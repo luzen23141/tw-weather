@@ -1,0 +1,38 @@
+appId: com.agubear.weather.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: '允許使用 App 時'
+    optional: true
+- setLocation:
+    latitude: 25.0330
+    longitude: 121.5654
+- extendedWaitUntil:
+    visible:
+      text: '天氣'
+    timeout: 30000
+- waitForAnimationToEnd
+- tapOn:
+    point: 50%,85%
+- waitForAnimationToEnd
+- assertVisible:
+    text: '設定'
+- swipe:
+    direction: DOWN
+    amount: 5
+- waitForAnimationToEnd
+- assertVisible:
+    text: '聚合模式'
+- swipe:
+    direction: DOWN
+    amount: 1
+- waitForAnimationToEnd
+- tapOn:
+    text: '啟用聚合'
+- waitForAnimationToEnd
+- tapOn:
+    point: 50%,15%
+- waitForAnimationToEnd
+- assertVisible:
+    text: '~'

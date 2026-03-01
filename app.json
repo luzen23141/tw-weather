@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "阿古熊天氣",
+    "slug": "tw-weather",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "tw-weather",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.agubear.weather.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.agubear.weather.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "description": "阿古熊天氣 - 提供全台灣精準的即時天氣預報、逐時預報與歷史天氣查詢。整合多方數據來源，給您最可靠的天氣資訊。",
+      "keywords": "天氣, 預報, 台灣天氣, 即時天氣, 歷史天氣, 阿古熊, 氣象",
+      "lang": "zh-Hant"
+    },
+    "plugins": ["expo-router", "expo-web-browser"]
+  }
+}

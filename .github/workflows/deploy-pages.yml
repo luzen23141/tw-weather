@@ -1,0 +1,69 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Export Expo Web (static)
+        run: |
+          npx expo export --platform web &
+          EXPO_PID=$!
+          for i in $(seq 1 120); do
+            sleep 5
+            if ls dist/_expo/static/js/web/*.js >/dev/null 2>&1; then
+              echo "✅ Bundle 已生成，終止 Metro worker"
+              kill $EXPO_PID 2>/dev/null || true
+              wait $EXPO_PID 2>/dev/null || true
+              exit 0
+            fi
+            if ! kill -0 $EXPO_PID 2>/dev/null; then
+              wait $EXPO_PID; EC=$?
+              [ $EC -ne 0 ] && echo "❌ expo export 失敗 (exit $EC)" && exit $EC
+              exit 0
+            fi
+          done
+          echo "❌ expo export 逾時（10 分鐘）"
+          kill -9 $EXPO_PID 2>/dev/null || true
+          exit 1
+        env:
+          EXPO_PUBLIC_PROXY_URL: ${{ vars.PROXY_URL }}
+          BASE_URL: /
+          CI: true
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

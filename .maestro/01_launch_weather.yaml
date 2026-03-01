@@ -1,0 +1,21 @@
+appId: com.agubear.weather.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: '允許使用 App 時'
+    optional: true
+- setLocation:
+    latitude: 25.0330
+    longitude: 121.5654
+- extendedWaitUntil:
+    visible:
+      text: '天氣'
+    timeout: 30000
+- waitForAnimationToEnd
+- assertVisible:
+    text: '天氣'
+- assertVisible:
+    text: '台北'
+- assertVisible:
+    text: '°'

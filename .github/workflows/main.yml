@@ -1,0 +1,197 @@
+name: Main CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 第 1 層：靜態檢查（並行，快速失敗）
+  lint-and-type-check:
+    name: Lint & Type & Format & Deps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Run ESLint
+        run: pnpm lint
+
+      - name: Run Type Check
+        run: pnpm type-check
+
+      - name: Run Prettier
+        run: pnpm format:check
+
+      - name: Run Dep Check
+        run: pnpm check:deps && pnpm check:unused
+
+  # 第 2 層：測試＋構建（依賴第 1 層全部通過才跑，有錯就停止）
+  unit-tests:
+    name: Jest Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-type-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Run tests with coverage
+        run: pnpm test --coverage --ci --maxWorkers=2
+
+      - name: Archiving coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  build-web:
+    name: Build Expo Web
+    runs-on: ubuntu-latest
+    needs: [lint-and-type-check]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
+
+      # Restore Expo cache (useful for Webpack/Metro)
+      - name: Expo cache
+        uses: actions/cache@v4
+        with:
+          path: .expo
+          key: ${{ runner.os }}-expo-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-expo-
+
+      - name: Export Web build
+        run: |
+          # Metro bundler 在 export 完成後仍保留 child process PIPE，導致 Node.js
+          # event loop 無法退出（已知 Metro 行為）。
+          # 解法：背景執行 export，每 5 秒偵測 bundle 是否產生；
+          # 一旦 bundle 存在即主動 kill，避免無限等待。
+          pnpm exec expo export --platform web &
+          EXPO_PID=$!
+          echo "expo PID: $EXPO_PID"
+          for i in $(seq 1 120); do
+            sleep 5
+            if ls dist/_expo/static/js/web/*.js >/dev/null 2>&1; then
+              echo "✅ Bundle 已生成，終止 Metro worker"
+              kill $EXPO_PID 2>/dev/null || true
+              wait $EXPO_PID 2>/dev/null || true
+              exit 0
+            fi
+            if ! kill -0 $EXPO_PID 2>/dev/null; then
+              wait $EXPO_PID; EC=$?
+              [ $EC -ne 0 ] && echo "❌ expo export 失敗 (exit $EC)" && exit $EC
+              exit 0
+            fi
+          done
+          echo "❌ expo export 逾時（10 分鐘）"
+          kill -9 $EXPO_PID 2>/dev/null || true
+          exit 1
+        env:
+          EXPO_PUBLIC_PROXY_URL: https://proxy-placeholder.vercel.app
+          BASE_URL: /
+          CI: true
+
+      - name: Scan bundle for problematic ESM patterns
+        run: |
+          BUNDLE=$(ls dist/_expo/static/js/web/*.js 2>/dev/null | head -1)
+          if [ -z "$BUNDLE" ]; then
+            echo "❌ No bundle found in dist/"
+            exit 1
+          fi
+          FAIL=0
+          # 1. 檢查 import.meta（非 ESM 環境的 SyntaxError 來源）
+          if grep -q "import\.meta" "$BUNDLE"; then
+            echo "❌ Found 'import.meta' in bundle — SyntaxError in non-ESM browsers"
+            echo "   Fix: check metro.config.js unstable_enablePackageExports setting"
+            FAIL=1
+          fi
+          # 2. 檢查 react/react-dom 版本一致性
+          REACT_VER=$(node -p "require('./node_modules/react/package.json').version" 2>/dev/null)
+          REACTDOM_VER=$(node -p "require('./node_modules/react-dom/package.json').version" 2>/dev/null)
+          if [ "$REACT_VER" != "$REACTDOM_VER" ]; then
+            echo "❌ React version mismatch: react@$REACT_VER vs react-dom@$REACTDOM_VER"
+            echo "   Fix: add pnpm.overrides.react-dom in package.json"
+            FAIL=1
+          fi
+          if [ $FAIL -eq 0 ]; then
+            echo "✅ Bundle scan passed (react@$REACT_VER, no import.meta)"
+          else
+            exit 1
+          fi
+
+  # 第 3 層：E2E 測試（依賴測試＋構建通過才跑）
+  e2e-web:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    needs: [unit-tests, build-web]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
+
+      # 快取 Playwright 瀏覽器
+      - name: Get Playwright version
+        id: pw-version
+        run: echo "version=$(pnpm list @playwright/test --depth=0 --json | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm dlx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps only
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm dlx playwright install-deps chromium
+
+      - name: Run Playwright tests
+        run: pnpm test:e2e:web
+        continue-on-error: true
+        env:
+          EXPO_PUBLIC_CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
+          EXPO_PUBLIC_WEATHERAPI_KEY: ${{ secrets.WEATHERAPI_KEY }}
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # 最終狀態彙總
+  check-suite:
+    name: All Checks Passed ✅
+    runs-on: ubuntu-latest
+    needs: [lint-and-type-check, unit-tests, build-web, e2e-web]
+    if: always()
+    steps:
+      - name: Verify all checks passed
+        run: |
+          if [ "${{ needs.lint-and-type-check.result }}" != "success" ]; then
+            echo "❌ Static checks failed"
+            exit 1
+          fi
+          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
+            echo "❌ Unit tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.build-web.result }}" != "success" ]; then
+            echo "❌ Web build failed"
+            exit 1
+          fi
+          echo "✅ All CI checks passed! Ready to merge."

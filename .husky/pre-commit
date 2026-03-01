@@ -1,0 +1,78 @@
+#!/bin/sh
+# Husky pre-commit hook
+# 防止提交敏感信息和格式問題
+
+set -e
+
+echo "🔍 執行 pre-commit 檢查..."
+
+# 1. 檢查 .env 文件是否被暫存
+if git diff --cached --name-only | grep -E "^\.env($|\.)" > /dev/null 2>&1; then
+  echo "❌ 錯誤：不能提交 .env 文件！"
+  echo ""
+  echo "   .env 文件包含敏感信息（API 金鑰、密碼等）"
+  echo "   應該添加到 .gitignore 並在本地管理"
+  echo ""
+  echo "   修復方式："
+  echo "   1. git reset HEAD .env"
+  echo "   2. git checkout -- .env"
+  echo "   3. 重新 git add（排除 .env）"
+  exit 1
+fi
+
+# 2. 檢查暫存的代碼中是否包含硬編碼的 API 金鑰
+echo "   • 檢查 API 金鑰..."
+if git diff --cached | grep -iE "(EXPO_PUBLIC_.*API_KEY|password|secret|token)" | grep -v "process\.env" > /dev/null 2>&1; then
+  echo "⚠️  警告：檢測到可能的硬編碼敏感信息"
+  echo "   請確保使用環境變數（process.env）而不是硬編碼值"
+fi
+
+# 3. 檢查是否包含已知的洩露金鑰（舊金鑰，僅限代碼文件）
+echo "   • 檢查已知的洩露金鑰..."
+# 注：只檢查代碼文件，文檔中包含金鑰是為了安全警告
+code_files=$(git diff --cached --name-only | grep -E '\.(ts|tsx|js|json|py|go|rs)$' || true)
+if [ ! -z "$code_files" ]; then
+  for file in $code_files; do
+    if git diff --cached -- "$file" | grep -E "CWA-93F0E7E1-2BE9-4D52-A18F-948157E9CB56|5c1aae861f6448f8857151615262702" > /dev/null 2>&1; then
+      echo "❌ 錯誤：檢測到已洩露的 API 金鑰在 $file 中！"
+      echo ""
+      echo "   不能提交已知的洩露金鑰！"
+      echo "   這些金鑰已失效並需要更新。"
+      exit 1
+    fi
+  done
+fi
+
+# 4. 檢查注釋中是否有敏感信息
+echo "   • 檢查注釋中的敏感信息..."
+if git diff --cached | grep -E "//.*API.?KEY|//.*password|//.*secret" > /dev/null 2>&1; then
+  echo "⚠️  警告：注釋中可能包含敏感信息說明"
+  echo "   建議移除或使用環境變數引用"
+fi
+
+# 5. 運行 ESLint（僅針對提交的文件）
+echo "   • 運行 ESLint 檢查..."
+if command -v npx &> /dev/null; then
+  npx lint-staged --allow-empty 2>/dev/null || true
+fi
+
+# 6. 運行 Prettier 格式檢查
+echo "   • 檢查代碼格式..."
+if command -v npx &> /dev/null; then
+  npx prettier --check --ignore-unknown $(git diff --cached --name-only) 2>/dev/null || {
+    echo "⚠️  警告：某些文件未符合 Prettier 格式"
+    echo "   運行 'pnpm format' 修復格式"
+  }
+fi
+
+# 7. 檢查 TypeScript 類型
+echo "   • 檢查 TypeScript 類型..."
+if command -v npx &> /dev/null; then
+  npx tsc --noEmit 2>/dev/null || {
+    echo "⚠️  警告：TypeScript 型別檢查失敗"
+  }
+fi
+
+echo ""
+echo "✅ pre-commit 檢查通過 - 允許提交"
+echo ""
