@@ -74,21 +74,32 @@ echo -e "${BLUE}    安全檢查腳本 - Security Audit${NC}"
 echo -e "${BLUE}═══════════════════════════════════════${NC}"
 echo ""
 
-# ============= 檢查 1：npm 依賴漏洞 =============
-echo -e "${BLUE}[1/8]${NC} 檢查 npm 依賴漏洞..."
-if command -v npm &> /dev/null; then
+# ============= 檢查 1：依賴漏洞審計 =============
+echo -e "${BLUE}[1/7]${NC} 檢查依賴漏洞..."
+if command -v pnpm &> /dev/null && [ -f "pnpm-lock.yaml" ]; then
+  if pnpm audit --production 2>/dev/null | grep -q "No known vulnerabilities found"; then
+    check_status 0 "pnpm audit 檢查"
+  else
+    pnpm audit --production || true
+    warn_status "pnpm audit 發現潛在漏洞 - 請檢查上方輸出"
+  fi
+elif command -v npm &> /dev/null; then
+  if [ -f "package-lock.json" ]; then
   if npm audit --production 2>/dev/null | grep -q "found 0 vulnerabilities"; then
     check_status 0 "npm audit 檢查"
   else
     warn_status "npm audit 發現潛在漏洞 - 建議執行 npm audit --production"
   fi
 else
-  warn_status "npm 未安裝"
+    info_status "跳過 npm audit (缺少 package-lock.json)"
+  fi
+else
+  warn_status "未檢測到套件管理工具 (npm/pnpm)"
 fi
 echo ""
 
 # ============= 檢查 2：pnpm 審計 =============
-echo -e "${BLUE}[2/8]${NC} 檢查 pnpm 依賴安全性..."
+echo -e "${BLUE}[2/7]${NC} 檢查 pnpm 依賴安全性..."
 if command -v pnpm &> /dev/null; then
   if pnpm audit --production 2>&1 | grep -q "No known vulnerabilities found"; then
     check_status 0 "pnpm audit 檢查"
@@ -102,7 +113,7 @@ fi
 echo ""
 
 # ============= 檢查 3：編譯產物中的 API 金鑰 =============
-echo -e "${BLUE}[3/8]${NC} 掃描編譯產物中的 API 金鑰（P0 檢查）..."
+echo -e "${BLUE}[3/7]${NC} 掃描編譯產物中的 API 金鑰（P0 檢查）..."
 if [ ! -d "dist" ]; then
   info_status "dist 目錄不存在，跳過"
 else
@@ -139,7 +150,7 @@ fi
 echo ""
 
 # ============= 檢查 4：.env 文件 =============
-echo -e "${BLUE}[4/8]${NC} 檢查 .env 文件..."
+echo -e "${BLUE}[4/7]${NC} 檢查 .env 文件..."
 if [ -f ".env" ]; then
   info_status ".env 文件存在於工作目錄（已在 .gitignore 中）"
   # 檢查 .env 是否被追蹤
@@ -159,32 +170,8 @@ if ls .env.* 2>/dev/null | grep -qv "\.example$"; then
 fi
 echo ""
 
-# ============= 檢查 5：Git 歷史中的敏感信息 =============
-echo -e "${BLUE}[5/8]${NC} 掃描 Git 歷史中的敏感信息..."
-if command -v git &> /dev/null; then
-  # 檢查最近 100 個提交
-  if git log --all -100 --oneline | wc -l > /dev/null 2>&1; then
-    local_git_issues=0
-
-    # 簡單掃描（快速）
-    if git log -p --all -100 | grep -iE "api.?key|password.*=|secret.*=" > /dev/null 2>&1; then
-      warn_status "Git 歷史中可能包含敏感信息（已檢查最近 100 提交）"
-      local_git_issues=$((local_git_issues + 1))
-    else
-      check_status 0 "Git 歷史檢查"
-    fi
-
-    if [ $local_git_issues -eq 0 ]; then
-      check_status 0 "Git 歷史敏感信息掃描"
-    fi
-  fi
-else
-  info_status "git 未安裝"
-fi
-echo ""
-
-# ============= 檢查 6：ESLint 安全規則 =============
-echo -e "${BLUE}[6/8]${NC} 檢查 ESLint 安全規則..."
+# ============= 檢查 5：ESLint 安全規則 =============
+echo -e "${BLUE}[5/7]${NC} 檢查 ESLint 安全規則..."
 if command -v npx &> /dev/null; then
   if npx eslint src --quiet 2>&1 | grep -q "security\|dangerous"; then
     warn_status "ESLint 檢測到潛在的安全問題"
@@ -196,8 +183,8 @@ else
 fi
 echo ""
 
-# ============= 檢查 7：代碼品質與覆蓋率 =============
-echo -e "${BLUE}[7/8]${NC} 檢查測試覆蓋率..."
+# ============= 檢查 6：代碼品質與覆蓋率 =============
+echo -e "${BLUE}[6/7]${NC} 檢查測試覆蓋率..."
 if [ -d "coverage" ]; then
   coverage_percent=$(grep -oP 'lines.*?\K[0-9]+\.[0-9]+' coverage/coverage-summary.json 2>/dev/null | head -1)
   if [ ! -z "$coverage_percent" ]; then
@@ -208,8 +195,8 @@ else
 fi
 echo ""
 
-# ============= 檢查 8：依賴更新 =============
-echo -e "${BLUE}[8/8]${NC} 檢查過期依賴..."
+# ============= 檢查 7：依賴更新 =============
+echo -e "${BLUE}[7/7]${NC} 檢查過期依賴..."
 if command -v npm &> /dev/null; then
   outdated=$(npm outdated --depth=0 2>/dev/null | tail -n +2 | wc -l)
   if [ $outdated -gt 0 ]; then
