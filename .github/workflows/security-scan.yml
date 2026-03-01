@@ -14,8 +14,24 @@ permissions:
   security-events: write
 
 jobs:
-  security-checks:
-    name: Security Checks
+  audit-and-lint:
+    name: Audit & Lint Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Run pnpm audit
+        run: pnpm audit || true
+
+      - name: ESLint Security Check
+        run: pnpm lint 2>&1 | grep -i "security\|dangerous\|unsafe" && echo "⚠️ 發現潛在的安全問題" || echo "✓ ESLint 安全檢查通過"
+
+  secrets-scan:
+    name: Secrets & Credentials Scan
     runs-on: ubuntu-latest
 
     steps:
@@ -24,19 +40,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
-      # 1. 檢查 pnpm 依賴漏洞
-      - name: Run pnpm audit
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm audit || true
-
-      # 2. 檢查硬編碼的敏感信息
       - name: Scan for hardcoded secrets
         uses: trufflesecurity/trufflehog@main
         continue-on-error: true
@@ -44,57 +47,30 @@ jobs:
           path: ./
           extra_args: --debug
 
-      # 3. 檢查編譯產物中的 API 金鑰（P0 檢查）
-      - name: Check for API keys in dist
-        run: |
-          echo "🔍 掃描編譯產物中的 API 金鑰..."
-
-          # 檢查是否存在 dist 目錄
-          if [ ! -d "dist" ]; then
-            echo "⚠️ dist 目錄不存在，跳過掃描"
-            exit 0
-          fi
-
-          # 檢查已知的 API Key 模式
-          if grep -r "EXPO_PUBLIC_CWA_API_KEY\|EXPO_PUBLIC_WEATHERAPI_KEY\|EXPO_PUBLIC_OPENWEATHERMAP_KEY" dist/ 2>/dev/null; then
-            echo "❌ 嚴重：編譯產物中發現 EXPO_PUBLIC_* 環境變數！"
-            exit 1
-          fi
-
-          # 檢查已知的洩露金鑰（舊金鑰）
-          if grep -r "CWA-93F0E7E1-2BE9-4D52-A18F-948157E9CB56\|5c1aae861f6448f8857151615262702" dist/ 2>/dev/null; then
-            echo "❌ 嚴重：編譯產物中發現已洩露的 API 金鑰！"
-            exit 1
-          fi
-
-          echo "✓ 編譯產物檢查通過"
-
-      # 4. 檢查 .env 文件是否被提交
       - name: Check for .env files
         run: |
           echo "🔍 檢查 .env 文件..."
-
           if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "\.env|\.env\.\w+"; then
             echo "❌ 嚴重：.env 文件被提交！"
             exit 1
           fi
-
           if [ -f ".env" ]; then
             echo "⚠️ 警告：.env 文件存在於工作目錄（不被追蹤是正確的）"
           fi
-
           echo "✓ .env 文件檢查通過"
 
-      # 5. 靜態程式碼分析（ESLint security 規則）
-      - name: ESLint Security Check
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm lint 2>&1 | grep -i "security\|dangerous\|unsafe" && echo "⚠️ 發現潛在的安全問題" || echo "✓ ESLint 安全檢查通過"
+  sonar-scan:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
 
-      # 6. SonarQube 代碼品質掃描（可選，需要 token）
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
-        if: ${{ always() }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -108,17 +84,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
 
       - name: Check for vulnerable dependencies
         run: |
@@ -168,7 +134,7 @@ jobs:
     name: Security Report
     runs-on: ubuntu-latest
     if: always()
-    needs: [security-checks, dependency-check]
+    needs: [audit-and-lint, secrets-scan, dependency-check, sast, license-check]
 
     steps:
       - name: Comment PR with security status

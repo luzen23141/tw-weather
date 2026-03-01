@@ -26,6 +26,15 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      # Restore Expo cache (useful for Webpack/Metro)
+      - name: Expo cache
+        uses: actions/cache@v4
+        with:
+          path: .expo
+          key: ${{ runner.os }}-expo-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-expo-
       - name: Export Expo Web (static)
         run: |
           npx expo export --platform web &

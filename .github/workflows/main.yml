@@ -12,22 +12,33 @@ concurrency:
 
 jobs:
   # 第 1 層：靜態檢查（並行，快速失敗）
-  lint-and-type-check:
-    name: Lint & Type & Format & Deps
+  # 第 1 層：並行靜態檢查
+  lint:
+    name: Lint Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node-pnpm
-
       - name: Run ESLint
         run: pnpm lint
 
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
       - name: Run Type Check
         run: pnpm type-check
 
+  format-and-deps:
+    name: Format & Deps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
       - name: Run Prettier
         run: pnpm format:check
-
       - name: Run Dep Check
         run: pnpm check:deps && pnpm check:unused
 
@@ -35,7 +46,7 @@ jobs:
   unit-tests:
     name: Jest Unit Tests
     runs-on: ubuntu-latest
-    needs: [lint-and-type-check]
+    needs: [lint, type-check, format-and-deps]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node-pnpm
@@ -54,7 +65,7 @@ jobs:
   build-web:
     name: Build Expo Web
     runs-on: ubuntu-latest
-    needs: [lint-and-type-check]
+    needs: [lint, type-check, format-and-deps]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -177,12 +188,12 @@ jobs:
   check-suite:
     name: All Checks Passed ✅
     runs-on: ubuntu-latest
-    needs: [lint-and-type-check, unit-tests, build-web, e2e-web]
+    needs: [lint, type-check, format-and-deps, unit-tests, build-web, e2e-web]
     if: always()
     steps:
       - name: Verify all checks passed
         run: |
-          if [ "${{ needs.lint-and-type-check.result }}" != "success" ]; then
+          if [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.type-check.result }}" != "success" ] || [ "${{ needs.format-and-deps.result }}" != "success" ]; then
             echo "❌ Static checks failed"
             exit 1
           fi
