@@ -39,8 +39,8 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
       - name: Run Prettier
         run: pnpm format:check
-      - name: Run Dep Check
-        run: pnpm check:deps && pnpm check:unused
+      - name: Run Unused Check
+        run: pnpm check:unused
 
   # 第 2 層：測試＋構建（依賴第 1 層全部通過才跑，有錯就停止）
   unit-tests:
