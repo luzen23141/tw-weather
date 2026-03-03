@@ -61,7 +61,9 @@
       "Bash(pnpm test:*)",
       "Bash(pnpm check:deps:*)",
       "Bash(grep -r \"import\\\\.meta\" node_modules/zustand/ --include=\"*.js\" --include=\"*.cjs\" -l 2>/dev/null | head -5 || echo \"clean\"\ngrep -r \"import\\\\.meta\" node_modules/zustand/ --include=\"*.mjs\" -l 2>/dev/null | head -5 || echo \"no mjs\")",
-      "mcp__sequential-thinking__sequentialthinking"
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(do echo:*)",
+      "Bash(ruby:*)"
     ]
   }
 }
