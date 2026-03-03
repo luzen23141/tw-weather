@@ -2,7 +2,7 @@
  * 聚合引擎工具函式（純函式，方便測試）
  */
 
-import { TemperatureAggregationRule, ThresholdRule } from './aggregation.types';
+import { TemperatureAggregationRule, ThresholdRule } from '../api/types';
 
 /**
  * 計算中位數

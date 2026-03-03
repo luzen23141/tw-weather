@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  security-events: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -40,6 +44,39 @@ jobs:
         run: pnpm format:check
       - name: Run Unused Check
         run: pnpm check:unused
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
+      - name: Audit dependencies for vulnerabilities
+        run: pnpm audit --production
+
+  secrets-scan:
+    name: Secrets Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for hardcoded secrets using trufflehog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --debug
+      - name: Check for .env files in git history
+        run: |
+          echo "檢查 .env 文件..."
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "\.env|\.env\.\w+"; then
+            echo "❌ 嚴重：.env 文件被提交！"
+            exit 1
+          fi
+          if [ -f ".env" ]; then
+            echo "注意：.env 文件存在於工作目錄（不被追蹤是正確的）"
+          fi
+          echo ".env 文件檢查通過"
 
   # 第 2 層：測試＋構建（依賴第 1 層全部通過才跑，有錯就停止）
   unit-tests:
@@ -187,13 +224,27 @@ jobs:
   check-suite:
     name: All Checks Passed ✅
     runs-on: ubuntu-latest
-    needs: [lint, type-check, format-and-unused, unit-tests, build-web, e2e-web]
+    needs:
+      [
+        lint,
+        type-check,
+        format-and-unused,
+        dependency-audit,
+        secrets-scan,
+        unit-tests,
+        build-web,
+        e2e-web,
+      ]
     if: always()
     steps:
       - name: Verify all checks passed
         run: |
           if [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.type-check.result }}" != "success" ] || [ "${{ needs.format-and-unused.result }}" != "success" ]; then
             echo "❌ Static checks failed"
+            exit 1
+          fi
+          if [ "${{ needs.dependency-audit.result }}" != "success" ] || [ "${{ needs.secrets-scan.result }}" != "success" ]; then
+            echo "❌ Security checks failed"
             exit 1
           fi
           if [ "${{ needs.unit-tests.result }}" != "success" ]; then

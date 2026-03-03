@@ -8,7 +8,6 @@ const config: KnipConfig = {
   rules: {},
   ignoreDependencies: [
     'expo-updates',
-    'react-native-mmkv',
     'react-native-css-interop',
     '@testing-library/jest-dom',
     '@testing-library/react',

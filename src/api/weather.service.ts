@@ -1,4 +1,4 @@
-import { AggregationEngine } from '../aggregator';
+import { AggregationEngine } from '../aggregator/AggregationEngine';
 
 import cwaAdapter from './adapters/cwa.adapter';
 import openMeteoAdapter from './adapters/open-meteo.adapter';
