@@ -9,16 +9,9 @@
     "@commitlint/cli",
     "@commitlint/config-conventional",
     "commitlint",
-    "eslint-plugin-react-native",
-    "eslint-plugin-security-node",
     "jest-environment-jsdom",
-    "jest-extended",
-    "jest-mock-extended",
-    "@testing-library/dom",
     "@testing-library/react",
-    "@testing-library/user-event",
     "ts-jest",
-    "babel-jest",
     "globals"
   ]
 }

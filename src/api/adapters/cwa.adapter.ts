@@ -9,11 +9,83 @@ import {
   WeatherData,
   WeatherSource,
 } from '../types';
-import { mapCwaCodeToWmo, getWeatherDescription } from '../weather-code.map';
+
+import { mapCwaCodeToWmo, getWeatherDescription } from '@/utils/weather-code';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
 const CWA_API_KEY = process.env.EXPO_PUBLIC_CWA_API_KEY;
 const CWA_DIRECT_BASE = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore';
+
+// TODO: 實作 calculateDistance，根據經緯度找最近的測站
+
+/**
+ * 從能見度描述文字提取數值（km）
+ * 範例："10 km", "5公里", "不良" → 10, 5, 或預設值
+ */
+function parseVisibilityDescription(desc: string | undefined): number {
+  if (!desc) return 10;
+  const match = desc.match(/(\d+(?:\.\d+)?)/);
+  if (match && match[1]) {
+    return parseFloat(match[1]);
+  }
+  return 10;
+}
+
+/**
+ * 計算體感溫度（簡化版：使用風寒指數 Wind Chill Index）
+ * 公式參考：NWS Wind Chill
+ * 僅適用於溫度 <= 10°C 的情況
+ */
+function calculateApparentTemperature(
+  temperature: number,
+  windSpeed: number, // km/h
+): number {
+  // 若溫度過高或風速過低，直接回傳氣溫
+  if (temperature > 10 || windSpeed < 4.8) {
+    return temperature;
+  }
+
+  // 風寒指數公式 (T in °C, V in km/h)
+  // Tw = 13.12 + 0.6215*T - 11.37*V^0.16 + 0.3965*T*V^0.16
+  const T = temperature;
+  const V = windSpeed;
+  const Tw = 13.12 + 0.6215 * T - 11.37 * Math.pow(V, 0.16) + 0.3965 * T * Math.pow(V, 0.16);
+
+  return Math.round(Tw * 10) / 10; // 保留一位小數
+}
+
+/**
+ * 從天氣描述文字反查 CWA 天氣代碼
+ * 使用簡單的字詞比對
+ */
+function getWeatherCodeFromDescription(description: string | undefined): number {
+  if (!description) return 3; // 預設多雲
+
+  const desc = description.toLowerCase();
+
+  // 依序檢查，優先匹配更精確的條件
+  if (desc.includes('晴')) return 1;
+  if (desc.includes('雪')) {
+    if (desc.includes('陣')) return 16; // 陣小雪
+    if (desc.includes('大')) return 20; // 大雪
+    return 7; // 小雪
+  }
+  if (desc.includes('雨')) {
+    if (desc.includes('陣')) return 8; // 陣雨
+    if (desc.includes('凍')) return 18; // 凍雨
+    if (desc.includes('雷')) return 21; // 雷暴伴隨冰雹
+    return 6; // 雨
+  }
+  if (desc.includes('霧')) {
+    if (desc.includes('濃')) return 10; // 濃霧
+    return 4; // 霧
+  }
+  if (desc.includes('多雲') || desc.includes('多云')) return 2;
+  if (desc.includes('陰') || desc.includes('阴')) return 3;
+  if (desc.includes('雷')) return 9; // 雷暴
+
+  return 3; // 預設多雲
+}
 
 function buildCwaUrl(endpoint: string, params: Record<string, string>): URL {
   if (PROXY_URL) {
@@ -148,7 +220,19 @@ class CwaAdapter implements WeatherApiAdapter {
       );
     }
 
-    const station = data.records.Station?.[0];
+    const stations = data.records.Station;
+    if (!stations || stations.length === 0) {
+      throw new WeatherApiError(
+        'CWA 無法取得觀測資料',
+        this.source,
+        undefined,
+        new Error('No station data found'),
+      );
+    }
+
+    // TODO: 實作完整的距離計算以選擇最近的測站
+    // 目前簡化為使用第一個測站，待後續優化
+    const station = stations[0];
     if (!station || !station.WeatherElement) {
       throw new WeatherApiError(
         'CWA 無法取得觀測資料',
@@ -159,22 +243,29 @@ class CwaAdapter implements WeatherApiAdapter {
     }
 
     const obs = station.WeatherElement;
-    // CWA 即時天氣現象代碼在新版 API 需要特殊對照，若無則預設為 多雲(3)
-    const weatherCode = mapCwaCodeToWmo(3);
+    const temperature = parseFloat(obs.AirTemperature ?? '') || 20;
+    const windSpeed = parseFloat(obs.WindSpeed ?? '') || 0;
+
+    // 從天氣描述反查天氣代碼
+    const cwaCodeFromDesc = getWeatherCodeFromDescription(obs.Weather);
+    const weatherCode = mapCwaCodeToWmo(cwaCodeFromDesc);
 
     return {
       timestamp: station.ObsTime?.DateTime ?? new Date().toISOString(),
-      temperature: parseFloat(obs.AirTemperature ?? '') || 20,
-      apparentTemperature: parseFloat(obs.AirTemperature ?? '') || 20, // 暫代
+      temperature,
+      // 使用風寒指數計算體感溫度
+      apparentTemperature: calculateApparentTemperature(temperature, windSpeed),
       humidity: parseFloat(obs.RelativeHumidity ?? '') || 50,
       description: obs.Weather || getWeatherDescription(weatherCode),
       weatherCode,
-      windSpeed: parseFloat(obs.WindSpeed ?? '') || 0,
+      windSpeed,
       windDirection: parseFloat(obs.WindDirection ?? '') || 0,
       precipitation: parseFloat(obs.Now?.Precipitation ?? '') || 0,
+      // TODO: CWA 即時觀測 API 未提供降雨機率，預設為 0
       precipitationProbability: 0,
       pressure: parseFloat(obs.AirPressure ?? '') || 1013,
-      visibility: 10, // 暫代
+      // 從 VisibilityDescription 解析能見度
+      visibility: parseVisibilityDescription(obs.VisibilityDescription),
     };
   }
 
@@ -239,10 +330,13 @@ class CwaAdapter implements WeatherApiAdapter {
         const weatherCode = mapCwaCodeToWmo(codeStr);
         const desc = wxVal?.Weather || getWeatherDescription(weatherCode);
 
-        // 解析降雨機率 (因為降雨機率的間距是6小時或12小時一筆，所以可能找不到剛好對應的idx，我們用簡單映射或直接取0)
+        // 解析降雨機率
+        // CWA 降雨機率通常以 6 小時或 12 小時為單位，需要向上對齊
+        // 計算映射到降雨機率元素的索引
+        const popIndex = Math.min(Math.floor(idx / 2), (popElement?.Time?.length ?? 1) - 1);
         const popStr =
-          popElement?.Time?.[Math.floor(idx / 2)]?.ElementValue?.[0]?.ProbabilityOfPrecipitation ??
-          '0';
+          popElement?.Time?.[popIndex]?.ElementValue?.[0]?.ProbabilityOfPrecipitation ?? '0';
+        const popValue = parseInt(popStr === ' ' ? '0' : popStr, 10) || 0;
 
         hourlyForecasts.push({
           timestamp: timeObj.DataTime ?? timeObj.StartTime ?? new Date().toISOString(),
@@ -252,7 +346,7 @@ class CwaAdapter implements WeatherApiAdapter {
           ),
           weatherCode,
           description: desc,
-          precipitationProbability: parseInt(popStr === ' ' ? '0' : popStr, 10) || 0,
+          precipitationProbability: Math.max(0, Math.min(100, popValue)), // 確保在 0-100 範圍內
           precipitation: 0, // 3小時降雨機率API常未提供累積雨量
           humidity: parseInt(
             rhElement?.Time?.[idx]?.ElementValue?.[0]?.RelativeHumidity ?? '50',
@@ -382,9 +476,12 @@ class CwaAdapter implements WeatherApiAdapter {
         weatherCode: obj.weatherCode || 3,
         description: obj.description || getWeatherDescription(obj.weatherCode || 3),
         precipitationProbability: obj.precipitationProbability || 0,
+        // TODO: CWA API 未提供每日累積降雨量，預設為 0
         precipitationSum: 0,
+        // TODO: CWA API 未提供日出日落時間，保留預設值
         sunrise: '06:00',
         sunset: '18:00',
+        // TODO: CWA API 未提供每日最大風速，預設為 0
         windSpeedMax: 0,
       });
     });

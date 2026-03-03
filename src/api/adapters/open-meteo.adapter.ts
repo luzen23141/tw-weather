@@ -9,7 +9,8 @@ import {
   WeatherData,
   WeatherSource,
 } from '../types';
-import { getWeatherDescription } from '../weather-code.map';
+
+import { getWeatherDescription } from '@/utils/weather-code';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 const ARCHIVE_URL = 'https://archive-api.open-meteo.com/v1/archive';

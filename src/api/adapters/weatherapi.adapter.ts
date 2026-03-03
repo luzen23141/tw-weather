@@ -9,7 +9,8 @@ import {
   WeatherData,
   WeatherSource,
 } from '../types';
-import { getWeatherDescription, mapWeatherApiCodeToWmo } from '../weather-code.map';
+
+import { getWeatherDescription, mapWeatherApiCodeToWmo } from '@/utils/weather-code';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
 const WEATHERAPI_KEY = process.env.EXPO_PUBLIC_WEATHERAPI_KEY;

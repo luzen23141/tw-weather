@@ -5,27 +5,6 @@
 
 export const CacheKeys = {
   /**
-   * 當前天氣
-   * Key: weather:current:{lat},{lon}
-   */
-  currentWeather: (latitude: number, longitude: number): string =>
-    `weather:current:${latitude},${longitude}`,
-
-  /**
-   * 逐時預報
-   * Key: weather:hourly:{lat},{lon}
-   */
-  hourlyForecast: (latitude: number, longitude: number): string =>
-    `weather:hourly:${latitude},${longitude}`,
-
-  /**
-   * 每日預報
-   * Key: weather:daily:{lat},{lon}
-   */
-  dailyForecast: (latitude: number, longitude: number): string =>
-    `weather:daily:${latitude},${longitude}`,
-
-  /**
    * 當前天氣完整資料（包含 hourly + daily）
    * Key: weather:full:{lat},{lon}
    */
@@ -69,16 +48,7 @@ export const CacheKeys = {
  * 快取過期時間配置（毫秒）
  */
 export const CacheExpiry = {
-  /** 當前天氣：5 分鐘 */
-  currentWeather: 5 * 60 * 1000,
-
-  /** 逐時預報：15 分鐘 */
-  hourlyForecast: 15 * 60 * 1000,
-
-  /** 每日預報：30 分鐘 */
-  dailyForecast: 30 * 60 * 1000,
-
-  /** 完整天氣資料：30 分鐘（取最嚴格的） */
+  /** 完整天氣資料：30 分鐘 */
   fullWeather: 30 * 60 * 1000,
 
   /** 歷史天氣：永不過期（過去天氣不會改變） */
