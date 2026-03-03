@@ -11,20 +11,22 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CurrentWeatherCard } from '@/components/weather/CurrentWeatherCard';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
-import { useLocation } from '@/hooks/useLocation';
+import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useWeather } from '@/hooks/useWeather';
-import { useLocationsStore } from '@/store/locations.store';
 import { useSettingsStore } from '@/store/settings.store';
 import { getGlassStyle } from '@/utils/glass';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { location, isLoading: locationLoading, error: locationError } = useLocation();
   const { displayMode } = useSettingsStore();
-  const selectedLocation = useLocationsStore((state) => state.selectedLocation);
+  const {
+    effectiveLocation,
+    displayName,
+    isLoading: locationLoading,
+    error: locationError,
+  } = useEffectiveLocation();
 
-  const effectiveLocation = selectedLocation || location;
   const { data: weatherData, isLoading, error } = useWeather(effectiveLocation);
 
   const isLoading_combined = locationLoading || isLoading;
@@ -50,7 +52,7 @@ export default function HomeScreen() {
             paddingTop: 8,
           }}
         >
-          {effectiveLocation && <Stack.Screen options={{ headerTitle: effectiveLocation.name }} />}
+          <Stack.Screen options={{ headerTitle: displayName }} />
 
           {isLoading_combined ? (
             <View className="flex-1 items-center justify-center py-32">

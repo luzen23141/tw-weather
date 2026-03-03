@@ -8,10 +8,9 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SourceBadge } from '@/components/ui/SourceBadge';
+import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useHistory } from '@/hooks/useHistory';
-import { useLocation } from '@/hooks/useLocation';
 import { useMDColors } from '@/hooks/useMDColors';
-import { useLocationsStore } from '@/store/locations.store';
 import { useSettingsStore } from '@/store/settings.store';
 import { formatDate } from '@/utils/date';
 import { getGlassStyle } from '@/utils/glass';
@@ -19,15 +18,17 @@ import { getGlassStyle } from '@/utils/glass';
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const colors = useMDColors();
-  const { location, isLoading: locationLoading, error: locationError } = useLocation();
   const { displayMode } = useSettingsStore();
-  const selectedLocation = useLocationsStore((state) => state.selectedLocation);
+  const {
+    effectiveLocation,
+    isLoading: locationLoading,
+    error: locationError,
+  } = useEffectiveLocation();
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const dateStr = new Date().toISOString().split('T')[0];
     return dateStr ?? '';
   });
 
-  const effectiveLocation = selectedLocation || location;
   const { data: historyData, isLoading, error } = useHistory(effectiveLocation ?? null, 30);
 
   const isLoading_combined = locationLoading || isLoading;

@@ -8,18 +8,19 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SourceBadge } from '@/components/ui/SourceBadge';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
-import { useLocation } from '@/hooks/useLocation';
+import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useWeather } from '@/hooks/useWeather';
-import { useLocationsStore } from '@/store/locations.store';
 import { useSettingsStore } from '@/store/settings.store';
 
 export default function ForecastScreen() {
   const insets = useSafeAreaInsets();
-  const { location, isLoading: locationLoading, error: locationError } = useLocation();
   const { displayMode } = useSettingsStore();
-  const selectedLocation = useLocationsStore((state) => state.selectedLocation);
+  const {
+    effectiveLocation,
+    isLoading: locationLoading,
+    error: locationError,
+  } = useEffectiveLocation();
 
-  const effectiveLocation = selectedLocation || location;
   const { data: weatherData, isLoading, error } = useWeather(effectiveLocation);
 
   const isLoading_combined = locationLoading || isLoading;
