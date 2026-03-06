@@ -9,7 +9,8 @@ import { RadioButton } from '@/components/ui/RadioButton';
 import { useSettingsStore } from '@/store/settings.store';
 import { getGlassStyle } from '@/utils/glass';
 
-const glassCardClassName = 'mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass';
+const glassCardClassName =
+  'mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass';
 const glassCardStyle = getGlassStyle(20);
 
 const settingsSectionsClassName = 'gap-6';
@@ -36,10 +37,7 @@ const SectionIntro = () => (
 );
 
 const SectionCard = ({ children, className = '' }: SectionCardProps) => (
-  <View
-    className={`${glassCardClassName} ${className}`.trim()}
-    style={glassCardStyle}
-  >
+  <View className={`${glassCardClassName} ${className}`.trim()} style={glassCardStyle}>
     {children}
   </View>
 );
@@ -68,7 +66,9 @@ const OptionContent = ({
 }) => (
   <View className="flex-1 gap-1 pr-4">
     <Text className="text-[15px] font-semibold leading-5 text-md-on-surface">{label}</Text>
-    {description && <Text className="text-xs leading-5 text-md-on-surface-variant">{description}</Text>}
+    {description && (
+      <Text className="text-xs leading-5 text-md-on-surface-variant">{description}</Text>
+    )}
   </View>
 );
 

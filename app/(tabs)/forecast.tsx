@@ -59,7 +59,11 @@ export default function ForecastScreen() {
               <View className="mx-4 mt-1 rounded-3xl border border-glass-border bg-md-surface/80 px-5 py-5 shadow-glass">
                 <View className="flex-row items-start gap-3">
                   <View className="mt-0.5 h-11 w-11 items-center justify-center rounded-2xl bg-md-primary/12 border border-glass-border">
-                    <Ionicons name="partly-sunny-outline" size={20} color="var(--color-md-primary)" />
+                    <Ionicons
+                      name="partly-sunny-outline"
+                      size={20}
+                      color="var(--color-md-primary)"
+                    />
                   </View>
                   <View className="flex-1 gap-1.5">
                     <View className="flex-row items-start justify-between gap-3">

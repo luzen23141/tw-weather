@@ -83,7 +83,9 @@ export default function HistoryScreen() {
                           </Text>
                         )}
                       </View>
-                      <SourceBadge source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'} />
+                      <SourceBadge
+                        source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'}
+                      />
                     </View>
                     <Text className="text-xs font-bold uppercase tracking-[1.6px] text-md-primary">
                       歷史天氣與日期瀏覽
@@ -131,7 +133,9 @@ export default function HistoryScreen() {
 
               {selectedDayData ? (
                 <View className="px-4 gap-3">
-                  <Text className="text-sm font-bold text-md-on-surface">{formatDate(selectedDate)}</Text>
+                  <Text className="text-sm font-bold text-md-on-surface">
+                    {formatDate(selectedDate)}
+                  </Text>
 
                   <View className="flex-row gap-3">
                     <View
