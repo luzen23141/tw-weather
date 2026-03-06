@@ -64,26 +64,36 @@ export default function HistoryScreen() {
               <Text className="text-md-on-surface-variant text-sm">{error_combined.message}</Text>
             </View>
           ) : effectiveLocation && historyData && historyData.length > 0 ? (
-            <View className="gap-4">
-              {/* 頂部：城市名稱 + 資料源 badge */}
-              <View className="px-4 pt-2 flex-row items-center justify-between">
-                <View className="flex-1">
-                  <Text className="text-base font-bold text-md-on-surface">
-                    {effectiveLocation.name}
-                  </Text>
-                  {effectiveLocation.city && (
-                    <Text className="text-xs text-md-on-surface-variant mt-0.5">
-                      {effectiveLocation.city}
-                      {effectiveLocation.district && ` · ${effectiveLocation.district}`}
+            <View className="gap-5">
+              <View className="mx-4 mt-1 rounded-3xl border border-glass-border bg-md-surface/80 px-5 py-5 shadow-glass">
+                <View className="flex-row items-start gap-3">
+                  <View className="mt-0.5 h-11 w-11 items-center justify-center rounded-2xl bg-md-primary/12 border border-glass-border">
+                    <Ionicons name="time-outline" size={20} color="var(--color-md-primary)" />
+                  </View>
+                  <View className="flex-1 gap-1.5">
+                    <View className="flex-row items-start justify-between gap-3">
+                      <View className="flex-1">
+                        <Text className="text-lg font-bold text-md-on-surface">
+                          {effectiveLocation.name}
+                        </Text>
+                        {effectiveLocation.city && (
+                          <Text className="mt-1 text-sm leading-5 text-md-on-surface-variant">
+                            {effectiveLocation.city}
+                            {effectiveLocation.district && ` · ${effectiveLocation.district}`}
+                          </Text>
+                        )}
+                      </View>
+                      <SourceBadge source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'} />
+                    </View>
+                    <Text className="text-xs font-bold uppercase tracking-[1.6px] text-md-primary">
+                      歷史天氣與日期瀏覽
                     </Text>
-                  )}
+                  </View>
                 </View>
-                <SourceBadge source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'} />
               </View>
 
-              {/* 日期選擇 */}
               <View className="gap-2">
-                <Text className="text-xs font-bold text-md-on-surface-variant uppercase tracking-wider px-4">
+                <Text className="px-4 text-xs font-bold uppercase tracking-[1.6px] text-md-on-surface-variant">
                   選擇日期
                 </Text>
                 <ScrollView
@@ -119,14 +129,10 @@ export default function HistoryScreen() {
                 </ScrollView>
               </View>
 
-              {/* 選定日期的天氣資料 */}
               {selectedDayData ? (
                 <View className="px-4 gap-3">
-                  <Text className="text-sm font-bold text-md-on-surface">
-                    {formatDate(selectedDate)}
-                  </Text>
+                  <Text className="text-sm font-bold text-md-on-surface">{formatDate(selectedDate)}</Text>
 
-                  {/* 統計 Bento Grid */}
                   <View className="flex-row gap-3">
                     <View
                       className="flex-1 bg-md-surface rounded-2xl p-4 gap-1 border border-glass-border"

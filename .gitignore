@@ -49,3 +49,6 @@ test-results/
 # Python cache
 __pycache__/
 *.py[cod]
+
+# Claude local files
+.claude/worktrees/

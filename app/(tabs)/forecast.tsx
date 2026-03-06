@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -54,23 +55,34 @@ export default function ForecastScreen() {
               <Text className="text-md-on-surface-variant text-sm">{error_combined.message}</Text>
             </View>
           ) : weatherData && effectiveLocation ? (
-            <View className="gap-4">
-              {/* 頂部：城市名稱 + 資料源 badge */}
-              <View className="px-4 pt-2 flex-row items-center justify-between">
-                <View className="flex-1">
-                  <Text className="text-base font-bold text-md-on-surface">
-                    {effectiveLocation.name}
-                  </Text>
-                  {effectiveLocation.city && (
-                    <Text className="text-xs text-md-on-surface-variant mt-0.5">
-                      {effectiveLocation.city}
-                      {effectiveLocation.district && ` · ${effectiveLocation.district}`}
+            <View className="gap-5">
+              <View className="mx-4 mt-1 rounded-3xl border border-glass-border bg-md-surface/80 px-5 py-5 shadow-glass">
+                <View className="flex-row items-start gap-3">
+                  <View className="mt-0.5 h-11 w-11 items-center justify-center rounded-2xl bg-md-primary/12 border border-glass-border">
+                    <Ionicons name="partly-sunny-outline" size={20} color="var(--color-md-primary)" />
+                  </View>
+                  <View className="flex-1 gap-1.5">
+                    <View className="flex-row items-start justify-between gap-3">
+                      <View className="flex-1">
+                        <Text className="text-lg font-bold text-md-on-surface">
+                          {effectiveLocation.name}
+                        </Text>
+                        {effectiveLocation.city && (
+                          <Text className="mt-1 text-sm leading-5 text-md-on-surface-variant">
+                            {effectiveLocation.city}
+                            {effectiveLocation.district && ` · ${effectiveLocation.district}`}
+                          </Text>
+                        )}
+                      </View>
+                      <SourceBadge
+                        source={displayMode === 'aggregate' ? 'aggregate' : weatherData.source}
+                      />
+                    </View>
+                    <Text className="text-xs font-bold uppercase tracking-[1.6px] text-md-primary">
+                      逐時與每日預報
                     </Text>
-                  )}
+                  </View>
                 </View>
-                <SourceBadge
-                  source={displayMode === 'aggregate' ? 'aggregate' : weatherData.source}
-                />
               </View>
 
               <HourlyForecastList forecasts={weatherData.hourlyForecast} />
