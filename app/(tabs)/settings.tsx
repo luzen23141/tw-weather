@@ -9,6 +9,20 @@ import { RadioButton } from '@/components/ui/RadioButton';
 import { useSettingsStore } from '@/store/settings.store';
 import { getGlassStyle } from '@/utils/glass';
 
+const glassCardClassName = 'mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass';
+const glassCardStyle = getGlassStyle(20);
+
+type SectionCardProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+const SectionCard = ({ children, className = '' }: SectionCardProps) => (
+  <View className={`${glassCardClassName} ${className}`.trim()} style={glassCardStyle}>
+    {children}
+  </View>
+);
+
 const SectionHeader = ({
   title,
   icon,
@@ -19,6 +33,19 @@ const SectionHeader = ({
   <View className="flex-row items-center gap-2 mt-7 mb-2 px-4">
     <Ionicons name={icon} size={14} color="var(--color-md-primary)" />
     <Text className="text-xs font-bold text-md-primary uppercase tracking-wider">{title}</Text>
+  </View>
+);
+
+const OptionContent = ({
+  label,
+  description,
+}: {
+  label: string;
+  description?: string | undefined;
+}) => (
+  <View className="flex-1 gap-0.5">
+    <Text className="text-sm font-medium text-md-on-surface">{label}</Text>
+    {description && <Text className="text-xs text-md-on-surface-variant mt-0.5">{description}</Text>}
   </View>
 );
 
@@ -43,12 +70,7 @@ const RadioOption = ({
       !isLast ? 'border-b border-glass-border' : ''
     }`}
   >
-    <View className="flex-1 gap-0.5">
-      <Text className="text-sm font-medium text-md-on-surface">{label}</Text>
-      {description && (
-        <Text className="text-xs text-md-on-surface-variant mt-0.5">{description}</Text>
-      )}
-    </View>
+    <OptionContent label={label} description={description} />
     <RadioButton selected={value === selectedValue} />
   </TouchableOpacity>
 );
@@ -75,12 +97,7 @@ const SourceToggleComponent = ({
         !isLast ? 'border-b border-glass-border' : ''
       }`}
     >
-      <View className="flex-1 gap-0.5">
-        <Text className="text-sm font-medium text-md-on-surface">{label}</Text>
-        {description && (
-          <Text className="text-xs text-md-on-surface-variant mt-0.5">{description}</Text>
-        )}
-      </View>
+      <OptionContent label={label} description={description} />
       <Switch
         value={isEnabled}
         onValueChange={() => toggleSource(source)}
@@ -90,6 +107,63 @@ const SourceToggleComponent = ({
     </View>
   );
 };
+
+const sourceOptions: Array<{
+  label: string;
+  description: string;
+  source: WeatherSource;
+}> = [
+  {
+    label: '中央氣象署（CWA）',
+    description: '台灣最精準，含即時觀測',
+    source: 'cwa',
+  },
+  {
+    label: 'Open-Meteo',
+    description: '免費無限制，歷史資料豐富',
+    source: 'open-meteo',
+  },
+  {
+    label: 'WeatherAPI',
+    description: '備用來源，7 天歷史',
+    source: 'weatherapi',
+  },
+  {
+    label: 'OpenWeatherMap',
+    description: '全球覆蓋，備用資料源',
+    source: 'openweathermap',
+  },
+];
+
+const displayModeOptions = [
+  {
+    label: '單一資料源',
+    description: '使用優先順序最高的來源',
+    value: 'single',
+  },
+  {
+    label: '聚合模式',
+    description: '整合多個來源取得最佳預測',
+    value: 'aggregate',
+  },
+] as const;
+
+const temperatureOptions = [
+  { label: '攝氏 (°C)', value: 'celsius' },
+  { label: '華氏 (°F)', value: 'fahrenheit' },
+] as const;
+
+const windSpeedOptions = [
+  { label: '公里/小時 (km/h)', value: 'kmh' },
+  { label: '公尺/秒 (m/s)', value: 'ms' },
+  { label: '英里/小時 (mph)', value: 'mph' },
+] as const;
+
+const themeOptions = [
+  { label: '亮色模式', value: 'light' },
+  { label: '暗色模式', value: 'dark' },
+  { label: '跟隨系統', value: 'system' },
+] as const;
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -118,140 +192,77 @@ export default function SettingsScreen() {
           paddingTop: 4,
         }}
       >
-        {/* 資料源區塊 */}
         <SectionHeader title="資料來源" icon="cloud-outline" />
-        <View
-          className="mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass"
-          style={getGlassStyle(20)}
-        >
-          <SourceToggleComponent
-            label="中央氣象署（CWA）"
-            description="台灣最精準，含即時觀測"
-            source="cwa"
-            enabledSources={enabledSources}
-            toggleSource={toggleSource}
-          />
-          <SourceToggleComponent
-            label="Open-Meteo"
-            description="免費無限制，歷史資料豐富"
-            source="open-meteo"
-            enabledSources={enabledSources}
-            toggleSource={toggleSource}
-          />
-          <SourceToggleComponent
-            label="WeatherAPI"
-            description="備用來源，7 天歷史"
-            source="weatherapi"
-            enabledSources={enabledSources}
-            toggleSource={toggleSource}
-          />
-          <SourceToggleComponent
-            label="OpenWeatherMap"
-            description="全球覆蓋，備用資料源"
-            source="openweathermap"
-            enabledSources={enabledSources}
-            toggleSource={toggleSource}
-            isLast
-          />
-        </View>
+        <SectionCard>
+          {sourceOptions.map((option, index) => (
+            <SourceToggleComponent
+              key={option.source}
+              label={option.label}
+              description={option.description}
+              source={option.source}
+              enabledSources={enabledSources}
+              toggleSource={toggleSource}
+              isLast={index === sourceOptions.length - 1}
+            />
+          ))}
+        </SectionCard>
 
-        {/* 顯示模式 */}
         <SectionHeader title="顯示模式" icon="layers-outline" />
-        <View
-          className="mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass"
-          style={getGlassStyle(20)}
-        >
-          <RadioOption
-            label="單一資料源"
-            description="使用優先順序最高的來源"
-            value="single"
-            selectedValue={displayMode}
-            onPress={() => setDisplayMode('single')}
-          />
-          <RadioOption
-            label="聚合模式"
-            description="整合多個來源取得最佳預測"
-            value="aggregate"
-            selectedValue={displayMode}
-            onPress={() => setDisplayMode('aggregate')}
-            isLast
-          />
-        </View>
+        <SectionCard>
+          {displayModeOptions.map((option, index) => (
+            <RadioOption
+              key={option.value}
+              label={option.label}
+              description={option.description}
+              value={option.value}
+              selectedValue={displayMode}
+              onPress={() => setDisplayMode(option.value)}
+              isLast={index === displayModeOptions.length - 1}
+            />
+          ))}
+        </SectionCard>
 
-        {/* 溫度單位 */}
         <SectionHeader title="溫度單位" icon="thermometer-outline" />
-        <View
-          className="mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass"
-          style={getGlassStyle(20)}
-        >
-          <RadioOption
-            label="攝氏 (°C)"
-            value="celsius"
-            selectedValue={temperatureUnit}
-            onPress={() => setTemperatureUnit('celsius')}
-          />
-          <RadioOption
-            label="華氏 (°F)"
-            value="fahrenheit"
-            selectedValue={temperatureUnit}
-            onPress={() => setTemperatureUnit('fahrenheit')}
-            isLast
-          />
-        </View>
+        <SectionCard>
+          {temperatureOptions.map((option, index) => (
+            <RadioOption
+              key={option.value}
+              label={option.label}
+              value={option.value}
+              selectedValue={temperatureUnit}
+              onPress={() => setTemperatureUnit(option.value)}
+              isLast={index === temperatureOptions.length - 1}
+            />
+          ))}
+        </SectionCard>
 
-        {/* 風速單位 */}
         <SectionHeader title="風速單位" icon="speedometer-outline" />
-        <View
-          className="mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass"
-          style={getGlassStyle(20)}
-        >
-          <RadioOption
-            label="公里/小時 (km/h)"
-            value="kmh"
-            selectedValue={windSpeedUnit}
-            onPress={() => setWindSpeedUnit('kmh')}
-          />
-          <RadioOption
-            label="公尺/秒 (m/s)"
-            value="ms"
-            selectedValue={windSpeedUnit}
-            onPress={() => setWindSpeedUnit('ms')}
-          />
-          <RadioOption
-            label="英里/小時 (mph)"
-            value="mph"
-            selectedValue={windSpeedUnit}
-            onPress={() => setWindSpeedUnit('mph')}
-            isLast
-          />
-        </View>
+        <SectionCard>
+          {windSpeedOptions.map((option, index) => (
+            <RadioOption
+              key={option.value}
+              label={option.label}
+              value={option.value}
+              selectedValue={windSpeedUnit}
+              onPress={() => setWindSpeedUnit(option.value)}
+              isLast={index === windSpeedOptions.length - 1}
+            />
+          ))}
+        </SectionCard>
 
-        {/* 主題 */}
         <SectionHeader title="主題外觀" icon="contrast-outline" />
-        <View
-          className="mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass mb-4"
-          style={getGlassStyle(20)}
-        >
-          <RadioOption
-            label="亮色模式"
-            value="light"
-            selectedValue={theme}
-            onPress={() => setTheme('light')}
-          />
-          <RadioOption
-            label="暗色模式"
-            value="dark"
-            selectedValue={theme}
-            onPress={() => setTheme('dark')}
-          />
-          <RadioOption
-            label="跟隨系統"
-            value="system"
-            selectedValue={theme}
-            onPress={() => setTheme('system')}
-            isLast
-          />
-        </View>
+        <SectionCard className="mb-4">
+          {themeOptions.map((option, index) => (
+            <RadioOption
+              key={option.value}
+              label={option.label}
+              value={option.value}
+              selectedValue={theme}
+              onPress={() => setTheme(option.value)}
+              isLast={index === themeOptions.length - 1}
+            />
+          ))}
+        </SectionCard>
       </ScrollView>
     </GlassBackground>
   );

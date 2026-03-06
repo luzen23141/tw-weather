@@ -2,8 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-import type { AggregationConfig, TemperatureUnit, WeatherSource, WindSpeedUnit } from '@/api/types';
-import { DEFAULT_AGGREGATION_CONFIG } from '@/api/types';
+import type { TemperatureUnit, WeatherSource, WindSpeedUnit } from '@/api/types';
 
 export interface SettingsState {
   // 主題設定
@@ -18,10 +17,6 @@ export interface SettingsState {
   activeSource: WeatherSource;
   enabledSources: WeatherSource[];
 
-  // 聚合設定
-  useDefaultAggregation: boolean;
-  aggregationConfig: AggregationConfig;
-
   // Action
   setTheme: (theme: SettingsState['theme']) => void;
   setTemperatureUnit: (unit: TemperatureUnit) => void;
@@ -29,8 +24,6 @@ export interface SettingsState {
   setDisplayMode: (mode: SettingsState['displayMode']) => void;
   setActiveSource: (source: WeatherSource) => void;
   toggleSource: (source: WeatherSource) => void;
-  setUseDefaultAggregation: (use: boolean) => void;
-  setAggregationConfig: (config: Partial<AggregationConfig>) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -43,8 +36,6 @@ export const useSettingsStore = create<SettingsState>()(
       displayMode: 'single',
       activeSource: 'cwa',
       enabledSources: ['cwa', 'open-meteo'],
-      useDefaultAggregation: true,
-      aggregationConfig: { ...DEFAULT_AGGREGATION_CONFIG },
 
       // Actions
       setTheme: (theme) => set({ theme }),
@@ -54,34 +45,45 @@ export const useSettingsStore = create<SettingsState>()(
       setActiveSource: (source) => set({ activeSource: source }),
       toggleSource: (source) =>
         set((state) => {
-          const newEnabled = state.enabledSources.includes(source)
-            ? state.enabledSources.filter((s) => s !== source)
+          const enabledSources = state.enabledSources.includes(source)
+            ? state.enabledSources.filter((item) => item !== source)
             : [...state.enabledSources, source];
 
-          // 防止所有來源被禁用（至少保留一個）
-          if (newEnabled.length === 0) {
+          if (enabledSources.length === 0) {
             return state;
           }
 
-          // 如果切換掉的是當前活躍來源，改為其他來源
-          if (!newEnabled.includes(state.activeSource)) {
-            return {
-              enabledSources: newEnabled,
-              activeSource: newEnabled[0],
-            } as SettingsState;
+          if (enabledSources.includes(state.activeSource)) {
+            return { enabledSources };
           }
 
-          return { enabledSources: newEnabled };
+          const nextActiveSource = enabledSources[0];
+          return nextActiveSource === undefined
+            ? state
+            : {
+                enabledSources,
+                activeSource: nextActiveSource,
+              };
         }),
-      setUseDefaultAggregation: (use) => set({ useDefaultAggregation: use }),
-      setAggregationConfig: (config) =>
-        set((state) => ({
-          aggregationConfig: { ...state.aggregationConfig, ...config },
-        })),
     }),
     {
       name: 'weather-settings',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: ({
+        theme,
+        temperatureUnit,
+        windSpeedUnit,
+        displayMode,
+        activeSource,
+        enabledSources,
+      }) => ({
+        theme,
+        temperatureUnit,
+        windSpeedUnit,
+        displayMode,
+        activeSource,
+        enabledSources,
+      }),
     },
   ),
 );

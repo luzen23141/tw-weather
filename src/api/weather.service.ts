@@ -33,10 +33,7 @@ class WeatherService {
     ]);
   }
 
-  /**
-   * 單一來源模式：直接呼叫指定的 Adapter
-   */
-  async fetchWeather(location: Location, source: WeatherSource): Promise<WeatherData> {
+  private getAdapter(source: WeatherSource): WeatherApiAdapter {
     const adapter = this.adapters.get(source);
     if (!adapter) {
       throw new WeatherApiError(
@@ -47,15 +44,26 @@ class WeatherService {
       );
     }
 
-    try {
-      const weatherData = await adapter.fetchWeather(location);
-      const history = adapter.fetchHistory ? await adapter.fetchHistory(location, 7) : [];
+    return adapter;
+  }
 
-      const result: WeatherData = {
-        ...weatherData,
-        history,
-      };
-      return result;
+  private async fetchWeatherFromAdapter(
+    location: Location,
+    source: WeatherSource,
+  ): Promise<WeatherData> {
+    const adapter = this.getAdapter(source);
+    const weatherData = await adapter.fetchWeather(location);
+    const history = adapter.fetchHistory ? await adapter.fetchHistory(location, 7) : [];
+
+    return { ...weatherData, history };
+  }
+
+  /**
+   * 單一來源模式：直接呼叫指定的 Adapter
+   */
+  async fetchWeather(location: Location, source: WeatherSource): Promise<WeatherData> {
+    try {
+      return await this.fetchWeatherFromAdapter(location, source);
     } catch (error) {
       if (error instanceof WeatherApiError) {
         throw error;
@@ -81,32 +89,15 @@ class WeatherService {
     config: AggregationConfig,
   ): Promise<WeatherData> {
     const results = await Promise.allSettled(
-      sources.map(async (source): Promise<WeatherData> => {
-        const adapter = this.adapters.get(source);
-        if (!adapter) {
-          throw new WeatherApiError(
-            `不支援的資料源: ${source}`,
-            source,
-            undefined,
-            new Error(`Unknown weather source: ${source}`),
-          );
-        }
-
-        const weatherData = await adapter.fetchWeather(location);
-        const history = adapter.fetchHistory ? await adapter.fetchHistory(location, 7) : [];
-
-        return { ...weatherData, history };
-      }),
+      sources.map((source) => this.fetchWeatherFromAdapter(location, source)),
     );
 
-    // 收集成功結果
     const successResults = results
       .filter(
         (result): result is PromiseFulfilledResult<WeatherData> => result.status === 'fulfilled',
       )
       .map((result) => result.value);
 
-    // 收集失敗資訊（用於日誌）
     const failedResults = results
       .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
       .map((result) => result.reason);
@@ -114,13 +105,12 @@ class WeatherService {
     if (successResults.length === 0) {
       throw new WeatherApiError(
         `所有資料源查詢失敗: ${failedResults.map((e) => (e instanceof Error ? e.message : String(e))).join('; ')}`,
-        'cwa', // 預設 fallback
+        'cwa',
         undefined,
         failedResults[0] instanceof Error ? failedResults[0] : new Error('All sources failed'),
       );
     }
 
-    // 若只有一個來源，直接回傳
     if (successResults.length === 1) {
       const result = successResults[0];
       if (result !== undefined) {
@@ -128,9 +118,7 @@ class WeatherService {
       }
     }
 
-    // 聚合多個來源的資料
-    const engine = new AggregationEngine();
-    return engine.aggregate(successResults, config);
+    return new AggregationEngine().aggregate(successResults, config);
   }
 
   /**
@@ -180,11 +168,12 @@ class WeatherService {
   async healthCheck(sources: WeatherSource[]): Promise<Record<WeatherSource, boolean>> {
     const results = await Promise.allSettled(
       sources.map(async (source) => {
-        const adapter = this.adapters.get(source);
-        if (!adapter) return { source, ok: false };
-
-        const ok = await adapter.healthCheck();
-        return { source, ok };
+        try {
+          const ok = await this.getAdapter(source).healthCheck();
+          return { source, ok };
+        } catch {
+          return { source, ok: false };
+        }
       }),
     );
 
