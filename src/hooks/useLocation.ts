@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 import { Location } from '@/api/types';
 import { useLocationsStore } from '@/store/locations.store';
+import { formatLocationDisplayName } from '@/utils/location-display';
 
 /**
  * useLocation Hook
@@ -72,21 +73,22 @@ export function useLocation(): {
       });
 
       const placeName = reversedLocation[0];
+      const country = placeName?.country || '';
       const city = placeName?.city || placeName?.region || '';
-      const district = placeName?.district || placeName?.subregion || '';
-
-      const formattedName =
-        city && district
-          ? `${city}/${district}`
-          : placeName?.name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+      const township = placeName?.district || placeName?.subregion || '';
+      const neighborhood = placeName?.street || placeName?.name || '';
 
       const newLocation: Location = {
         latitude,
         longitude,
-        name: formattedName,
+        name: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        ...(country ? { country } : {}),
         ...(city ? { city } : {}),
-        ...(district ? { district } : {}),
+        ...(township ? { district: township, township } : {}),
+        ...(neighborhood ? { neighborhood } : {}),
       };
+
+      newLocation.name = formatLocationDisplayName(newLocation, 'township');
 
       setLocation(newLocation);
     } catch (err) {

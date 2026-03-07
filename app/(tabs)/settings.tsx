@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { WeatherSource } from '@/api/types';
+import type { LocationDisplayFormat, WeatherSource } from '@/api/types';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { RadioButton } from '@/components/ui/RadioButton';
@@ -182,6 +182,28 @@ const windSpeedOptions = [
   { label: '英里/小時 (mph)', value: 'mph' },
 ] as const;
 
+const locationDisplayOptions: Array<{
+  label: string;
+  description: string;
+  value: LocationDisplayFormat;
+}> = [
+  {
+    label: '鄉鎮市（預設）',
+    description: '僅顯示鄉鎮市區名稱',
+    value: 'township',
+  },
+  {
+    label: '縣市 / 鄉鎮市',
+    description: '同時顯示縣市與鄉鎮市區',
+    value: 'city-township',
+  },
+  {
+    label: '完整地址層級',
+    description: '顯示國家、縣市、鄉鎮市與鄰里',
+    value: 'full',
+  },
+];
+
 const themeOptions = [
   { label: '亮色模式', value: 'light' },
   { label: '暗色模式', value: 'dark' },
@@ -195,11 +217,13 @@ export default function SettingsScreen() {
     displayMode,
     temperatureUnit,
     windSpeedUnit,
+    locationDisplayFormat,
     enabledSources,
     setTheme,
     setDisplayMode,
     setTemperatureUnit,
     setWindSpeedUnit,
+    setLocationDisplayFormat,
     toggleSource,
   } = useSettingsStore();
 
@@ -279,6 +303,23 @@ export default function SettingsScreen() {
                   selectedValue={windSpeedUnit}
                   onPress={() => setWindSpeedUnit(option.value)}
                   isLast={index === windSpeedOptions.length - 1}
+                />
+              ))}
+            </SectionCard>
+          </View>
+
+          <View>
+            <SectionHeader title="地點顯示" icon="location-outline" />
+            <SectionCard>
+              {locationDisplayOptions.map((option, index) => (
+                <RadioOption
+                  key={option.value}
+                  label={option.label}
+                  description={option.description}
+                  value={option.value}
+                  selectedValue={locationDisplayFormat}
+                  onPress={() => setLocationDisplayFormat(option.value)}
+                  isLast={index === locationDisplayOptions.length - 1}
                 />
               ))}
             </SectionCard>

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   DEFAULT_AGGREGATION_CONFIG,
   type Location,
+  type LocationDisplayFormat,
   type WeatherData,
   type WeatherSource,
 } from '@/api/types';
@@ -79,12 +80,14 @@ function mockStoreState(overrides?: {
     theme: 'system' as const,
     temperatureUnit: 'celsius' as const,
     windSpeedUnit: 'kmh' as const,
+    locationDisplayFormat: 'township' as LocationDisplayFormat,
     displayMode: overrides?.displayMode ?? 'single',
     activeSource: overrides?.activeSource ?? 'cwa',
     enabledSources: overrides?.enabledSources ?? ['cwa', 'open-meteo'],
     setTheme: jest.fn(),
     setTemperatureUnit: jest.fn(),
     setWindSpeedUnit: jest.fn(),
+    setLocationDisplayFormat: jest.fn(),
     setDisplayMode: jest.fn(),
     setActiveSource: jest.fn(),
     toggleSource: jest.fn(),

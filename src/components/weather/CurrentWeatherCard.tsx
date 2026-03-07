@@ -10,6 +10,9 @@ import { formatWindSpeed } from '../../utils/unit-conversion';
 import { getWeatherCodeInfo } from '../../utils/weather-code';
 import { SourceBadge } from '../ui/SourceBadge';
 
+import { useSettingsStore } from '@/store/settings.store';
+import { formatLocationSecondaryName } from '@/utils/location-display';
+
 export interface CurrentWeatherCardProps {
   data: CurrentWeather;
   location: Location;
@@ -50,6 +53,8 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
   const weatherInfo = getWeatherCodeInfo(data.weatherCode);
   const isRangeTemp = typeof data.temperature === 'string';
   const tempDisplay = isRangeTemp ? data.temperature : `${Math.round(data.temperature)}°`;
+  const locationDisplayFormat = useSettingsStore((state) => state.locationDisplayFormat);
+  const secondaryLocationText = formatLocationSecondaryName(location, locationDisplayFormat);
 
   return (
     <View
@@ -62,10 +67,9 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
           <Text className="text-lg font-bold text-md-on-surface tracking-tight">
             {location.name}
           </Text>
-          {location.city && (
+          {secondaryLocationText && (
             <Text className="text-xs text-md-on-surface-variant mt-1 font-medium">
-              {location.city}
-              {location.district ? ` · ${location.district}` : ''}
+              {secondaryLocationText}
             </Text>
           )}
         </View>

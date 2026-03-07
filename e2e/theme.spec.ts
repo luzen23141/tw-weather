@@ -13,6 +13,7 @@ function buildSettingsState(theme: 'light' | 'dark' | 'system'): PersistedStore<
   temperatureUnit: 'celsius';
   windSpeedUnit: 'kmh';
   displayMode: 'single';
+  locationDisplayFormat: 'township';
   activeSource: 'open-meteo';
   enabledSources: ['open-meteo'];
 }> {
@@ -22,6 +23,7 @@ function buildSettingsState(theme: 'light' | 'dark' | 'system'): PersistedStore<
       temperatureUnit: 'celsius',
       windSpeedUnit: 'kmh',
       displayMode: 'single',
+      locationDisplayFormat: 'township',
       activeSource: 'open-meteo',
       enabledSources: ['open-meteo'],
     },

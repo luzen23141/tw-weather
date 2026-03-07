@@ -9,6 +9,9 @@ export type WindSpeedUnit = 'kmh' | 'ms' | 'mph';
 /** 天氣資料來源 */
 export type WeatherSource = 'cwa' | 'open-meteo' | 'weatherapi' | 'openweathermap' | 'aggregate';
 
+/** 地點顯示格式 */
+export type LocationDisplayFormat = 'township' | 'city-township' | 'full';
+
 /** 地理位置 */
 export interface Location {
   /** 緯度 */
@@ -17,10 +20,16 @@ export interface Location {
   longitude: number;
   /** 地點名稱（如「台北市信義區」） */
   name: string;
+  /** 國家 */
+  country?: string;
   /** 縣市 */
   city?: string;
   /** 鄉鎮市區 */
   district?: string;
+  /** 鄉鎮市區（新版欄位） */
+  township?: string;
+  /** 鄰里 / 街道等更細地點 */
+  neighborhood?: string;
 }
 
 // ===== 當前天氣 =====

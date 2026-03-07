@@ -11,9 +11,12 @@ import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
 import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useWeather } from '@/hooks/useWeather';
+import { useSettingsStore } from '@/store/settings.store';
+import { formatLocationSecondaryName } from '@/utils/location-display';
 
 export default function ForecastScreen() {
   const insets = useSafeAreaInsets();
+  const locationDisplayFormat = useSettingsStore((state) => state.locationDisplayFormat);
   const {
     effectiveLocation,
     isLoading: locationLoading,
@@ -24,6 +27,10 @@ export default function ForecastScreen() {
 
   const isLoading_combined = locationLoading || isLoading;
   const error_combined = locationError || error;
+
+  const locationSecondaryText = effectiveLocation
+    ? formatLocationSecondaryName(effectiveLocation, locationDisplayFormat)
+    : null;
 
   return (
     <ErrorBoundary
@@ -69,10 +76,9 @@ export default function ForecastScreen() {
                         <Text className="text-lg font-bold text-md-on-surface">
                           {effectiveLocation.name}
                         </Text>
-                        {effectiveLocation.city && (
+                        {locationSecondaryText && (
                           <Text className="mt-1 text-sm leading-5 text-md-on-surface-variant">
-                            {effectiveLocation.city}
-                            {effectiveLocation.district && ` · ${effectiveLocation.district}`}
+                            {locationSecondaryText}
                           </Text>
                         )}
                       </View>

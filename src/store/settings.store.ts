@@ -2,7 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-import type { TemperatureUnit, WeatherSource, WindSpeedUnit } from '@/api/types';
+import type {
+  LocationDisplayFormat,
+  TemperatureUnit,
+  WeatherSource,
+  WindSpeedUnit,
+} from '@/api/types';
 
 export interface SettingsState {
   // 主題設定
@@ -11,6 +16,9 @@ export interface SettingsState {
   // 單位設定
   temperatureUnit: TemperatureUnit;
   windSpeedUnit: WindSpeedUnit;
+
+  // 地點顯示格式
+  locationDisplayFormat: LocationDisplayFormat;
 
   // 資料源與聚合設定
   displayMode: 'single' | 'aggregate';
@@ -21,6 +29,7 @@ export interface SettingsState {
   setTheme: (theme: SettingsState['theme']) => void;
   setTemperatureUnit: (unit: TemperatureUnit) => void;
   setWindSpeedUnit: (unit: WindSpeedUnit) => void;
+  setLocationDisplayFormat: (format: LocationDisplayFormat) => void;
   setDisplayMode: (mode: SettingsState['displayMode']) => void;
   setActiveSource: (source: WeatherSource) => void;
   toggleSource: (source: WeatherSource) => void;
@@ -33,6 +42,7 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'system',
       temperatureUnit: 'celsius',
       windSpeedUnit: 'kmh',
+      locationDisplayFormat: 'township',
       displayMode: 'single',
       activeSource: 'cwa',
       enabledSources: ['cwa', 'open-meteo'],
@@ -41,6 +51,7 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) => set({ theme }),
       setTemperatureUnit: (unit) => set({ temperatureUnit: unit }),
       setWindSpeedUnit: (unit) => set({ windSpeedUnit: unit }),
+      setLocationDisplayFormat: (format) => set({ locationDisplayFormat: format }),
       setDisplayMode: (mode) => set({ displayMode: mode }),
       setActiveSource: (source) => set({ activeSource: source }),
       toggleSource: (source) =>
@@ -73,6 +84,7 @@ export const useSettingsStore = create<SettingsState>()(
         theme,
         temperatureUnit,
         windSpeedUnit,
+        locationDisplayFormat,
         displayMode,
         activeSource,
         enabledSources,
@@ -80,6 +92,7 @@ export const useSettingsStore = create<SettingsState>()(
         theme,
         temperatureUnit,
         windSpeedUnit,
+        locationDisplayFormat,
         displayMode,
         activeSource,
         enabledSources,

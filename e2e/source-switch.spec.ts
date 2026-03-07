@@ -49,6 +49,7 @@ function buildSingleSettings(source: WeatherSource): PersistedStore<{
   temperatureUnit: 'celsius';
   windSpeedUnit: 'kmh';
   displayMode: 'single';
+  locationDisplayFormat: 'township';
   activeSource: WeatherSource;
   enabledSources: WeatherSource[];
 }> {
@@ -58,6 +59,7 @@ function buildSingleSettings(source: WeatherSource): PersistedStore<{
       temperatureUnit: 'celsius',
       windSpeedUnit: 'kmh',
       displayMode: 'single',
+      locationDisplayFormat: 'township',
       activeSource: source,
       enabledSources: [source],
     },
@@ -70,6 +72,7 @@ const AGGREGATE_SETTINGS: PersistedStore<{
   temperatureUnit: 'celsius';
   windSpeedUnit: 'kmh';
   displayMode: 'aggregate';
+  locationDisplayFormat: 'township';
   activeSource: 'cwa';
   enabledSources: ['cwa', 'open-meteo'];
 }> = {
@@ -78,6 +81,7 @@ const AGGREGATE_SETTINGS: PersistedStore<{
     temperatureUnit: 'celsius',
     windSpeedUnit: 'kmh',
     displayMode: 'aggregate',
+    locationDisplayFormat: 'township',
     activeSource: 'cwa',
     enabledSources: ['cwa', 'open-meteo'],
   },
@@ -509,7 +513,7 @@ async function assertWeatherPagesBySource(
   badge: string,
 ): Promise<void> {
   await page.goto('/');
-  await expect(page.getByText('台北市信義區', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('信義區', { exact: true }).first()).toBeVisible();
   await expect(page.getByText(badge, { exact: true }).first()).toBeVisible();
 
   await page.goto('/forecast');

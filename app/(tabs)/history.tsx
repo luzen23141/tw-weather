@@ -14,11 +14,12 @@ import { useMDColors } from '@/hooks/useMDColors';
 import { useSettingsStore } from '@/store/settings.store';
 import { formatDate } from '@/utils/date';
 import { getGlassStyle } from '@/utils/glass';
+import { formatLocationSecondaryName } from '@/utils/location-display';
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const colors = useMDColors();
-  const { displayMode } = useSettingsStore();
+  const { displayMode, locationDisplayFormat } = useSettingsStore();
   const {
     effectiveLocation,
     isLoading: locationLoading,
@@ -33,8 +34,11 @@ export default function HistoryScreen() {
 
   const isLoading_combined = locationLoading || isLoading;
   const error_combined = locationError || error;
-
   const selectedDayData = historyData?.find((d) => d.date === selectedDate);
+
+  const locationSecondaryText = effectiveLocation
+    ? formatLocationSecondaryName(effectiveLocation, locationDisplayFormat)
+    : null;
 
   return (
     <ErrorBoundary
@@ -76,10 +80,9 @@ export default function HistoryScreen() {
                         <Text className="text-lg font-bold text-md-on-surface">
                           {effectiveLocation.name}
                         </Text>
-                        {effectiveLocation.city && (
+                        {locationSecondaryText && (
                           <Text className="mt-1 text-sm leading-5 text-md-on-surface-variant">
-                            {effectiveLocation.city}
-                            {effectiveLocation.district && ` · ${effectiveLocation.district}`}
+                            {locationSecondaryText}
                           </Text>
                         )}
                       </View>

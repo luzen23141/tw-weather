@@ -5,6 +5,7 @@ const AGGREGATE_SETTINGS = {
     theme: 'light',
     temperatureUnit: 'celsius',
     windSpeedUnit: 'kmh',
+    locationDisplayFormat: 'township',
     displayMode: 'aggregate',
     activeSource: 'cwa',
     enabledSources: ['open-meteo', 'cwa'],
@@ -63,7 +64,7 @@ test.describe('聚合模式', () => {
 
     const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
     expect(settings).toContain('"displayMode":"aggregate"');
-    await expect(page.getByText('台北市信義區', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('信義區', { exact: true }).first()).toBeVisible();
   });
 
   test('預報頁在 aggregate 模式應保留 aggregate 設定', async ({ page }) => {
