@@ -347,7 +347,12 @@ class CwaAdapter implements WeatherApiAdapter {
   }
 
   private getLocationNameCandidates(location: Location): string[] {
-    const normalizedCandidates = [location.township, location.district, location.city, location.name]
+    const normalizedCandidates = [
+      location.township,
+      location.district,
+      location.city,
+      location.name,
+    ]
       .map((value) => normalizeLocationCandidate(value))
       .filter((value): value is string => value !== null);
 
