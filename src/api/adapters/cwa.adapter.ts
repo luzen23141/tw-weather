@@ -280,6 +280,14 @@ class CwaAdapter implements WeatherApiAdapter {
     }
   }
 
+  private getLocationNameCandidates(location: Location): string[] {
+    const candidates = [location.district, location.city, location.name].filter(
+      (value): value is string => Boolean(value && value.trim()),
+    );
+
+    return Array.from(new Set(candidates));
+  }
+
   /**
    * 取得即時天氣 (O-A0001-001)
    */
@@ -356,35 +364,45 @@ class CwaAdapter implements WeatherApiAdapter {
    * 取得 3 日逐 3 小時預報 (F-D0047-089)
    */
   private async fetchHourlyForecast(location: Location): Promise<HourlyForecast[]> {
-    const url = buildCwaUrl('F-D0047-089', {
-      format: 'JSON',
-      LocationName: location.district || location.city || location.name,
-    });
+    const locationNames = this.getLocationNameCandidates(location);
 
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new WeatherApiError(
-        `CWA 逐時預報 API 失敗: ${response.statusText}`,
-        this.source,
-        response.status,
-      );
+    let records: CwaWeatherElement[] = [];
+
+    for (const locationName of locationNames) {
+      const url = buildCwaUrl('F-D0047-089', {
+        format: 'JSON',
+        LocationName: locationName,
+      });
+
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new WeatherApiError(
+          `CWA 逐時預報 API 失敗: ${response.statusText}`,
+          this.source,
+          response.status,
+        );
+      }
+
+      const data: CwaApiResponse<{
+        Locations?: Array<{ Location?: Array<{ WeatherElement?: CwaWeatherElement[] }> }>;
+      }> = await response.json();
+      if (!data.success || !data.records) {
+        throw new WeatherApiError(
+          'CWA 逐時預報回傳無效',
+          this.source,
+          undefined,
+          new Error(`API response: success=${data.success}, hasRecords=${!!data.records}`),
+        );
+      }
+
+      records = Array.isArray(data.records)
+        ? data.records
+        : (data.records.Locations?.[0]?.Location?.[0]?.WeatherElement ?? []);
+
+      if (records.length > 0) {
+        break;
+      }
     }
-
-    const data: CwaApiResponse<{
-      Locations?: Array<{ Location?: Array<{ WeatherElement?: CwaWeatherElement[] }> }>;
-    }> = await response.json();
-    if (!data.success || !data.records) {
-      throw new WeatherApiError(
-        'CWA 逐時預報回傳無效',
-        this.source,
-        undefined,
-        new Error(`API response: success=${data.success}, hasRecords=${!!data.records}`),
-      );
-    }
-
-    const records: CwaWeatherElement[] = Array.isArray(data.records)
-      ? data.records
-      : (data.records.Locations?.[0]?.Location?.[0]?.WeatherElement ?? []);
 
     const hourlyForecasts: HourlyForecast[] = [];
     const timeElement = records.find((el: CwaWeatherElement) => el.ElementName === '溫度');
@@ -449,40 +467,48 @@ class CwaAdapter implements WeatherApiAdapter {
    * 取得 1 週預報 (F-D0047-091)
    */
   private async fetchDailyForecast(location: Location): Promise<DailyForecast[]> {
-    const url = buildCwaUrl('F-D0047-091', {
-      format: 'JSON',
-      LocationName: location.district || location.city || location.name,
-    });
+    const locationNames = this.getLocationNameCandidates(location);
 
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new WeatherApiError(
-        `CWA 每日預報 API 失敗: ${response.statusText}`,
-        this.source,
-        response.status,
-      );
-    }
+    let weatherElements: CwaWeatherElement[] = [];
 
-    const data: CwaApiResponse<{
-      Locations?: Array<{ Location?: Array<{ WeatherElement?: CwaWeatherElement[] }> }>;
-    }> = await response.json();
-    if (!data.success || !data.records) {
-      throw new WeatherApiError(
-        'CWA 每日預報回傳無效',
-        this.source,
-        undefined,
-        new Error(`API response: success=${data.success}, hasRecords=${!!data.records}`),
-      );
+    for (const locationName of locationNames) {
+      const url = buildCwaUrl('F-D0047-091', {
+        format: 'JSON',
+        LocationName: locationName,
+      });
+
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new WeatherApiError(
+          `CWA 每日預報 API 失敗: ${response.statusText}`,
+          this.source,
+          response.status,
+        );
+      }
+
+      const data: CwaApiResponse<{
+        Locations?: Array<{ Location?: Array<{ WeatherElement?: CwaWeatherElement[] }> }>;
+      }> = await response.json();
+      if (!data.success || !data.records) {
+        throw new WeatherApiError(
+          'CWA 每日預報回傳無效',
+          this.source,
+          undefined,
+          new Error(`API response: success=${data.success}, hasRecords=${!!data.records}`),
+        );
+      }
+
+      const locations = Array.isArray(data.records)
+        ? []
+        : (data.records.Locations?.[0]?.Location ?? []);
+      weatherElements = locations[0]?.WeatherElement ?? [];
+
+      if (weatherElements.length > 0) {
+        break;
+      }
     }
 
     const dailyForecasts: DailyForecast[] = [];
-
-    // 簡化邏輯：從 records 解析每日預報
-    const locations = Array.isArray(data.records)
-      ? []
-      : (data.records.Locations?.[0]?.Location ?? []);
-
-    const weatherElements: CwaWeatherElement[] = locations[0]?.WeatherElement ?? [];
 
     const popElement = weatherElements.find(
       (el: CwaWeatherElement) => el.ElementName === '12小時降雨機率',

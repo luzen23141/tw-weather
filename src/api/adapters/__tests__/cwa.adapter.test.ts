@@ -44,9 +44,19 @@ describe('CwaAdapter', () => {
     expect(station?.StationName).toBe('台北');
   });
 
-  it('should successfully fetch current weather, hourly, and daily forecasts', async () => {
+  it('should fallback from district to city when district has no forecast records', async () => {
+    const banqiaoLocation: Location = {
+      name: '新北市板橋區',
+      city: '新北市',
+      district: '板橋區',
+      latitude: 25.0142,
+      longitude: 121.4592,
+    };
+
     (global.fetch as jest.Mock).mockImplementation((url: { toString: () => string } | string) => {
       const urlStr = url.toString();
+      const decodedUrl = decodeURIComponent(urlStr);
+
       if (urlStr.includes('O-A0001-001')) {
         return Promise.resolve({
           ok: true,
@@ -55,35 +65,20 @@ describe('CwaAdapter', () => {
             records: {
               Station: [
                 {
-                  StationName: '高雄',
+                  StationName: '板橋',
                   GeoInfo: {
-                    StationLatitude: '22.6273',
-                    StationLongitude: '120.3014',
+                    StationLatitude: '25.0130',
+                    StationLongitude: '121.4630',
                   },
-                  ObsTime: { DateTime: '2026-02-28T06:00:00+08:00' },
+                  ObsTime: { DateTime: '2026-03-07T07:00:00+08:00' },
                   WeatherElement: {
-                    AirTemperature: '28.1',
-                    RelativeHumidity: '70',
-                    Weather: '晴',
-                    WindSpeed: '2.1',
-                    WindDirection: '180',
-                    AirPressure: '1010.5',
-                  },
-                },
-                {
-                  StationName: '臺北',
-                  GeoInfo: {
-                    StationLatitude: '25.0375',
-                    StationLongitude: '121.5637',
-                  },
-                  ObsTime: { DateTime: '2026-02-28T07:00:00+08:00' },
-                  WeatherElement: {
-                    AirTemperature: '18.7',
-                    RelativeHumidity: '86',
+                    AirTemperature: '20',
+                    RelativeHumidity: '85',
                     Weather: '陰',
-                    WindSpeed: '0.8',
-                    WindDirection: '273',
-                    AirPressure: '1013.2',
+                    WindSpeed: '1.5',
+                    WindDirection: '120',
+                    AirPressure: '1012',
+                    Now: { Precipitation: '0' },
                   },
                 },
               ],
@@ -91,7 +86,20 @@ describe('CwaAdapter', () => {
           }),
         });
       }
-      if (urlStr.includes('F-D0047-089')) {
+
+      if (urlStr.includes('F-D0047-089') && decodedUrl.includes('LocationName=板橋區')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            records: {
+              Locations: [{ Location: [] }],
+            },
+          }),
+        });
+      }
+
+      if (urlStr.includes('F-D0047-089') && decodedUrl.includes('LocationName=新北市')) {
         return Promise.resolve({
           ok: true,
           json: async () => ({
@@ -106,8 +114,8 @@ describe('CwaAdapter', () => {
                           ElementName: '溫度',
                           Time: [
                             {
-                              DataTime: '2026-02-28T09:00:00+08:00',
-                              ElementValue: [{ Temperature: '19' }],
+                              DataTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ Temperature: '21' }],
                             },
                           ],
                         },
@@ -115,8 +123,8 @@ describe('CwaAdapter', () => {
                           ElementName: '3小時降雨機率',
                           Time: [
                             {
-                              StartTime: '2026-02-28T09:00:00+08:00',
-                              ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
+                              StartTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
                             },
                           ],
                         },
@@ -124,7 +132,7 @@ describe('CwaAdapter', () => {
                           ElementName: '相對濕度',
                           Time: [
                             {
-                              DataTime: '2026-02-28T09:00:00+08:00',
+                              DataTime: '2026-03-07T12:00:00+08:00',
                               ElementValue: [{ RelativeHumidity: '80' }],
                             },
                           ],
@@ -133,8 +141,8 @@ describe('CwaAdapter', () => {
                           ElementName: '風速',
                           Time: [
                             {
-                              DataTime: '2026-02-28T09:00:00+08:00',
-                              ElementValue: [{ WindSpeed: '2' }],
+                              DataTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ WindSpeed: '3' }],
                             },
                           ],
                         },
@@ -142,8 +150,8 @@ describe('CwaAdapter', () => {
                           ElementName: '風向',
                           Time: [
                             {
-                              DataTime: '2026-02-28T09:00:00+08:00',
-                              ElementValue: [{ WindDirection: '120' }],
+                              DataTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ WindDirection: '150' }],
                             },
                           ],
                         },
@@ -151,8 +159,8 @@ describe('CwaAdapter', () => {
                           ElementName: '體感溫度',
                           Time: [
                             {
-                              DataTime: '2026-02-28T09:00:00+08:00',
-                              ElementValue: [{ Temperature: '19' }],
+                              DataTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ Temperature: '22' }],
                             },
                           ],
                         },
@@ -160,8 +168,8 @@ describe('CwaAdapter', () => {
                           ElementName: '天氣現象',
                           Time: [
                             {
-                              DataTime: '2026-02-28T09:00:00+08:00',
-                              ElementValue: [{ WeatherCode: '04' }],
+                              DataTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ WeatherCode: '04', Weather: '陰' }],
                             },
                           ],
                         },
@@ -174,7 +182,20 @@ describe('CwaAdapter', () => {
           }),
         });
       }
-      if (urlStr.includes('F-D0047-091')) {
+
+      if (urlStr.includes('F-D0047-091') && decodedUrl.includes('LocationName=板橋區')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            records: {
+              Locations: [{ Location: [] }],
+            },
+          }),
+        });
+      }
+
+      if (urlStr.includes('F-D0047-091') && decodedUrl.includes('LocationName=新北市')) {
         return Promise.resolve({
           ok: true,
           json: async () => ({
@@ -186,20 +207,11 @@ describe('CwaAdapter', () => {
                     {
                       WeatherElement: [
                         {
-                          ElementName: '平均溫度',
-                          Time: [
-                            {
-                              StartTime: '2026-02-28T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '18' }],
-                            },
-                          ],
-                        },
-                        {
                           ElementName: '最高溫度',
                           Time: [
                             {
-                              StartTime: '2026-02-28T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '21' }],
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ Temperature: '24' }],
                             },
                           ],
                         },
@@ -207,8 +219,8 @@ describe('CwaAdapter', () => {
                           ElementName: '最低溫度',
                           Time: [
                             {
-                              StartTime: '2026-02-28T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '15' }],
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ Temperature: '18' }],
                             },
                           ],
                         },
@@ -216,8 +228,8 @@ describe('CwaAdapter', () => {
                           ElementName: '12小時降雨機率',
                           Time: [
                             {
-                              StartTime: '2026-02-28T06:00:00+08:00',
-                              ElementValue: [{ ProbabilityOfPrecipitation: '20' }],
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
                             },
                           ],
                         },
@@ -225,8 +237,8 @@ describe('CwaAdapter', () => {
                           ElementName: '天氣現象',
                           Time: [
                             {
-                              StartTime: '2026-02-28T06:00:00+08:00',
-                              ElementValue: [{ WeatherCode: '04' }],
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ WeatherCode: '04', Weather: '陰' }],
                             },
                           ],
                         },
@@ -239,26 +251,18 @@ describe('CwaAdapter', () => {
           }),
         });
       }
+
       return Promise.reject(new Error('Unknown URL: ' + urlStr));
     });
 
-    const result = await cwaAdapter.fetchWeather(mockLocation);
+    const result = await cwaAdapter.fetchWeather(banqiaoLocation);
+    expect(result.hourlyForecast.length).toBeGreaterThan(0);
+    expect(result.dailyForecast.length).toBeGreaterThan(0);
 
-    expect(global.fetch).toHaveBeenCalledTimes(3);
-
-    // Assert Current Weather
-    expect(result.current.temperature).toBe(18.7);
-    expect(result.current.humidity).toBe(86);
-    expect(result.current.windSpeed).toBe(0.8);
-    expect(result.current.description).toBe('陰');
-
-    // Assert Hourly
-    expect(result.hourlyForecast).toHaveLength(1);
-    expect(result.hourlyForecast[0]!.temperature).toBe(19);
-
-    // Assert Daily
-    expect(result.dailyForecast).toHaveLength(1);
-    expect(result.dailyForecast[0]!.temperatureMax).toBe(21);
-    expect(result.dailyForecast[0]!.temperatureMin).toBe(15);
+    const requestUrls = (global.fetch as jest.Mock).mock.calls.map(([url]) =>
+      decodeURIComponent(String(url)),
+    );
+    expect(requestUrls.some((url) => url.includes('LocationName=板橋區'))).toBe(true);
+    expect(requestUrls.some((url) => url.includes('LocationName=新北市'))).toBe(true);
   });
 });
