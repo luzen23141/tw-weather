@@ -1,5 +1,15 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+type ProxyRequest = {
+  method?: string;
+  query: Record<string, string | string[] | undefined>;
+};
 
+type ProxyResponse = {
+  setHeader: (name: string, value: string) => ProxyResponse;
+  status: (code: number) => ProxyResponse;
+  send: (body: string) => ProxyResponse;
+  json: (body: unknown) => ProxyResponse;
+  end: () => ProxyResponse;
+};
 const ROUTES: Record<string, { base: string; keyParam: string; envKey: string }> = {
   cwa: {
     base: 'https://opendata.cwa.gov.tw/api/v1/rest/datastore',
@@ -27,7 +37,7 @@ type CacheEntry = {
 const PROXY_CACHE_TTL_MS = 5 * 60 * 1000;
 const responseCache = new Map<string, CacheEntry>();
 
-function buildCacheKey(service: string, endpoint: string, query: VercelRequest['query']): string {
+function buildCacheKey(service: string, endpoint: string, query: ProxyRequest['query']): string {
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(query)) {
@@ -67,7 +77,7 @@ function writeCache(key: string, status: number, body: string): void {
   });
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+export default async function handler(req: ProxyRequest, res: ProxyResponse): Promise<void> {
   // CORS preflight
   if (req.method === 'OPTIONS') {
     res.status(204).end();
@@ -108,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       if (Array.isArray(value)) {
         value.forEach((v) => url.searchParams.append(key, v));
       } else if (value !== undefined) {
-        url.searchParams.set(key, value);
+        url.searchParams.set(key, String(value));
       }
     }
 

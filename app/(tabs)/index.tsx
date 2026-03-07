@@ -58,7 +58,13 @@ export default function HomeScreen() {
     error: locationError,
   } = useEffectiveLocation();
 
-  const { data: weatherData, isLoading, error, refetch, isRefetching } = useWeather(effectiveLocation);
+  const {
+    data: weatherData,
+    isLoading,
+    error,
+    refetch,
+    isRefetching,
+  } = useWeather(effectiveLocation);
 
   const isLoadingCombined = locationLoading || isLoading;
   const errorCombined = locationError || error;

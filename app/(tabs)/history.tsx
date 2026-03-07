@@ -32,10 +32,13 @@ export default function HistoryScreen() {
     return dateStr ?? '';
   });
 
-  const { data: historyData, isLoading, error, refetch, isRefetching } = useHistory(
-    effectiveLocation ?? null,
-    MAX_HISTORY_FETCH_DAYS,
-  );
+  const {
+    data: historyData,
+    isLoading,
+    error,
+    refetch,
+    isRefetching,
+  } = useHistory(effectiveLocation ?? null, MAX_HISTORY_FETCH_DAYS);
 
   const isLoading_combined = locationLoading || isLoading;
   const error_combined = locationError || error;

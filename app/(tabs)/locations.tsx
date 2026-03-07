@@ -126,7 +126,9 @@ export default function LocationsScreen() {
         name: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
         ...(placeName?.country ? { country: placeName.country } : {}),
         ...(placeName?.city ? { city: placeName.city } : {}),
-        ...(placeName?.district ? { district: placeName.district, township: placeName.district } : {}),
+        ...(placeName?.district
+          ? { district: placeName.district, township: placeName.district }
+          : {}),
         ...(placeName?.street ? { neighborhood: placeName.street } : {}),
       };
 

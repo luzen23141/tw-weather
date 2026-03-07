@@ -75,10 +75,9 @@ describe('useHistory', () => {
     jest.clearAllMocks();
     captured = null;
 
-    mockUseSettingsStore.mockImplementation(
-      ((selector: (state: { refreshIntervalMinutes: number }) => number) =>
-        selector({ refreshIntervalMinutes: 5 })) as typeof useSettingsStore,
-    );
+    mockUseSettingsStore.mockImplementation(((
+      selector: (state: { refreshIntervalMinutes: number }) => number,
+    ) => selector({ refreshIntervalMinutes: 5 })) as typeof useSettingsStore);
 
     mockUseQuery.mockImplementation((options) => {
       captured = options as unknown as UseQueryArg;
