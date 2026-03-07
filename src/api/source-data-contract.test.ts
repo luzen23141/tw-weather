@@ -1,4 +1,10 @@
-import type { CurrentWeather, DailyForecast, HistoricalDayWeather, HourlyForecast, Location } from '@/api/types';
+import type {
+  CurrentWeather,
+  DailyForecast,
+  HistoricalDayWeather,
+  HourlyForecast,
+  Location,
+} from '@/api/types';
 
 const TEST_LOCATION: Location = {
   name: '台北市信義區',
@@ -384,7 +390,8 @@ describe('資料源資料契約（頁面使用欄位）', () => {
   });
 
   it('OpenWeatherMap adapter 應回傳首頁與預報頁需要的欄位', async () => {
-    const { default: openWeatherMapAdapter } = await import('@/api/adapters/openweathermap.adapter');
+    const { default: openWeatherMapAdapter } =
+      await import('@/api/adapters/openweathermap.adapter');
 
     (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
       const urlString = url.toString();
