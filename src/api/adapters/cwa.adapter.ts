@@ -137,8 +137,8 @@ function resolveNearestTaiwanLocationCandidates(location: Location): string[] {
     }
   }
 
-  return [nearestDistrict?.name, nearestCity.name].filter(
-    (value): value is string => Boolean(value),
+  return [nearestDistrict?.name, nearestCity.name].filter((value): value is string =>
+    Boolean(value),
   );
 }
 
@@ -388,10 +388,14 @@ class CwaAdapter implements WeatherApiAdapter {
       .map((value) => normalizeLocationCandidate(value))
       .filter((value): value is string => value !== null);
 
-    const hasAdministrativeCandidate = primaryCandidates.some((candidate) => !isCoordinateLikeName(candidate));
+    const hasAdministrativeCandidate = primaryCandidates.some(
+      (candidate) => !isCoordinateLikeName(candidate),
+    );
     const fallbackCandidates = hasAdministrativeCandidate
       ? []
-      : resolveNearestTaiwanLocationCandidates(location).map((value) => normalizeLocationCandidate(value));
+      : resolveNearestTaiwanLocationCandidates(location).map((value) =>
+          normalizeLocationCandidate(value),
+        );
 
     const mergedCandidates = [...primaryCandidates, ...fallbackCandidates].filter(
       (value): value is string => Boolean(value && !isCoordinateLikeName(value)),
