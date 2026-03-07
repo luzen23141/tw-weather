@@ -129,11 +129,13 @@ interface CwaWeatherElement {
 interface CwaStationCoordinates {
   StationLatitude?: string;
   StationLongitude?: string;
-  Coordinates?: string;
+  Coordinates?: unknown;
 }
 
 interface CwaStation {
   StationName?: string;
+  StationLatitude?: string;
+  StationLongitude?: string;
   GeoInfo?: CwaStationCoordinates;
   ObsTime?: { DateTime?: string };
   WeatherElement?: {
@@ -156,25 +158,76 @@ function parseStationCoordinate(value: string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function parseCoordinatePairFromText(
+  value: string,
+): { latitude: number; longitude: number } | null {
+  const matches = value.match(/-?\d+(?:\.\d+)?/g);
+  if (!matches || matches.length < 2) return null;
+
+  const first = Number.parseFloat(matches[0] ?? '');
+  const second = Number.parseFloat(matches[1] ?? '');
+  if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+
+  if (Math.abs(first) <= 90 && Math.abs(second) <= 180) {
+    return { latitude: first, longitude: second };
+  }
+
+  if (Math.abs(second) <= 90 && Math.abs(first) <= 180) {
+    return { latitude: second, longitude: first };
+  }
+
+  return null;
+}
+
+function parseCoordinatePair(value: unknown): { latitude: number; longitude: number } | null {
+  if (typeof value === 'string') {
+    return parseCoordinatePairFromText(value);
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const parsed = parseCoordinatePair(item);
+      if (parsed) return parsed;
+    }
+    return null;
+  }
+
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+
+    const directLat = parseStationCoordinate(
+      typeof obj.StationLatitude === 'string' ? obj.StationLatitude : undefined,
+    );
+    const directLon = parseStationCoordinate(
+      typeof obj.StationLongitude === 'string' ? obj.StationLongitude : undefined,
+    );
+
+    if (directLat !== null && directLon !== null) {
+      return { latitude: directLat, longitude: directLon };
+    }
+
+    const fromText = parseCoordinatePairFromText(JSON.stringify(obj));
+    if (fromText) return fromText;
+  }
+
+  return null;
+}
+
 function getStationCoordinates(
   station: CwaStation,
 ): { latitude: number; longitude: number } | null {
-  const latitude = parseStationCoordinate(station.GeoInfo?.StationLatitude);
-  const longitude = parseStationCoordinate(station.GeoInfo?.StationLongitude);
+  const latitude = parseStationCoordinate(
+    station.GeoInfo?.StationLatitude ?? station.StationLatitude,
+  );
+  const longitude = parseStationCoordinate(
+    station.GeoInfo?.StationLongitude ?? station.StationLongitude,
+  );
 
   if (latitude !== null && longitude !== null) {
     return { latitude, longitude };
   }
 
-  const coordinates = station.GeoInfo?.Coordinates?.split(',') ?? [];
-  const fallbackLatitude = parseStationCoordinate(coordinates[0]?.trim());
-  const fallbackLongitude = parseStationCoordinate(coordinates[1]?.trim());
-
-  if (fallbackLatitude !== null && fallbackLongitude !== null) {
-    return { latitude: fallbackLatitude, longitude: fallbackLongitude };
-  }
-
-  return null;
+  return parseCoordinatePair(station.GeoInfo?.Coordinates);
 }
 
 function calculateDistanceKm(

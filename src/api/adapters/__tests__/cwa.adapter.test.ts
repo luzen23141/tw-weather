@@ -44,6 +44,111 @@ describe('CwaAdapter', () => {
     expect(station?.StationName).toBe('台北');
   });
 
+  it('should parse coordinates when GeoInfo.Coordinates is object-like value', () => {
+    const station = selectNearestStation(mockLocation, [
+      {
+        StationName: '座標物件站',
+        GeoInfo: {
+          Coordinates: [
+            {
+              CoordinateName: 'WGS84',
+              CoordinateFormat: 'latlon',
+              StationLatitude: '25.0375',
+              StationLongitude: '121.5637',
+            },
+          ],
+        },
+        WeatherElement: {
+          AirTemperature: '19',
+        },
+      },
+    ]);
+
+    expect(station?.StationName).toBe('座標物件站');
+  });
+
+  it('should parse coordinates when GeoInfo.Coordinates is a text field', () => {
+    const station = selectNearestStation(mockLocation, [
+      {
+        StationName: '座標字串站',
+        GeoInfo: {
+          Coordinates: '25.0375,121.5637',
+        },
+        WeatherElement: {
+          AirTemperature: '19',
+        },
+      },
+    ]);
+
+    expect(station?.StationName).toBe('座標字串站');
+  });
+
+  it('should ignore station when coordinates are invalid and fallback to next station', () => {
+    const station = selectNearestStation(mockLocation, [
+      {
+        StationName: '壞座標站',
+        GeoInfo: {
+          Coordinates: { foo: 'bar' },
+        },
+        WeatherElement: {
+          AirTemperature: '19',
+        },
+      },
+      {
+        StationName: '正常站',
+        GeoInfo: {
+          StationLatitude: '25.0375',
+          StationLongitude: '121.5637',
+        },
+        WeatherElement: {
+          AirTemperature: '20',
+        },
+      },
+    ]);
+
+    expect(station?.StationName).toBe('正常站');
+  });
+
+  it('should fallback to first WeatherElement station when all coordinates are invalid', () => {
+    const station = selectNearestStation(mockLocation, [
+      {
+        StationName: '第一站',
+        GeoInfo: {
+          Coordinates: { invalid: true },
+        },
+        WeatherElement: {
+          AirTemperature: '18',
+        },
+      },
+      {
+        StationName: '第二站',
+        GeoInfo: {
+          Coordinates: null,
+        },
+        WeatherElement: {
+          AirTemperature: '19',
+        },
+      },
+    ]);
+
+    expect(station?.StationName).toBe('第一站');
+  });
+
+  it('should fallback to station field coordinates when GeoInfo coordinates are missing', () => {
+    const station = selectNearestStation(mockLocation, [
+      {
+        StationName: '欄位座標站',
+        StationLatitude: '25.0375',
+        StationLongitude: '121.5637',
+        WeatherElement: {
+          AirTemperature: '19',
+        },
+      },
+    ] as any);
+
+    expect(station?.StationName).toBe('欄位座標站');
+  });
+
   it('should fallback from district to city when district has no forecast records', async () => {
     const banqiaoLocation: Location = {
       name: '新北市板橋區',
