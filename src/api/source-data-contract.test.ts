@@ -755,6 +755,82 @@ describe('資料源資料契約（頁面使用欄位）', () => {
     expectDailyContract(result.dailyForecast);
   });
 
+  it('單一來源 weatherService 在 WeatherAPI 歷史失敗時仍可回傳首頁與預報資料', async () => {
+    const { weatherService } = await import('@/api/weather.service');
+
+    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
+      const urlString = url.toString();
+
+      if (urlString.includes('weatherapi.com') && urlString.includes('/forecast.json')) {
+        return Promise.resolve(
+          createJsonResponse({
+            current: {
+              last_updated_epoch: 1709800000,
+              last_updated: '2026-03-07 12:00',
+              temp_c: 24,
+              is_day: 1,
+              condition: { code: 1003, text: 'Partly cloudy', icon: '' },
+              wind_kph: 7,
+              wind_degree: 150,
+              humidity: 70,
+              feelslike_c: 25,
+              precip_mm: 0,
+              pressure_mb: 1012,
+              vis_km: 10,
+            },
+            forecast: {
+              forecastday: [
+                {
+                  date: '2026-03-07',
+                  day: {
+                    date: '2026-03-07',
+                    maxtemp_c: 29,
+                    mintemp_c: 22,
+                    avgtemp_c: 25,
+                    condition: { text: 'Cloudy', code: 1006 },
+                    daily_chance_of_rain: 30,
+                    totalprecip_mm: 1.4,
+                    maxwind_kph: 12,
+                    sunrise: '06:10 AM',
+                    sunset: '05:58 PM',
+                    avg_humidity: 72,
+                    uv: 6,
+                  },
+                  astro: { sunrise: '06:10 AM', sunset: '05:58 PM' },
+                  hour: [
+                    {
+                      time: '2026-03-07 12:00',
+                      temp_c: 24,
+                      feelslike_c: 25,
+                      humidity: 70,
+                      condition: { text: 'Cloudy', code: 1006 },
+                      chance_of_rain: 35,
+                      precip_mm: 0.1,
+                      wind_kph: 7,
+                      wind_degree: 150,
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        );
+      }
+
+      if (urlString.includes('weatherapi.com') && urlString.includes('/history.json')) {
+        return Promise.reject(new Error('history gateway timeout'));
+      }
+
+      throw new Error(`Unexpected URL: ${urlString}`);
+    });
+
+    const result = await weatherService.fetchWeather(TEST_LOCATION, 'weatherapi');
+    expectCurrentContract(result.current);
+    expectHourlyContract(result.hourlyForecast);
+    expectDailyContract(result.dailyForecast);
+    expect(result.history).toEqual([]);
+  });
+
   it('歷史頁資料契約：weatherService 應在 Open-Meteo 失敗時 fallback 到 WeatherAPI', async () => {
     const { weatherService } = await import('@/api/weather.service');
 

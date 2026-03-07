@@ -14,6 +14,8 @@ import {
   WeatherSource,
 } from './types';
 
+export const MAX_HISTORY_FETCH_DAYS = 7;
+
 /**
  * WeatherService - 統一天氣資料取得服務
  *
@@ -53,7 +55,17 @@ class WeatherService {
   ): Promise<WeatherData> {
     const adapter = this.getAdapter(source);
     const weatherData = await adapter.fetchWeather(location);
-    const history = adapter.fetchHistory ? await adapter.fetchHistory(location, 7) : [];
+
+    let history: HistoricalDayWeather[] = [];
+    if (adapter.fetchHistory) {
+      try {
+        history = await adapter.fetchHistory(location, 7);
+      } catch (error) {
+        console.warn(
+          `${source} 歷史資料查詢失敗，回退為空陣列: ${error instanceof Error ? error.message : '未知錯誤'}`,
+        );
+      }
+    }
 
     return { ...weatherData, history };
   }
@@ -130,11 +142,13 @@ class WeatherService {
    * 3. WeatherAPI 作為備選（限 7 天）
    */
   async fetchHistory(location: Location, days: number): Promise<HistoricalDayWeather[]> {
+    const normalizedDays = Math.min(days, MAX_HISTORY_FETCH_DAYS);
+
     // 優先使用 Open-Meteo（最多支援 92 天歷史）
     const openMeteo = this.adapters.get('open-meteo');
     if (openMeteo?.fetchHistory) {
       try {
-        return await openMeteo.fetchHistory(location, Math.min(days, 92));
+        return await openMeteo.fetchHistory(location, normalizedDays);
       } catch (error) {
         console.warn(
           `Open-Meteo 歷史資料查詢失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
@@ -146,7 +160,7 @@ class WeatherService {
     const weatherApi = this.adapters.get('weatherapi');
     if (weatherApi?.fetchHistory) {
       try {
-        return await weatherApi.fetchHistory(location, Math.min(days, 7));
+        return await weatherApi.fetchHistory(location, normalizedDays);
       } catch (error) {
         console.warn(
           `WeatherAPI 歷史資料查詢失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,

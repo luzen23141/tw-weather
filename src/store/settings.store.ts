@@ -25,7 +25,11 @@ export interface SettingsState {
   activeSource: WeatherSource;
   enabledSources: WeatherSource[];
 
+  // 前端重抓間隔（分鐘）
+  refreshIntervalMinutes: number;
+
   // Action
+  setRefreshIntervalMinutes: (minutes: number) => void;
   setTheme: (theme: SettingsState['theme']) => void;
   setTemperatureUnit: (unit: TemperatureUnit) => void;
   setWindSpeedUnit: (unit: WindSpeedUnit) => void;
@@ -39,6 +43,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // 初始值
+      refreshIntervalMinutes: 5,
       theme: 'system',
       temperatureUnit: 'celsius',
       windSpeedUnit: 'kmh',
@@ -48,6 +53,8 @@ export const useSettingsStore = create<SettingsState>()(
       enabledSources: ['cwa', 'open-meteo'],
 
       // Actions
+      setRefreshIntervalMinutes: (minutes) =>
+        set({ refreshIntervalMinutes: Math.max(1, Math.floor(minutes)) }),
       setTheme: (theme) => set({ theme }),
       setTemperatureUnit: (unit) => set({ temperatureUnit: unit }),
       setWindSpeedUnit: (unit) => set({ windSpeedUnit: unit }),
@@ -81,6 +88,7 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'weather-settings',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({
+        refreshIntervalMinutes,
         theme,
         temperatureUnit,
         windSpeedUnit,
@@ -89,6 +97,7 @@ export const useSettingsStore = create<SettingsState>()(
         activeSource,
         enabledSources,
       }) => ({
+        refreshIntervalMinutes,
         theme,
         temperatureUnit,
         windSpeedUnit,

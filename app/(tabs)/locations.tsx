@@ -20,12 +20,14 @@ import { TAIWAN_CITIES } from '@/constants/taiwan-locations';
 import { useMDColors } from '@/hooks/useMDColors';
 import { useLocationsStore } from '@/store/locations.store';
 import { getGlassStyle } from '@/utils/glass';
+import { formatLocationDisplayName, formatLocationSecondaryName } from '@/utils/location-display';
 
 /** 將 TAIWAN_CITIES 展平為可搜尋的列表 */
 const SEARCHABLE: Array<Location & { label: string }> = TAIWAN_CITIES.flatMap((city) => [
   {
     label: city.name,
     name: city.name,
+    country: '台灣',
     city: city.name,
     latitude: city.latitude,
     longitude: city.longitude,
@@ -33,12 +35,26 @@ const SEARCHABLE: Array<Location & { label: string }> = TAIWAN_CITIES.flatMap((c
   ...city.districts.map((d) => ({
     label: `${city.name} ${d.name}`,
     name: d.name,
+    country: '台灣',
     city: city.name,
     district: d.name,
+    township: d.name,
     latitude: d.latitude,
     longitude: d.longitude,
   })),
 ]);
+
+const formatCoordinates = (location: Location): string =>
+  `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+
+const getLocationPrimaryText = (location: Location): string =>
+  formatLocationDisplayName(location, 'township');
+
+const getLocationSecondaryText = (location: Location): string => {
+  const secondary = formatLocationSecondaryName(location, 'township');
+  const coordinates = formatCoordinates(location);
+  return secondary ? `${secondary} · ${coordinates}` : coordinates;
+};
 
 export default function LocationsScreen() {
   const insets = useSafeAreaInsets();
@@ -107,9 +123,11 @@ export default function LocationsScreen() {
       const newLoc: Location = {
         latitude,
         longitude,
-        name: placeName?.name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        name: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        ...(placeName?.country ? { country: placeName.country } : {}),
         ...(placeName?.city ? { city: placeName.city } : {}),
-        ...(placeName?.district ? { district: placeName.district } : {}),
+        ...(placeName?.district ? { district: placeName.district, township: placeName.district } : {}),
+        ...(placeName?.street ? { neighborhood: placeName.street } : {}),
       };
 
       const saved = savedLocations.find((s) => s.name === newLoc.name);
@@ -204,10 +222,12 @@ export default function LocationsScreen() {
                   style={getGlassStyle(16)}
                 >
                   <View className="flex-1">
-                    <Text className="text-sm font-semibold text-md-on-surface">{item.name}</Text>
-                    {item.city && item.district && (
-                      <Text className="text-xs text-md-on-surface-variant mt-0.5">{item.city}</Text>
-                    )}
+                    <Text className="text-sm font-semibold text-md-on-surface">
+                      {getLocationPrimaryText(item)}
+                    </Text>
+                    <Text className="text-xs text-md-on-surface-variant mt-0.5">
+                      {getLocationSecondaryText(item)}
+                    </Text>
                   </View>
                   {saved ? (
                     <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
@@ -262,14 +282,11 @@ export default function LocationsScreen() {
                         isSelected ? 'text-md-on-primary-container' : 'text-md-on-surface'
                       }`}
                     >
-                      {item.name}
+                      {getLocationPrimaryText(item)}
                     </Text>
-                    {item.city && (
-                      <Text className="text-xs text-md-on-surface-variant mt-0.5">
-                        {item.city}
-                        {item.district && ` · ${item.district}`}
-                      </Text>
-                    )}
+                    <Text className="text-xs text-md-on-surface-variant mt-0.5">
+                      {getLocationSecondaryText(item)}
+                    </Text>
                   </View>
                   <View className="flex-row items-center gap-3">
                     {isSelected && (

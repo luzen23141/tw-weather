@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
+import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -30,7 +32,10 @@ export default function HistoryScreen() {
     return dateStr ?? '';
   });
 
-  const { data: historyData, isLoading, error } = useHistory(effectiveLocation ?? null, 30);
+  const { data: historyData, isLoading, error, refetch, isRefetching } = useHistory(
+    effectiveLocation ?? null,
+    MAX_HISTORY_FETCH_DAYS,
+  );
 
   const isLoading_combined = locationLoading || isLoading;
   const error_combined = locationError || error;
@@ -93,6 +98,17 @@ export default function HistoryScreen() {
                     <Text className="text-xs font-bold uppercase tracking-[1.6px] text-md-primary">
                       歷史天氣與日期瀏覽
                     </Text>
+                    <View className="pt-1">
+                      <Button
+                        variant="tonal"
+                        size="sm"
+                        label={isRefetching ? '更新中...' : '手動刷新'}
+                        onPress={() => {
+                          void refetch();
+                        }}
+                        disabled={isRefetching}
+                      />
+                    </View>
                   </View>
                 </View>
               </View>

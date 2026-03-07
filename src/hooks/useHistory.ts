@@ -1,9 +1,10 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 
 import { HistoricalDayWeather, Location } from '@/api/types';
-import { weatherService } from '@/api/weather.service';
+import { weatherService, MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
 import { historyCache } from '@/cache/history-cache';
 import { CacheKeys } from '@/cache/keys';
+import { useSettingsStore } from '@/store/settings.store';
 
 /**
  * useHistory Hook
@@ -19,12 +20,15 @@ import { CacheKeys } from '@/cache/keys';
  */
 export function useHistory(
   location: Location | null,
-  days = 7,
+  days = MAX_HISTORY_FETCH_DAYS,
 ): UseQueryResult<HistoricalDayWeather[], Error> {
+  const normalizedDays = Math.min(days, MAX_HISTORY_FETCH_DAYS);
+  const refreshIntervalMinutes = useSettingsStore((s) => s.refreshIntervalMinutes);
+
   return useQuery({
     queryKey: [
       CacheKeys.historyDay(location?.latitude ?? 0, location?.longitude ?? 0, 'range'),
-      days,
+      normalizedDays,
     ],
     queryFn: async () => {
       if (!location) {
@@ -35,7 +39,7 @@ export function useHistory(
       const { cached, missingDates } = await historyCache.getHistoryRange(
         location.latitude,
         location.longitude,
-        days,
+        normalizedDays,
       );
 
       // 如果所有日期都已快取，直接回傳
@@ -46,7 +50,7 @@ export function useHistory(
       // 步驟 2：取得缺失的資料
       let fetchedData: HistoricalDayWeather[] = [];
       try {
-        fetchedData = await weatherService.fetchHistory(location, days);
+        fetchedData = await weatherService.fetchHistory(location, normalizedDays);
 
         // 驗證回傳的資料不為空
         if (!fetchedData || fetchedData.length === 0) {
@@ -79,7 +83,7 @@ export function useHistory(
       return uniqueData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     },
     enabled: !!location,
-    staleTime: 30 * 60 * 1000, // 30 分鐘
+    staleTime: Math.max(1, refreshIntervalMinutes) * 60 * 1000,
     gcTime: 3 * 60 * 60 * 1000, // 3 小時
     retry: 1,
     refetchOnWindowFocus: false,
@@ -111,7 +115,7 @@ export function useHistoryDay(
 
       // 快取未命中，從 API 取得
       try {
-        const data = await weatherService.fetchHistory(location, 7);
+        const data = await weatherService.fetchHistory(location, MAX_HISTORY_FETCH_DAYS);
         const found = data.find((item) => item.date === date);
 
         if (found) {

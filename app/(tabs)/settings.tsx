@@ -204,6 +204,14 @@ const locationDisplayOptions: Array<{
   },
 ];
 
+const refreshIntervalOptions = [
+  { label: '1 分鐘', value: 1 },
+  { label: '5 分鐘（預設）', value: 5 },
+  { label: '10 分鐘', value: 10 },
+  { label: '15 分鐘', value: 15 },
+  { label: '30 分鐘', value: 30 },
+] as const;
+
 const themeOptions = [
   { label: '亮色模式', value: 'light' },
   { label: '暗色模式', value: 'dark' },
@@ -219,6 +227,8 @@ export default function SettingsScreen() {
     windSpeedUnit,
     locationDisplayFormat,
     enabledSources,
+    refreshIntervalMinutes,
+    setRefreshIntervalMinutes,
     setTheme,
     setDisplayMode,
     setTemperatureUnit,
@@ -320,6 +330,23 @@ export default function SettingsScreen() {
                   selectedValue={locationDisplayFormat}
                   onPress={() => setLocationDisplayFormat(option.value)}
                   isLast={index === locationDisplayOptions.length - 1}
+                />
+              ))}
+            </SectionCard>
+          </View>
+
+          <View>
+            <SectionHeader title="重抓間隔" icon="refresh-outline" />
+            <SectionCard>
+              {refreshIntervalOptions.map((option, index) => (
+                <RadioOption
+                  key={option.value}
+                  label={option.label}
+                  description="天氣與歷史資料多久視為 stale 並重新抓取"
+                  value={String(option.value)}
+                  selectedValue={String(refreshIntervalMinutes)}
+                  onPress={() => setRefreshIntervalMinutes(option.value)}
+                  isLast={index === refreshIntervalOptions.length - 1}
                 />
               ))}
             </SectionCard>

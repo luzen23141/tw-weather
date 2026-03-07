@@ -43,7 +43,13 @@ export function formatLocationDisplayName(
     return city;
   }
 
-  return location.name;
+  const coordinateName = `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+  const fallbackName = normalizeValue(location.name);
+  if (fallbackName && fallbackName !== coordinateName) {
+    return fallbackName;
+  }
+
+  return coordinateName;
 }
 
 export function formatLocationSecondaryName(

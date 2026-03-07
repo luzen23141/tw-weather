@@ -14,6 +14,7 @@ import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
 import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useWeather } from '@/hooks/useWeather';
 import { getGlassStyle } from '@/utils/glass';
+import { formatLocationDisplayName } from '@/utils/location-display';
 
 function StateCard({
   icon,
@@ -57,10 +58,16 @@ export default function HomeScreen() {
     error: locationError,
   } = useEffectiveLocation();
 
-  const { data: weatherData, isLoading, error } = useWeather(effectiveLocation);
+  const { data: weatherData, isLoading, error, refetch, isRefetching } = useWeather(effectiveLocation);
 
   const isLoadingCombined = locationLoading || isLoading;
   const errorCombined = locationError || error;
+  const townshipDisplayName = effectiveLocation
+    ? formatLocationDisplayName(effectiveLocation, 'township')
+    : displayName;
+  const weatherCardLocation = effectiveLocation
+    ? { ...effectiveLocation, name: townshipDisplayName }
+    : null;
 
   return (
     <ErrorBoundary
@@ -81,7 +88,7 @@ export default function HomeScreen() {
             paddingTop: 8,
           }}
         >
-          <Stack.Screen options={{ headerTitle: displayName }} />
+          <Stack.Screen options={{ headerTitle: townshipDisplayName }} />
 
           {isLoadingCombined ? (
             <View className="flex-1 items-center justify-center py-32">
@@ -96,11 +103,22 @@ export default function HomeScreen() {
               buttonLabel="前往選擇地點"
               onPress={() => router.push('/locations')}
             />
-          ) : weatherData && effectiveLocation ? (
+          ) : weatherData && weatherCardLocation ? (
             <View className="gap-6">
+              <View className="px-4 pt-1">
+                <Button
+                  variant="tonal"
+                  size="sm"
+                  label={isRefetching ? '更新中...' : '手動刷新'}
+                  onPress={() => {
+                    void refetch();
+                  }}
+                  disabled={isRefetching}
+                />
+              </View>
               <CurrentWeatherCard
                 data={weatherData.current}
-                location={effectiveLocation}
+                location={weatherCardLocation}
                 source={weatherData.source}
               />
 
