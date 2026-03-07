@@ -16,8 +16,6 @@ const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
 const CWA_API_KEY = process.env.EXPO_PUBLIC_CWA_API_KEY;
 const CWA_DIRECT_BASE = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore';
 
-// TODO: 實作 calculateDistance，根據經緯度找最近的測站
-
 /**
  * 從能見度描述文字提取數值（km）
  * 範例："10 km", "5公里", "不良" → 10, 5, 或預設值
@@ -128,8 +126,15 @@ interface CwaWeatherElement {
   }>;
 }
 
+interface CwaStationCoordinates {
+  StationLatitude?: string;
+  StationLongitude?: string;
+  Coordinates?: string;
+}
+
 interface CwaStation {
   StationName?: string;
+  GeoInfo?: CwaStationCoordinates;
   ObsTime?: { DateTime?: string };
   WeatherElement?: {
     Weather?: string;
@@ -141,6 +146,86 @@ interface CwaStation {
     AirPressure?: string;
     VisibilityDescription?: string;
   };
+}
+
+function parseStationCoordinate(value: string | undefined): number | null {
+  if (!value) return null;
+  const match = value.match(/-?\d+(?:\.\d+)?/);
+  if (!match || !match[0]) return null;
+  const parsed = Number.parseFloat(match[0]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getStationCoordinates(
+  station: CwaStation,
+): { latitude: number; longitude: number } | null {
+  const latitude = parseStationCoordinate(station.GeoInfo?.StationLatitude);
+  const longitude = parseStationCoordinate(station.GeoInfo?.StationLongitude);
+
+  if (latitude !== null && longitude !== null) {
+    return { latitude, longitude };
+  }
+
+  const coordinates = station.GeoInfo?.Coordinates?.split(',') ?? [];
+  const fallbackLatitude = parseStationCoordinate(coordinates[0]?.trim());
+  const fallbackLongitude = parseStationCoordinate(coordinates[1]?.trim());
+
+  if (fallbackLatitude !== null && fallbackLongitude !== null) {
+    return { latitude: fallbackLatitude, longitude: fallbackLongitude };
+  }
+
+  return null;
+}
+
+function calculateDistanceKm(
+  from: { latitude: number; longitude: number },
+  to: { latitude: number; longitude: number },
+): number {
+  const toRadians = (degree: number): number => (degree * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const latDelta = toRadians(to.latitude - from.latitude);
+  const lonDelta = toRadians(to.longitude - from.longitude);
+  const fromLatitude = toRadians(from.latitude);
+  const toLatitude = toRadians(to.latitude);
+
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(fromLatitude) * Math.cos(toLatitude) * Math.sin(lonDelta / 2) ** 2;
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export function selectNearestStation(
+  location: Location,
+  stations: CwaStation[],
+): CwaStation | null {
+  if (stations.length === 0) return null;
+
+  const stationsWithDistance = stations
+    .map((station) => {
+      const coordinates = getStationCoordinates(station);
+      if (!coordinates || !station.WeatherElement) {
+        return null;
+      }
+
+      return {
+        station,
+        distance: calculateDistanceKm(location, coordinates),
+      };
+    })
+    .filter(
+      (
+        entry,
+      ): entry is {
+        station: CwaStation;
+        distance: number;
+      } => entry !== null,
+    )
+    .sort((left, right) => left.distance - right.distance);
+
+  return (
+    stationsWithDistance[0]?.station ?? stations.find((station) => station.WeatherElement) ?? null
+  );
 }
 
 /**
@@ -167,7 +252,7 @@ class CwaAdapter implements WeatherApiAdapter {
     try {
       // 並行取得三個端點資料
       const [currentRes, hourlyRes, dailyRes] = await Promise.all([
-        this.fetchCurrentWeather(),
+        this.fetchCurrentWeather(location),
         this.fetchHourlyForecast(location),
         this.fetchDailyForecast(location),
       ]);
@@ -198,7 +283,7 @@ class CwaAdapter implements WeatherApiAdapter {
   /**
    * 取得即時天氣 (O-A0001-001)
    */
-  private async fetchCurrentWeather(): Promise<CurrentWeather> {
+  private async fetchCurrentWeather(location: Location): Promise<CurrentWeather> {
     const url = buildCwaUrl('O-A0001-001', { format: 'JSON' });
 
     const response = await fetch(url.toString());
@@ -230,9 +315,7 @@ class CwaAdapter implements WeatherApiAdapter {
       );
     }
 
-    // TODO: 實作完整的距離計算以選擇最近的測站
-    // 目前簡化為使用第一個測站，待後續優化
-    const station = stations[0];
+    const station = selectNearestStation(location, stations);
     if (!station || !station.WeatherElement) {
       throw new WeatherApiError(
         'CWA 無法取得觀測資料',

@@ -1,90 +1,98 @@
 import { test, expect } from '@playwright/test';
 
+const DARK_BACKGROUND = '#0f172a';
+const LIGHT_BACKGROUND = '#f0f4f8';
+
+type PersistedStore<T> = {
+  state: T;
+  version: number;
+};
+
+function buildSettingsState(theme: 'light' | 'dark' | 'system'): PersistedStore<{
+  theme: 'light' | 'dark' | 'system';
+  temperatureUnit: 'celsius';
+  windSpeedUnit: 'kmh';
+  displayMode: 'single';
+  activeSource: 'open-meteo';
+  enabledSources: ['open-meteo'];
+}> {
+  return {
+    state: {
+      theme,
+      temperatureUnit: 'celsius',
+      windSpeedUnit: 'kmh',
+      displayMode: 'single',
+      activeSource: 'open-meteo',
+      enabledSources: ['open-meteo'],
+    },
+    version: 0,
+  };
+}
+
+async function setThemeState(
+  page: import('@playwright/test').Page,
+  theme: 'light' | 'dark' | 'system',
+) {
+  await page.goto('/settings');
+  await page.evaluate((settings) => {
+    window.localStorage.setItem('weather-settings', JSON.stringify(settings));
+  }, buildSettingsState(theme));
+  await page.reload();
+}
+
+async function getAppliedBackgroundVar(page: import('@playwright/test').Page) {
+  return await page.evaluate(() => {
+    const element = Array.from(document.querySelectorAll('div')).find((node) => {
+      return window.getComputedStyle(node).getPropertyValue('--color-md-background').trim();
+    });
+
+    if (!element) {
+      return null;
+    }
+
+    return window.getComputedStyle(element).getPropertyValue('--color-md-background').trim();
+  });
+}
+
 test.describe('主題切換', () => {
   test('應能進入設定並找到主題選項', async ({ page }) => {
     await page.goto('/');
-
-    // 點擊設定標籤
-    const settingsTab = page.locator('a[href="/settings"]');
-    await settingsTab.click();
-
-    // 驗證主題選項存在
-    const themeSection = page.getByText('主題外觀');
-    await expect(themeSection).toBeVisible();
-    await expect(themeSection).toBeVisible();
-  });
-
-  test('應能切換到深色主題', async ({ page }) => {
-    await page.goto('/settings');
-    // 點擊深色主題選項
-    const darkThemeButton = page.getByText('暗色模式', { exact: true });
-    if (await darkThemeButton.isVisible()) {
-      await darkThemeButton.click();
-
-      // 驗證深色主題已應用
-      const settings = await page.evaluate(() => localStorage.getItem('weather-settings'));
-      expect(settings).toContain('"theme":"dark"');
-    }
-  });
-
-  test('應能切換到淺色主題', async ({ page }) => {
-    await page.goto('/settings');
-    // 先切換到深色主題
-    const darkButton = page.getByText('暗色模式', { exact: true });
-    if (await darkButton.isVisible()) {
-      await darkButton.click();
-    }
-
-    // 再切換回淺色主題
-    const lightButton = page.getByText('亮色模式', { exact: true });
-    if (await lightButton.isVisible()) {
-      await lightButton.click();
-
-      // 驗證淺色主題已應用
-      const settings = await page.evaluate(() => localStorage.getItem('weather-settings'));
-      expect(settings).toContain('"theme":"light"');
-    }
-  });
-
-  test('主題設定應持久化保存', async ({ page }) => {
-    await page.goto('/settings');
-    // 切換到深色主題
-    const darkButton = page.getByText('暗色模式', { exact: true });
-    if (await darkButton.isVisible()) {
-      await darkButton.click();
-
-      // 刷新頁面
-      await page.reload();
-
-      // 驗證深色主題仍然活躍
-      const settings = await page.evaluate(() => localStorage.getItem('weather-settings'));
-      expect(settings).toContain('"theme":"dark"');
-    }
-  });
-
-  test('切換主題後背景色應相應改變', async ({ page }) => {
-    await page.goto('/');
-
-    const body = page.locator('body');
-
-    // 進入設定
     await page.locator('a[href="/settings"]').click();
+    await expect(page.getByText('主題外觀')).toBeVisible();
+  });
 
-    // 切換主題
-    const themeButton = page.getByText('暗色模式', { exact: true });
-    if (await themeButton.isVisible()) {
-      await themeButton.click();
+  test('應能切換到深色主題並套用 dark token', async ({ page }) => {
+    await setThemeState(page, 'light');
 
-      // 返回主頁
-      await page.locator('a[href="/"]').first().click();
+    await page.getByText('暗色模式', { exact: true }).click();
 
-      // 檢查背景顏色是否改變
-      const newBgColor = await body.evaluate((el) => {
-        return window.getComputedStyle(el).backgroundColor;
-      });
+    const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
+    expect(settings).toContain('"theme":"dark"');
+    await expect.poll(() => getAppliedBackgroundVar(page)).toBe(DARK_BACKGROUND);
+  });
 
-      // 顏色應該改變（除非剛好相同，但概率很低）
-      expect(newBgColor).toBeTruthy();
-    }
+  test('應能切換到淺色主題並套用 light token', async ({ page }) => {
+    await setThemeState(page, 'dark');
+
+    await page.getByText('亮色模式', { exact: true }).click();
+
+    const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
+    expect(settings).toContain('"theme":"light"');
+    await expect.poll(() => getAppliedBackgroundVar(page)).toBe(LIGHT_BACKGROUND);
+  });
+
+  test('主題設定重新整理後仍會保留並持續套用', async ({ page }) => {
+    await setThemeState(page, 'light');
+
+    await page.getByText('暗色模式', { exact: true }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.localStorage.getItem('weather-settings')))
+      .toContain('"theme":"dark"');
+
+    await page.reload();
+
+    const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
+    expect(settings).toContain('"theme":"dark"');
+    await expect.poll(() => getAppliedBackgroundVar(page)).toBe(DARK_BACKGROUND);
   });
 });

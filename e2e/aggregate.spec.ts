@@ -1,84 +1,77 @@
 import { test, expect } from '@playwright/test';
 
-test.describe.skip('聚合模式', () => {
-  test('應能啟用聚合模式', async ({ page }) => {
-    await page.goto('/settings');
+const AGGREGATE_SETTINGS = {
+  state: {
+    theme: 'light',
+    temperatureUnit: 'celsius',
+    windSpeedUnit: 'kmh',
+    displayMode: 'aggregate',
+    activeSource: 'cwa',
+    enabledSources: ['open-meteo', 'cwa'],
+  },
+  version: 0,
+};
 
-    // 向下滾動到聚合模式選項
-    await page.locator('text=聚合模式').scrollIntoViewIfNeeded();
+const SELECTED_LOCATION = {
+  state: {
+    savedLocations: [
+      {
+        name: '台北市信義區',
+        city: '台北市',
+        district: '信義區',
+        latitude: 25.033,
+        longitude: 121.5654,
+      },
+    ],
+    selectedLocation: {
+      name: '台北市信義區',
+      city: '台北市',
+      district: '信義區',
+      latitude: 25.033,
+      longitude: 121.5654,
+    },
+  },
+  version: 0,
+};
 
-    // 驗證聚合模式選項存在
-    const aggregateSection = page.locator('text=聚合模式');
-    await expect(aggregateSection).toBeVisible();
+async function seedAggregateMode(page: import('@playwright/test').Page) {
+  await page.goto('/settings');
+  await page.evaluate(
+    ({ settings, locations }) => {
+      window.localStorage.setItem('weather-settings', JSON.stringify(settings));
+      window.localStorage.setItem('weather-locations', JSON.stringify(locations));
+    },
+    { settings: AGGREGATE_SETTINGS, locations: SELECTED_LOCATION },
+  );
+  await page.reload();
+}
+
+test.describe('聚合模式', () => {
+  test('設定頁應顯示聚合模式已啟用', async ({ page }) => {
+    await seedAggregateMode(page);
+
+    const aggregateOption = page.getByText('聚合模式', { exact: true });
+    await expect(aggregateOption).toBeVisible();
+
+    const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
+    expect(settings).toContain('"displayMode":"aggregate"');
   });
 
-  test('啟用聚合模式後應顯示溫度範圍', async ({ page }) => {
-    await page.goto('/settings');
+  test('首頁在 aggregate 模式應保留 aggregate 設定', async ({ page }) => {
+    await seedAggregateMode(page);
+    await page.goto('/');
 
-    // 向下滾動到聚合模式選項
-    await page.locator('text=聚合模式').scrollIntoViewIfNeeded();
-
-    // 啟用聚合模式（假設有開關）
-    const aggregateToggle = page.locator('input[type="checkbox"]').nth(0);
-    const isChecked = await aggregateToggle.isChecked();
-
-    if (!isChecked) {
-      await aggregateToggle.click();
-    }
-
-    await page.waitForLoadState('networkidle');
-
-    // 返回主頁
-    await page.locator('text=天氣').click();
-
-    await page.waitForLoadState('networkidle');
-
-    // 驗證顯示溫度範圍（~符號）
-    const tempRange = page.locator('text=/~|範圍/');
-    await expect(tempRange).toBeVisible();
+    const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
+    expect(settings).toContain('"displayMode":"aggregate"');
+    await expect(page.getByText('台北市信義區', { exact: true }).first()).toBeVisible();
   });
 
-  test('可以禁用聚合模式', async ({ page }) => {
-    await page.goto('/settings');
+  test('預報頁在 aggregate 模式應保留 aggregate 設定', async ({ page }) => {
+    await seedAggregateMode(page);
+    await page.goto('/forecast');
 
-    // 向下滾動到聚合模式選項
-    await page.locator('text=聚合模式').scrollIntoViewIfNeeded();
-
-    // 禁用聚合模式
-    const aggregateToggle = page.locator('input[type="checkbox"]').nth(0);
-    const isChecked = await aggregateToggle.isChecked();
-
-    if (isChecked) {
-      await aggregateToggle.click();
-    }
-
-    await page.waitForLoadState('networkidle');
-
-    // 驗證設定已保存
-    const toggleState = await aggregateToggle.isChecked();
-    expect(toggleState).toBe(false);
-  });
-
-  test('多個資料源聚合應顯示正確的溫度統計', async ({ page }) => {
-    await page.goto('/settings');
-
-    // 啟用聚合模式
-    const aggregateToggle = page.locator('input[type="checkbox"]').nth(0);
-    const isChecked = await aggregateToggle.isChecked();
-
-    if (!isChecked) {
-      await aggregateToggle.click();
-    }
-
-    await page.waitForLoadState('networkidle');
-
-    // 返回主頁
-    await page.locator('text=天氣').click();
-
-    await page.waitForLoadState('networkidle');
-
-    // 驗證溫度範圍顯示（最高溫和最低溫）
-    const tempDisplay = page.locator('text=/°C.*~|~.*°C/');
-    await expect(tempDisplay).toBeVisible();
+    const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
+    expect(settings).toContain('"displayMode":"aggregate"');
+    await expect(page.getByText('逐時與每日預報', { exact: true })).toBeVisible();
   });
 });

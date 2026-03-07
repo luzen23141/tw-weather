@@ -1,4 +1,4 @@
-import cwaAdapter from '../cwa.adapter';
+import cwaAdapter, { selectNearestStation } from '../cwa.adapter';
 import { Location } from '../../types';
 
 // Mock `fetch` globally
@@ -17,6 +17,33 @@ describe('CwaAdapter', () => {
     process.env.EXPO_PUBLIC_CWA_API_KEY = 'test-key';
   });
 
+  it('should choose the nearest station instead of the first station', () => {
+    const station = selectNearestStation(mockLocation, [
+      {
+        StationName: '高雄',
+        GeoInfo: {
+          StationLatitude: '22.6273',
+          StationLongitude: '120.3014',
+        },
+        WeatherElement: {
+          AirTemperature: '28',
+        },
+      },
+      {
+        StationName: '台北',
+        GeoInfo: {
+          StationLatitude: '25.0375',
+          StationLongitude: '121.5637',
+        },
+        WeatherElement: {
+          AirTemperature: '19',
+        },
+      },
+    ]);
+
+    expect(station?.StationName).toBe('台北');
+  });
+
   it('should successfully fetch current weather, hourly, and daily forecasts', async () => {
     (global.fetch as jest.Mock).mockImplementation((url: { toString: () => string } | string) => {
       const urlStr = url.toString();
@@ -28,7 +55,27 @@ describe('CwaAdapter', () => {
             records: {
               Station: [
                 {
+                  StationName: '高雄',
+                  GeoInfo: {
+                    StationLatitude: '22.6273',
+                    StationLongitude: '120.3014',
+                  },
+                  ObsTime: { DateTime: '2026-02-28T06:00:00+08:00' },
+                  WeatherElement: {
+                    AirTemperature: '28.1',
+                    RelativeHumidity: '70',
+                    Weather: '晴',
+                    WindSpeed: '2.1',
+                    WindDirection: '180',
+                    AirPressure: '1010.5',
+                  },
+                },
+                {
                   StationName: '臺北',
+                  GeoInfo: {
+                    StationLatitude: '25.0375',
+                    StationLongitude: '121.5637',
+                  },
                   ObsTime: { DateTime: '2026-02-28T07:00:00+08:00' },
                   WeatherElement: {
                     AirTemperature: '18.7',

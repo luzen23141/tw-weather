@@ -13,13 +13,11 @@ import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
 import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useWeather } from '@/hooks/useWeather';
-import { useSettingsStore } from '@/store/settings.store';
 import { getGlassStyle } from '@/utils/glass';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { displayMode } = useSettingsStore();
   const {
     effectiveLocation,
     displayName,
@@ -84,7 +82,7 @@ export default function HomeScreen() {
               <CurrentWeatherCard
                 data={weatherData.current}
                 location={effectiveLocation}
-                source={displayMode === 'aggregate' ? 'aggregate' : weatherData.source}
+                source={weatherData.source}
               />
 
               <View className="py-1">

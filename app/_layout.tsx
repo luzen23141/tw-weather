@@ -6,13 +6,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { vars } from 'nativewind';
+import { useColorScheme, vars } from 'nativewind';
 import { useEffect, useState } from 'react';
 import { LogBox, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { historyCache } from '@/cache/history-cache';
-import { useMDColors } from '@/hooks/useMDColors';
+import { getMDColors } from '@/hooks/useMDColors';
 import { useSettingsStore } from '@/store/settings.store';
 
 // Suppress all LogBox warnings during tests so they don't block Maestro UI interactions
@@ -37,8 +37,10 @@ const asyncStoragePersister = isBrowser
   : null;
 
 function AppContent() {
-  useSettingsStore((state) => state.theme); // 訂閱主題變化以觸發重繪
-  const colors = useMDColors();
+  const theme = useSettingsStore((state) => state.theme);
+  const { colorScheme, setColorScheme } = useColorScheme();
+  const resolvedTheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const colors = getMDColors(resolvedTheme);
 
   // 將 MDColors 轉換為 NativeWind 變數
   const themeVars = vars({
@@ -71,6 +73,10 @@ function AppContent() {
   });
 
   useEffect(() => {
+    setColorScheme(theme);
+  }, [setColorScheme, theme]);
+
+  useEffect(() => {
     // App 啟動時清理過期的快取
     void historyCache.cleanup(30);
   }, []);
@@ -82,7 +88,7 @@ function AppContent() {
           headerShown: false,
         }}
       />
-      <StatusBar style="auto" />
+      <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
     </View>
   );
 }

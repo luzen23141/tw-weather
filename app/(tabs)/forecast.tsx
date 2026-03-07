@@ -11,11 +11,9 @@ import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
 import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useWeather } from '@/hooks/useWeather';
-import { useSettingsStore } from '@/store/settings.store';
 
 export default function ForecastScreen() {
   const insets = useSafeAreaInsets();
-  const { displayMode } = useSettingsStore();
   const {
     effectiveLocation,
     isLoading: locationLoading,
@@ -78,9 +76,7 @@ export default function ForecastScreen() {
                           </Text>
                         )}
                       </View>
-                      <SourceBadge
-                        source={displayMode === 'aggregate' ? 'aggregate' : weatherData.source}
-                      />
+                      <SourceBadge source={weatherData.source} />
                     </View>
                     <Text className="text-xs font-bold uppercase tracking-[1.6px] text-md-primary">
                       逐時與每日預報

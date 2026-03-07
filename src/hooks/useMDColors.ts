@@ -34,7 +34,7 @@ export interface MDColors {
   glassHeader: string;
 }
 
-const LIGHT: MDColors = {
+export const LIGHT: MDColors = {
   primary: '#0891B2',
   onPrimary: '#FFFFFF',
   primaryContainer: 'rgba(8, 145, 178, 0.12)',
@@ -68,7 +68,7 @@ const LIGHT: MDColors = {
   glassHeader: 'rgba(255, 255, 255, 0.80)',
 };
 
-const DARK: MDColors = {
+export const DARK: MDColors = {
   primary: '#22D3EE',
   onPrimary: '#0A3E48',
   primaryContainer: 'rgba(34, 211, 238, 0.15)',
@@ -102,7 +102,11 @@ const DARK: MDColors = {
   glassHeader: 'rgba(15, 23, 42, 0.90)',
 };
 
+export function getMDColors(theme: 'light' | 'dark'): MDColors {
+  return theme === 'dark' ? DARK : LIGHT;
+}
+
 export function useMDColors(): MDColors {
   const { colorScheme } = useColorScheme();
-  return colorScheme === 'dark' ? DARK : LIGHT;
+  return getMDColors(colorScheme === 'dark' ? 'dark' : 'light');
 }
