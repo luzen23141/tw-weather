@@ -572,11 +572,11 @@ describe('資料源資料契約（頁面使用欄位）', () => {
     (global.fetch as jest.Mock).mockResolvedValue(
       createJsonResponse({
         current: {
-          temperature: 23,
-          relative_humidity: 75,
+          temperature_2m: 23,
+          relative_humidity_2m: 75,
           apparent_temperature: 24,
           is_day: 1,
-          weathercode: 3,
+          weather_code: 3,
           wind_speed_10m: 4,
           wind_direction_10m: 170,
           precipitation: 0,

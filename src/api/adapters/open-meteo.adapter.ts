@@ -16,11 +16,14 @@ const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 const ARCHIVE_URL = 'https://archive-api.open-meteo.com/v1/archive';
 
 interface OpenMeteoCurrentWeather {
-  temperature: number;
-  relative_humidity: number;
+  temperature_2m?: number;
+  temperature?: number;
+  relative_humidity_2m?: number;
+  relative_humidity?: number;
   apparent_temperature: number;
   is_day: number;
-  weathercode: number;
+  weather_code?: number;
+  weathercode?: number;
   wind_speed_10m: number;
   wind_direction_10m: number;
   precipitation: number;
@@ -198,13 +201,17 @@ class OpenMeteoAdapter implements WeatherApiAdapter {
    * 解析即時天氣
    */
   private parseCurrentWeather(current: OpenMeteoCurrentWeather): CurrentWeather {
+    const temperature = current.temperature_2m ?? current.temperature ?? 20;
+    const humidity = current.relative_humidity_2m ?? current.relative_humidity ?? 50;
+    const weatherCode = current.weather_code ?? current.weathercode ?? 0;
+
     return {
       timestamp: new Date().toISOString(),
-      temperature: current.temperature,
+      temperature,
       apparentTemperature: current.apparent_temperature,
-      humidity: current.relative_humidity,
-      description: getWeatherDescription(current.weathercode),
-      weatherCode: current.weathercode,
+      humidity,
+      description: getWeatherDescription(weatherCode),
+      weatherCode,
       windSpeed: current.wind_speed_10m,
       windDirection: current.wind_direction_10m,
       precipitation: current.precipitation,

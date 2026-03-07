@@ -325,11 +325,11 @@ async function mockAllWeatherApis(page: import('@playwright/test').Page): Promis
       contentType: 'application/json',
       body: JSON.stringify({
         current: {
-          temperature: 23,
-          relative_humidity: 75,
+          temperature_2m: 23,
+          relative_humidity_2m: 75,
           apparent_temperature: 24,
           is_day: 1,
-          weathercode: 3,
+          weather_code: 3,
           wind_speed_10m: 4,
           wind_direction_10m: 170,
           precipitation: 0,
