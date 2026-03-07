@@ -99,6 +99,19 @@ function buildCwaUrl(endpoint: string, params: Record<string, string>): URL {
   return url;
 }
 
+function normalizeLocationCandidate(value: string | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.replace(/\s+/g, '').trim();
+  return trimmed ? trimmed : null;
+}
+
+function findElementByNames(
+  elements: CwaWeatherElement[],
+  names: readonly string[],
+): CwaWeatherElement | undefined {
+  return elements.find((el) => names.includes(el.ElementName));
+}
+
 interface CwaApiResponse<T = unknown> {
   success: boolean;
   result?: {
@@ -334,11 +347,11 @@ class CwaAdapter implements WeatherApiAdapter {
   }
 
   private getLocationNameCandidates(location: Location): string[] {
-    const candidates = [location.district, location.city, location.name].filter(
-      (value): value is string => Boolean(value && value.trim()),
-    );
+    const normalizedCandidates = [location.township, location.district, location.city, location.name]
+      .map((value) => normalizeLocationCandidate(value))
+      .filter((value): value is string => value !== null);
 
-    return Array.from(new Set(candidates));
+    return Array.from(new Set(normalizedCandidates));
   }
 
   /**
@@ -458,13 +471,13 @@ class CwaAdapter implements WeatherApiAdapter {
     }
 
     const hourlyForecasts: HourlyForecast[] = [];
-    const timeElement = records.find((el: CwaWeatherElement) => el.ElementName === '溫度');
-    const popElement = records.find((el: CwaWeatherElement) => el.ElementName === '3小時降雨機率');
-    const rhElement = records.find((el: CwaWeatherElement) => el.ElementName === '相對濕度');
-    const wsElement = records.find((el: CwaWeatherElement) => el.ElementName === '風速');
-    const wdElement = records.find((el: CwaWeatherElement) => el.ElementName === '風向');
-    const wxElement = records.find((el: CwaWeatherElement) => el.ElementName === '天氣現象');
-    const atElement = records.find((el: CwaWeatherElement) => el.ElementName === '體感溫度');
+    const timeElement = findElementByNames(records, ['溫度', '氣溫']);
+    const popElement = findElementByNames(records, ['3小時降雨機率', '降雨機率']);
+    const rhElement = findElementByNames(records, ['相對濕度', '濕度']);
+    const wsElement = findElementByNames(records, ['風速']);
+    const wdElement = findElementByNames(records, ['風向']);
+    const wxElement = findElementByNames(records, ['天氣現象', '天氣預報綜合描述']);
+    const atElement = findElementByNames(records, ['體感溫度', '感覺溫度']);
 
     if (!timeElement || !timeElement.Time) {
       return [];
@@ -563,18 +576,10 @@ class CwaAdapter implements WeatherApiAdapter {
 
     const dailyForecasts: DailyForecast[] = [];
 
-    const popElement = weatherElements.find(
-      (el: CwaWeatherElement) => el.ElementName === '12小時降雨機率',
-    );
-    const wxElement = weatherElements.find(
-      (el: CwaWeatherElement) => el.ElementName === '天氣現象',
-    );
-    const maxTElement = weatherElements.find(
-      (el: CwaWeatherElement) => el.ElementName === '最高溫度',
-    );
-    const minTElement = weatherElements.find(
-      (el: CwaWeatherElement) => el.ElementName === '最低溫度',
-    );
+    const popElement = findElementByNames(weatherElements, ['12小時降雨機率', '降雨機率']);
+    const wxElement = findElementByNames(weatherElements, ['天氣現象', '天氣預報綜合描述']);
+    const maxTElement = findElementByNames(weatherElements, ['最高溫度', '最高氣溫']);
+    const minTElement = findElementByNames(weatherElements, ['最低溫度', '最低氣溫']);
 
     // 由於每日預報的顆粒度是12小時，比較粗略，改為取第一天的值直接映射
     // 我們只取未來7天

@@ -277,6 +277,295 @@ describe('資料源資料契約（頁面使用欄位）', () => {
     expectDailyContract(result.dailyForecast);
   });
 
+  it('CWA township-only location 在資料契約下仍成立', async () => {
+    const { default: cwaAdapter } = await import('@/api/adapters/cwa.adapter');
+    const townshipOnlyLocation: Location = {
+      name: '新北市板橋區',
+      city: '新北市',
+      township: '板橋區',
+      latitude: 25.0142,
+      longitude: 121.4592,
+    };
+
+    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
+      const urlString = url.toString();
+      const decodedUrl = decodeURIComponent(urlString);
+
+      if (urlString.includes('O-A0001-001')) {
+        return Promise.resolve(
+          createJsonResponse({
+            success: true,
+            records: {
+              Station: [
+                {
+                  StationName: '板橋站',
+                  GeoInfo: { StationLatitude: '25.0130', StationLongitude: '121.4630' },
+                  ObsTime: { DateTime: '2026-03-07T10:00:00+08:00' },
+                  WeatherElement: {
+                    AirTemperature: '20.1',
+                    RelativeHumidity: '82',
+                    Weather: '陰',
+                    WindSpeed: '1.2',
+                    WindDirection: '200',
+                    AirPressure: '1012.5',
+                    Now: { Precipitation: '0' },
+                  },
+                },
+              ],
+            },
+          }),
+        );
+      }
+
+      if (urlString.includes('F-D0047-089') && decodedUrl.includes('LocationName=板橋區')) {
+        return Promise.resolve(
+          createJsonResponse({
+            success: true,
+            records: {
+              Locations: [
+                {
+                  Location: [
+                    {
+                      WeatherElement: [
+                        {
+                          ElementName: '溫度',
+                          Time: [
+                            {
+                              DataTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ Temperature: '21' }],
+                            },
+                          ],
+                        },
+                        {
+                          ElementName: '3小時降雨機率',
+                          Time: [
+                            {
+                              StartTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        );
+      }
+
+      if (urlString.includes('F-D0047-091') && decodedUrl.includes('LocationName=板橋區')) {
+        return Promise.resolve(
+          createJsonResponse({
+            success: true,
+            records: {
+              Locations: [
+                {
+                  Location: [
+                    {
+                      WeatherElement: [
+                        {
+                          ElementName: '最高溫度',
+                          Time: [
+                            {
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ Temperature: '24' }],
+                            },
+                          ],
+                        },
+                        {
+                          ElementName: '最低溫度',
+                          Time: [
+                            {
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ Temperature: '18' }],
+                            },
+                          ],
+                        },
+                        {
+                          ElementName: '12小時降雨機率',
+                          Time: [
+                            {
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        );
+      }
+
+      throw new Error(`Unexpected URL: ${urlString}`);
+    });
+
+    const result = await cwaAdapter.fetchWeather(townshipOnlyLocation);
+    expectHourlyContract(result.hourlyForecast);
+    expectDailyContract(result.dailyForecast);
+
+    const requestUrls = (global.fetch as jest.Mock).mock.calls.map(([url]) =>
+      decodeURIComponent(String(url)),
+    );
+    expect(requestUrls.some((url) => url.includes('LocationName=板橋區'))).toBe(true);
+  });
+
+  it('CWA fallback 路徑下 hourly/daily 資料契約仍成立', async () => {
+    const { default: cwaAdapter } = await import('@/api/adapters/cwa.adapter');
+    const fallbackLocation: Location = {
+      name: '新北市板橋區',
+      city: '新北市',
+      township: '板橋區',
+      latitude: 25.0142,
+      longitude: 121.4592,
+    };
+
+    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
+      const urlString = url.toString();
+      const decodedUrl = decodeURIComponent(urlString);
+
+      if (urlString.includes('O-A0001-001')) {
+        return Promise.resolve(
+          createJsonResponse({
+            success: true,
+            records: {
+              Station: [
+                {
+                  StationName: '板橋站',
+                  GeoInfo: { StationLatitude: '25.0130', StationLongitude: '121.4630' },
+                  ObsTime: { DateTime: '2026-03-07T10:00:00+08:00' },
+                  WeatherElement: {
+                    AirTemperature: '20.1',
+                    RelativeHumidity: '82',
+                    Weather: '陰',
+                    WindSpeed: '1.2',
+                    WindDirection: '200',
+                    AirPressure: '1012.5',
+                    Now: { Precipitation: '0' },
+                  },
+                },
+              ],
+            },
+          }),
+        );
+      }
+
+      if (urlString.includes('F-D0047-089') && decodedUrl.includes('LocationName=板橋區')) {
+        return Promise.resolve(
+          createJsonResponse({ success: true, records: { Locations: [{ Location: [] }] } }),
+        );
+      }
+
+      if (urlString.includes('F-D0047-089') && decodedUrl.includes('LocationName=新北市')) {
+        return Promise.resolve(
+          createJsonResponse({
+            success: true,
+            records: {
+              Locations: [
+                {
+                  Location: [
+                    {
+                      WeatherElement: [
+                        {
+                          ElementName: '溫度',
+                          Time: [
+                            {
+                              DataTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ Temperature: '21' }],
+                            },
+                          ],
+                        },
+                        {
+                          ElementName: '3小時降雨機率',
+                          Time: [
+                            {
+                              StartTime: '2026-03-07T12:00:00+08:00',
+                              ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        );
+      }
+
+      if (urlString.includes('F-D0047-091') && decodedUrl.includes('LocationName=板橋區')) {
+        return Promise.resolve(
+          createJsonResponse({ success: true, records: { Locations: [{ Location: [] }] } }),
+        );
+      }
+
+      if (urlString.includes('F-D0047-091') && decodedUrl.includes('LocationName=新北市')) {
+        return Promise.resolve(
+          createJsonResponse({
+            success: true,
+            records: {
+              Locations: [
+                {
+                  Location: [
+                    {
+                      WeatherElement: [
+                        {
+                          ElementName: '最高溫度',
+                          Time: [
+                            {
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ Temperature: '24' }],
+                            },
+                          ],
+                        },
+                        {
+                          ElementName: '最低溫度',
+                          Time: [
+                            {
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ Temperature: '18' }],
+                            },
+                          ],
+                        },
+                        {
+                          ElementName: '12小時降雨機率',
+                          Time: [
+                            {
+                              StartTime: '2026-03-07T06:00:00+08:00',
+                              ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        );
+      }
+
+      throw new Error(`Unexpected URL: ${urlString}`);
+    });
+
+    const result = await cwaAdapter.fetchWeather(fallbackLocation);
+    expectHourlyContract(result.hourlyForecast);
+    expectDailyContract(result.dailyForecast);
+
+    const requestUrls = (global.fetch as jest.Mock).mock.calls.map(([url]) =>
+      decodeURIComponent(String(url)),
+    );
+    expect(requestUrls.some((url) => url.includes('LocationName=板橋區'))).toBe(true);
+    expect(requestUrls.some((url) => url.includes('LocationName=新北市'))).toBe(true);
+  });
+
   it('Open-Meteo adapter 應回傳首頁與預報頁需要的欄位', async () => {
     const { default: openMeteoAdapter } = await import('@/api/adapters/open-meteo.adapter');
 

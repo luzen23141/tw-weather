@@ -11,14 +11,16 @@ const LOCATION_STORE: PersistedStore<{
   savedLocations: Array<{
     name: string;
     city: string;
-    district: string;
+    district?: string;
+    township?: string;
     latitude: number;
     longitude: number;
   }>;
   selectedLocation: {
     name: string;
     city: string;
-    district: string;
+    district?: string;
+    township?: string;
     latitude: number;
     longitude: number;
   };
@@ -29,6 +31,7 @@ const LOCATION_STORE: PersistedStore<{
         name: '台北市信義區',
         city: '台北市',
         district: '信義區',
+        township: '信義區',
         latitude: 25.033,
         longitude: 121.5654,
       },
@@ -37,8 +40,48 @@ const LOCATION_STORE: PersistedStore<{
       name: '台北市信義區',
       city: '台北市',
       district: '信義區',
+      township: '信義區',
       latitude: 25.033,
       longitude: 121.5654,
+    },
+  },
+  version: 0,
+};
+
+const CWA_TOWNSHIP_ONLY_LOCATION_STORE: PersistedStore<{
+  savedLocations: Array<{
+    name: string;
+    city: string;
+    district?: string;
+    township?: string;
+    latitude: number;
+    longitude: number;
+  }>;
+  selectedLocation: {
+    name: string;
+    city: string;
+    district?: string;
+    township?: string;
+    latitude: number;
+    longitude: number;
+  };
+}> = {
+  state: {
+    savedLocations: [
+      {
+        name: '新北市板橋區',
+        city: '新北市',
+        township: '板橋區',
+        latitude: 25.0142,
+        longitude: 121.4592,
+      },
+    ],
+    selectedLocation: {
+      name: '新北市板橋區',
+      city: '新北市',
+      township: '板橋區',
+      latitude: 25.0142,
+      longitude: 121.4592,
     },
   },
   version: 0,
@@ -91,6 +134,7 @@ const AGGREGATE_SETTINGS: PersistedStore<{
 async function seedState(
   page: import('@playwright/test').Page,
   settings: PersistedStore<unknown>,
+  locations: PersistedStore<unknown> = LOCATION_STORE,
 ): Promise<void> {
   await page.goto('/settings');
   await page.evaluate(
@@ -98,7 +142,7 @@ async function seedState(
       window.localStorage.setItem('weather-settings', JSON.stringify(state));
       window.localStorage.setItem('weather-locations', JSON.stringify(locations));
     },
-    { state: settings, locations: LOCATION_STORE },
+    { state: settings, locations },
   );
   await page.reload();
 }
@@ -508,6 +552,125 @@ async function mockAllWeatherApis(page: import('@playwright/test').Page): Promis
   });
 }
 
+async function mockCwaTownshipFallbackApis(page: import('@playwright/test').Page): Promise<void> {
+  await page.route('**/opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-089**', async (route) => {
+    const url = decodeURIComponent(route.request().url());
+
+    if (url.includes('LocationName=板橋區')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          records: { Locations: [{ Location: [] }] },
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        records: {
+          Locations: [
+            {
+              Location: [
+                {
+                  WeatherElement: [
+                    {
+                      ElementName: '溫度',
+                      Time: [
+                        {
+                          DataTime: '2026-03-07T12:00:00+08:00',
+                          ElementValue: [{ Temperature: '21' }],
+                        },
+                      ],
+                    },
+                    {
+                      ElementName: '3小時降雨機率',
+                      Time: [
+                        {
+                          StartTime: '2026-03-07T12:00:00+08:00',
+                          ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    });
+  });
+
+  await page.route('**/opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091**', async (route) => {
+    const url = decodeURIComponent(route.request().url());
+
+    if (url.includes('LocationName=板橋區')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          records: { Locations: [{ Location: [] }] },
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        records: {
+          Locations: [
+            {
+              Location: [
+                {
+                  WeatherElement: [
+                    {
+                      ElementName: '最高溫度',
+                      Time: [
+                        {
+                          StartTime: '2026-03-07T06:00:00+08:00',
+                          ElementValue: [{ Temperature: '24' }],
+                        },
+                      ],
+                    },
+                    {
+                      ElementName: '最低溫度',
+                      Time: [
+                        {
+                          StartTime: '2026-03-07T06:00:00+08:00',
+                          ElementValue: [{ Temperature: '18' }],
+                        },
+                      ],
+                    },
+                    {
+                      ElementName: '12小時降雨機率',
+                      Time: [
+                        {
+                          StartTime: '2026-03-07T06:00:00+08:00',
+                          ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    });
+  });
+}
+
 async function assertWeatherPagesBySource(
   page: import('@playwright/test').Page,
   badge: string,
@@ -540,6 +703,18 @@ test.describe('資料源 E2E', () => {
         await assertWeatherPagesBySource(page, item.badge);
       });
     }
+  });
+
+  test('CWA township 優先地點在第一候選失敗時可 fallback 並顯示有效預報', async ({ page }) => {
+    await mockCwaTownshipFallbackApis(page);
+    await seedState(page, buildSingleSettings('cwa'), CWA_TOWNSHIP_ONLY_LOCATION_STORE);
+
+    await page.goto('/forecast');
+    await expect(page.getByText('逐時與每日預報', { exact: true })).toBeVisible();
+    await expect(page.getByText('逐時預報', { exact: true })).toBeVisible();
+    await expect(page.getByText('7 日預報', { exact: true })).toBeVisible();
+    await expect(page.getByText('無逐時預報資料', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('無每日預報資料', { exact: true })).toHaveCount(0);
   });
 
   test('聚合模式應在首頁、預報、歷史頁顯示聚合來源', async ({ page }) => {
