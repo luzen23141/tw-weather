@@ -10,6 +10,7 @@ import {
   WeatherSource,
 } from '../types';
 
+import { TAIWAN_CITIES } from '@/constants/taiwan-locations';
 import { mapCwaCodeToWmo, getWeatherDescription } from '@/utils/weather-code';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
@@ -103,6 +104,42 @@ function normalizeLocationCandidate(value: string | undefined): string | null {
   if (!value) return null;
   const trimmed = value.replace(/\s+/g, '').trim();
   return trimmed ? trimmed : null;
+}
+
+function isCoordinateLikeName(value: string | undefined): boolean {
+  if (!value) return false;
+  const normalized = value.replace(/\s+/g, '');
+  return /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(normalized);
+}
+
+function resolveNearestTaiwanLocationCandidates(location: Location): string[] {
+  let nearestCity: (typeof TAIWAN_CITIES)[number] | null = null;
+  let nearestCityDistance = Number.POSITIVE_INFINITY;
+
+  for (const city of TAIWAN_CITIES) {
+    const cityDistance = calculateDistanceKm(location, city);
+    if (cityDistance < nearestCityDistance) {
+      nearestCityDistance = cityDistance;
+      nearestCity = city;
+    }
+  }
+
+  if (!nearestCity) return [];
+
+  let nearestDistrict: (typeof nearestCity.districts)[number] | null = null;
+  let nearestDistrictDistance = Number.POSITIVE_INFINITY;
+
+  for (const district of nearestCity.districts) {
+    const districtDistance = calculateDistanceKm(location, district);
+    if (districtDistance < nearestDistrictDistance) {
+      nearestDistrictDistance = districtDistance;
+      nearestDistrict = district;
+    }
+  }
+
+  return [nearestDistrict?.name, nearestCity.name].filter(
+    (value): value is string => Boolean(value),
+  );
 }
 
 function findElementByNames(
@@ -347,16 +384,20 @@ class CwaAdapter implements WeatherApiAdapter {
   }
 
   private getLocationNameCandidates(location: Location): string[] {
-    const normalizedCandidates = [
-      location.township,
-      location.district,
-      location.city,
-      location.name,
-    ]
+    const primaryCandidates = [location.township, location.district, location.city, location.name]
       .map((value) => normalizeLocationCandidate(value))
       .filter((value): value is string => value !== null);
 
-    return Array.from(new Set(normalizedCandidates));
+    const hasAdministrativeCandidate = primaryCandidates.some((candidate) => !isCoordinateLikeName(candidate));
+    const fallbackCandidates = hasAdministrativeCandidate
+      ? []
+      : resolveNearestTaiwanLocationCandidates(location).map((value) => normalizeLocationCandidate(value));
+
+    const mergedCandidates = [...primaryCandidates, ...fallbackCandidates].filter(
+      (value): value is string => Boolean(value && !isCoordinateLikeName(value)),
+    );
+
+    return Array.from(new Set(mergedCandidates));
   }
 
   /**
