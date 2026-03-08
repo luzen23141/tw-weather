@@ -6,6 +6,9 @@ const config: KnipConfig = {
     'src/**/*.{ts,tsx}',
     'babel.config.js',
     'eslint.config.mjs',
+    'metro.config.js',
+    'jest.setup.ts',
+    'debug_cwa.ts',
     'commitlint.config.js',
   ],
   project: [
@@ -19,7 +22,16 @@ const config: KnipConfig = {
   ignore: ['__tests__/mocks/msw.setup.ts'],
   ignoreWorkspaces: [],
   rules: {},
-  ignoreDependencies: ['expo-updates', '@testing-library/jest-dom', 'lint-staged'],
+  ignoreDependencies: [
+    'expo-updates',
+    '@testing-library/jest-dom',
+    'lint-staged',
+    'babel-plugin-transform-define',
+    'babel-plugin-transform-import-meta',
+    'eslint-plugin-import-x',
+    'eslint-plugin-react',
+    'eslint-plugin-react-hooks',
+  ],
   ignoreBinaries: ['maestro', 'tail'],
   ignoreExportsUsedInFile: true,
 };
