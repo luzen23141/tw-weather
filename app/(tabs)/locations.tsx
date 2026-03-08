@@ -1,15 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ExpoLocation from 'expo-location';
 import { useMemo, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Platform,
-  Pressable,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, FlatList, Platform, Pressable, Text, TouchableOpacity, View } from 'react-native';
 
 import type { Location } from '@/api/types';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
@@ -235,7 +227,8 @@ export default function LocationsScreen() {
           }
 
           const isSelected =
-            selectedLocation?.latitude === item.latitude && selectedLocation?.longitude === item.longitude;
+            selectedLocation?.latitude === item.latitude &&
+            selectedLocation?.longitude === item.longitude;
           const isFirst = index === 0;
           const isLast = index === savedLocations.length - 1;
 
@@ -245,7 +238,9 @@ export default function LocationsScreen() {
               accessibilityLabel={`選擇 ${getLocationPrimaryText(item)}`}
               onPress={() => handleSelect(item)}
               className={`mx-4 flex-row items-center justify-between rounded-3xl border px-4 py-3.5 ${
-                isSelected ? 'border-glass-border-strong bg-md-primary-container' : 'border-glass-border-strong bg-md-surface-container'
+                isSelected
+                  ? 'border-glass-border-strong bg-md-primary-container'
+                  : 'border-glass-border-strong bg-md-surface-container'
               } ${!isLast ? 'border-b border-glass-border' : ''} ${isFirst ? 'rounded-t-3xl' : ''} ${
                 isLast ? 'rounded-b-3xl' : ''
               }`}
@@ -264,7 +259,9 @@ export default function LocationsScreen() {
                 </Text>
               </View>
               <View className="flex-row items-center gap-3">
-                {isSelected ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
+                {isSelected ? (
+                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                ) : null}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`刪除 ${getLocationPrimaryText(item)}`}

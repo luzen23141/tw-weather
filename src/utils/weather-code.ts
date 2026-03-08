@@ -326,7 +326,12 @@ export function getWeatherCodeInfo(weatherCode: number): WeatherCodeInfo {
 
   // 雷暴伴隨冰雹 (96)
   if (weatherCode === 96) {
-    return { emoji: '⛈️', icon: 'thunderstorm-outline', description: '雷暴伴隨冰雹', isRaining: true };
+    return {
+      emoji: '⛈️',
+      icon: 'thunderstorm-outline',
+      description: '雷暴伴隨冰雹',
+      isRaining: true,
+    };
   }
 
   // 強雷暴 (99)

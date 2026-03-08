@@ -67,7 +67,13 @@ export function PageState({
           {description ?? config.defaultDescription}
         </Text>
         {actionLabel && onActionPress ? (
-          <Button variant="tonal" size="sm" label={actionLabel} onPress={onActionPress} className="mt-2" />
+          <Button
+            variant="tonal"
+            size="sm"
+            label={actionLabel}
+            onPress={onActionPress}
+            className="mt-2"
+          />
         ) : null}
       </Card>
     </View>

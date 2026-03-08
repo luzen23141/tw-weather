@@ -46,13 +46,11 @@ export function resolveTaiwanLocation(latitude: number, longitude: number): Loca
   let nearestCity: (typeof TAIWAN_CITIES)[number] | null = null;
   let nearestCityDistance = Number.POSITIVE_INFINITY;
 
-  let nearestDistrict:
-    | {
-        cityName: string;
-        districtName: string;
-        distanceKm: number;
-      }
-    | null = null;
+  let nearestDistrict: {
+    cityName: string;
+    districtName: string;
+    distanceKm: number;
+  } | null = null;
 
   for (const city of TAIWAN_CITIES) {
     const cityDistance = calculateDistanceKm(coordinate, city);

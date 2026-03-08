@@ -48,11 +48,7 @@ export default function ForecastScreen() {
           {isLoadingCombined ? (
             <PageState type="loading" title="載入預報資料" description="正在取得逐時與每日預報。" />
           ) : errorCombined ? (
-            <PageState
-              type="error"
-              title="無法取得預報資料"
-              description={errorCombined.message}
-            />
+            <PageState type="error" title="無法取得預報資料" description={errorCombined.message} />
           ) : weatherData && effectiveLocation ? (
             <View className="gap-6">
               <PageHeaderCard

@@ -52,7 +52,8 @@ const asyncStoragePersister = isBrowser
 function AppContent() {
   const theme = useSettingsStore((state) => state.theme);
   const systemColorScheme = useColorScheme();
-  const resolvedTheme = (theme === 'system' ? systemColorScheme : theme) === 'dark' ? 'dark' : 'light';
+  const resolvedTheme =
+    (theme === 'system' ? systemColorScheme : theme) === 'dark' ? 'dark' : 'light';
   const colors = getMDColors(resolvedTheme);
 
   const themeVariables = {

@@ -1,7 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const APP_STORAGE_PREFIXES = ['weather-settings', 'weather-locations', 'weather:', 'history:', 'timestamp:history:'] as const;
+const APP_STORAGE_PREFIXES = [
+  'weather-settings',
+  'weather-locations',
+  'weather:',
+  'history:',
+  'timestamp:history:',
+] as const;
 
 function isAppStorageKey(key: string): boolean {
   return APP_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix));

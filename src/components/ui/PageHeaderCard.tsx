@@ -29,13 +29,17 @@ export function PageHeaderCard({
             <View className="flex-1">
               <Text className="text-lg font-bold text-md-on-surface">{title}</Text>
               {subtitle ? (
-                <Text className="mt-1 text-sm leading-5 text-md-on-surface-variant">{subtitle}</Text>
+                <Text className="mt-1 text-sm leading-5 text-md-on-surface-variant">
+                  {subtitle}
+                </Text>
               ) : null}
             </View>
             {rightSlot ? <View>{rightSlot}</View> : null}
           </View>
           {eyebrow ? (
-            <Text className="text-xs font-bold uppercase tracking-[1.6px] text-md-primary">{eyebrow}</Text>
+            <Text className="text-xs font-bold uppercase tracking-[1.6px] text-md-primary">
+              {eyebrow}
+            </Text>
           ) : null}
           {bottomSlot ? <View className="pt-1">{bottomSlot}</View> : null}
         </View>

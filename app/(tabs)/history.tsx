@@ -65,11 +65,7 @@ export default function HistoryScreen() {
           {isLoadingCombined ? (
             <PageState type="loading" title="載入歷史資料" description="正在取得歷史天氣紀錄。" />
           ) : errorCombined ? (
-            <PageState
-              type="error"
-              title="無法取得歷史資料"
-              description={errorCombined.message}
-            />
+            <PageState type="error" title="無法取得歷史資料" description={errorCombined.message} />
           ) : effectiveLocation && historyData && historyData.length > 0 ? (
             <View className="gap-6">
               <PageHeaderCard
@@ -77,7 +73,9 @@ export default function HistoryScreen() {
                 title={effectiveLocation.name}
                 subtitle={locationSecondaryText}
                 eyebrow="歷史天氣與日期瀏覽"
-                rightSlot={<SourceBadge source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'} />}
+                rightSlot={
+                  <SourceBadge source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'} />
+                }
                 bottomSlot={
                   <Button
                     variant="tonal"
@@ -113,7 +111,9 @@ export default function HistoryScreen() {
                         accessibilityLabel={`選擇 ${monthStr}/${dayStr}`}
                         onPress={() => setSelectedDate(item.date)}
                         className={`min-w-14 min-h-11 items-center justify-center rounded-2xl px-3 py-2.5 ${
-                          isSelected ? 'bg-md-primary' : 'border border-glass-border-strong bg-md-surface-container'
+                          isSelected
+                            ? 'bg-md-primary'
+                            : 'border border-glass-border-strong bg-md-surface-container'
                         }`}
                         style={!isSelected ? getGlassStyle(16) : undefined}
                       >
@@ -132,7 +132,9 @@ export default function HistoryScreen() {
 
               {selectedDayData ? (
                 <View className="gap-4 px-4">
-                  <Text className="text-sm font-bold text-md-on-surface">{formatDate(selectedDate)}</Text>
+                  <Text className="text-sm font-bold text-md-on-surface">
+                    {formatDate(selectedDate)}
+                  </Text>
 
                   <View className="flex-row gap-3">
                     <View
@@ -182,7 +184,11 @@ export default function HistoryScreen() {
               )}
             </View>
           ) : (
-            <PageState type="empty" title="無歷史資料" description="目前地點尚未有可用歷史天氣紀錄。" />
+            <PageState
+              type="empty"
+              title="無歷史資料"
+              description="目前地點尚未有可用歷史天氣紀錄。"
+            />
           )}
         </PageScrollView>
       </GlassBackground>

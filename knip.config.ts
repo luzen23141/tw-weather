@@ -19,11 +19,7 @@ const config: KnipConfig = {
   ignore: ['__tests__/mocks/msw.setup.ts'],
   ignoreWorkspaces: [],
   rules: {},
-  ignoreDependencies: [
-    'expo-updates',
-    '@testing-library/jest-dom',
-    'lint-staged',
-  ],
+  ignoreDependencies: ['expo-updates', '@testing-library/jest-dom', 'lint-staged'],
   ignoreBinaries: ['maestro', 'tail'],
   ignoreExportsUsedInFile: true,
 };

@@ -84,5 +84,11 @@ export function BlurDecorative({
     pointerEvents: 'none',
   };
 
-  return <View className={`${baseStyles} ${className}`.trim()} style={[sharedStyle, platformStyle, style]} {...props} />;
+  return (
+    <View
+      className={`${baseStyles} ${className}`.trim()}
+      style={[sharedStyle, platformStyle, style]}
+      {...props}
+    />
+  );
 }

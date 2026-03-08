@@ -110,7 +110,9 @@ export function Button({
       {...props}
     >
       <View className="flex-row items-center justify-center">
-        {loading ? <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} /> : null}
+        {loading ? (
+          <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
+        ) : null}
         {!loading && icon ? <View className="mr-2">{icon}</View> : null}
         <Text className={getLabelStyles()}>{loading ? `${label}...` : label}</Text>
       </View>

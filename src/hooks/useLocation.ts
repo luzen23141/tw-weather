@@ -19,7 +19,6 @@ export function getLocationFallback(
   return firstLocation ?? null;
 }
 
-
 /**
  * useLocation Hook
  *

@@ -175,7 +175,6 @@ class WeatherService {
       new Error('No history sources available'),
     );
   }
-
 }
 
 // 導出單例

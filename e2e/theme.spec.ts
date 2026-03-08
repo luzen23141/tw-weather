@@ -68,7 +68,9 @@ async function getThemeValue(page: import('@playwright/test').Page) {
 
 async function getAppliedBackgroundVar(page: import('@playwright/test').Page) {
   return await page.evaluate(() => {
-    return getComputedStyle(document.documentElement).getPropertyValue('--color-md-background').trim();
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-md-background')
+      .trim();
   });
 }
 

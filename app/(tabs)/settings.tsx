@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Switch, Text, View, Platform } from 'react-native';
 
-
 import type { LocationDisplayFormat, WeatherSource } from '@/api/types';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { GlassBackground } from '@/components/ui/GlassBackground';
@@ -82,7 +81,9 @@ const SectionHeader = ({
     <View className="h-6 w-6 items-center justify-center rounded-full bg-md-primary/12">
       <Ionicons name={icon} size={13} color="var(--color-md-primary)" />
     </View>
-    <Text className="text-[11px] font-bold tracking-[1.2px] text-md-primary uppercase">{title}</Text>
+    <Text className="text-[11px] font-bold tracking-[1.2px] text-md-primary uppercase">
+      {title}
+    </Text>
   </View>
 );
 
