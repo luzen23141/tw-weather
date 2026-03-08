@@ -1,14 +1,27 @@
 import '../global.css';
 
+declare global {
+  interface Window {
+    importMeta?: {
+      url: string;
+    };
+  }
+}
+
+// 注入 Polyfill 以防止 ESM 套件中的 import.meta 導致 Web 崩潰
+if (typeof window !== 'undefined' && typeof window.importMeta === 'undefined') {
+  window.importMeta = { url: window.location.href };
+}
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme, vars } from 'nativewind';
+import { VariableContextProvider } from 'nativewind';
 import { useEffect, useState } from 'react';
-import { LogBox, View } from 'react-native';
+import { Appearance, LogBox, Platform, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { historyCache } from '@/cache/history-cache';
@@ -38,12 +51,11 @@ const asyncStoragePersister = isBrowser
 
 function AppContent() {
   const theme = useSettingsStore((state) => state.theme);
-  const { colorScheme, setColorScheme } = useColorScheme();
-  const resolvedTheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const systemColorScheme = useColorScheme();
+  const resolvedTheme = (theme === 'system' ? systemColorScheme : theme) === 'dark' ? 'dark' : 'light';
   const colors = getMDColors(resolvedTheme);
 
-  // 將 MDColors 轉換為 NativeWind 變數
-  const themeVars = vars({
+  const themeVariables = {
     '--color-md-primary': colors.primary,
     '--color-md-on-primary': colors.onPrimary,
     '--color-md-primary-container': colors.primaryContainer,
@@ -70,11 +82,18 @@ function AppContent() {
     '--color-md-on-error-container': colors.onErrorContainer,
     '--color-glass-border': colors.glassBorder,
     '--color-glass-border-strong': colors.glassBorderStrong,
-  });
+  } as const;
 
   useEffect(() => {
-    setColorScheme(theme);
-  }, [setColorScheme, theme]);
+    if (Platform.OS === 'web') {
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
+      }
+      return;
+    }
+
+    Appearance.setColorScheme(theme === 'system' ? 'unspecified' : theme);
+  }, [resolvedTheme, theme]);
 
   useEffect(() => {
     // App 啟動時清理過期的快取
@@ -82,14 +101,16 @@ function AppContent() {
   }, []);
 
   return (
-    <View style={themeVars} className="flex-1">
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      />
-      <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
-    </View>
+    <VariableContextProvider value={themeVariables}>
+      <View className="flex-1">
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        />
+        <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
+      </View>
+    </VariableContextProvider>
   );
 }
 
@@ -97,7 +118,6 @@ export default function RootLayout() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
