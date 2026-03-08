@@ -1,11 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
-import { ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
+import { PageScrollView } from '@/components/ui/PageScrollView';
+import { PageState } from '@/components/ui/PageState';
 import { SourceBadge } from '@/components/ui/SourceBadge';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
@@ -15,7 +16,6 @@ import { useSettingsStore } from '@/store/settings.store';
 import { formatLocationSecondaryName } from '@/utils/location-display';
 
 export default function ForecastScreen() {
-  const insets = useSafeAreaInsets();
   const locationDisplayFormat = useSettingsStore((state) => state.locationDisplayFormat);
   const {
     effectiveLocation,
@@ -25,8 +25,8 @@ export default function ForecastScreen() {
 
   const { data: weatherData, isLoading, error } = useWeather(effectiveLocation);
 
-  const isLoading_combined = locationLoading || isLoading;
-  const error_combined = locationError || error;
+  const isLoadingCombined = locationLoading || isLoading;
+  const errorCombined = locationError || error;
 
   const locationSecondaryText = effectiveLocation
     ? formatLocationSecondaryName(effectiveLocation, locationDisplayFormat)
@@ -41,61 +41,39 @@ export default function ForecastScreen() {
       }
     >
       <GlassBackground>
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{
-            paddingBottom: insets.bottom + 80,
-            paddingTop: 8,
-          }}
-        >
+        <PageScrollView>
           <BlurDecorative color="accent" size="xl" position="top-right" />
           <BlurDecorative color="tertiary" size="md" position="bottom-left" />
 
-          {isLoading_combined ? (
-            <View className="flex-1 items-center justify-center py-32">
-              <LoadingSpinner size="lg" label="載入中..." />
-            </View>
-          ) : error_combined ? (
-            <View className="flex-1 items-center justify-center py-32">
-              <Text className="text-md-on-surface-variant text-sm">{error_combined.message}</Text>
-            </View>
+          {isLoadingCombined ? (
+            <PageState type="loading" title="載入預報資料" description="正在取得逐時與每日預報。" />
+          ) : errorCombined ? (
+            <PageState
+              type="error"
+              title="無法取得預報資料"
+              description={errorCombined.message}
+            />
           ) : weatherData && effectiveLocation ? (
-            <View className="gap-5">
-              <View className="mx-4 mt-1 rounded-3xl border border-glass-border bg-md-surface/80 px-5 py-5 shadow-glass">
-                <View className="flex-row items-start gap-3">
-                  <View className="mt-0.5 h-11 w-11 items-center justify-center rounded-2xl bg-md-primary/12 border border-glass-border">
-                    <Ionicons
-                      name="partly-sunny-outline"
-                      size={20}
-                      color="var(--color-md-primary)"
-                    />
-                  </View>
-                  <View className="flex-1 gap-1.5">
-                    <View className="flex-row items-start justify-between gap-3">
-                      <View className="flex-1">
-                        <Text className="text-lg font-bold text-md-on-surface">
-                          {effectiveLocation.name}
-                        </Text>
-                        {locationSecondaryText && (
-                          <Text className="mt-1 text-sm leading-5 text-md-on-surface-variant">
-                            {locationSecondaryText}
-                          </Text>
-                        )}
-                      </View>
-                      <SourceBadge source={weatherData.source} />
-                    </View>
-                    <Text className="text-xs font-bold uppercase tracking-[1.6px] text-md-primary">
-                      逐時與每日預報
-                    </Text>
-                  </View>
-                </View>
-              </View>
+            <View className="gap-6">
+              <PageHeaderCard
+                icon="partly-sunny-outline"
+                title={effectiveLocation.name}
+                subtitle={locationSecondaryText}
+                eyebrow="逐時與每日預報"
+                rightSlot={<SourceBadge source={weatherData.source} />}
+              />
 
               <HourlyForecastList forecasts={weatherData.hourlyForecast} />
               <DailyForecastList forecasts={weatherData.dailyForecast} />
             </View>
-          ) : null}
-        </ScrollView>
+          ) : (
+            <PageState
+              type="empty"
+              title="目前沒有可用預報"
+              description="請先選擇地點，或稍後再試一次。"
+            />
+          )}
+        </PageScrollView>
       </GlassBackground>
     </ErrorBoundary>
   );

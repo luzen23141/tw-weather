@@ -33,7 +33,7 @@ const StatCard = ({
 }) => (
   <View
     style={[{ width: '48%' }, getGlassStyle(16)]}
-    className="bg-md-surface-variant rounded-2xl p-4 gap-2 border border-glass-border transition-all"
+    className="rounded-3xl border border-glass-border-strong bg-md-surface-container px-4 py-4 gap-2"
   >
     <View className="flex-row items-center gap-1.5">
       <Ionicons name={icon} size={14} color={iconColor} />
@@ -58,7 +58,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
 
   return (
     <View
-      className="mx-4 bg-md-surface rounded-[28px] p-6 gap-6 shadow-glass border border-glass-border"
+      className="mx-4 rounded-[28px] border border-glass-border-strong bg-md-surface-container px-6 py-6 gap-6 shadow-glass"
       style={getGlassStyle(24)}
     >
       {/* 頂部：城市 + Badge */}
@@ -77,15 +77,17 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
       </View>
 
       {/* 溫度 + 天氣圖示 */}
-      <View className="items-center py-2 gap-1">
+      <View className="items-center py-1 gap-2">
         <Text
           className="font-bold text-md-on-surface text-center tracking-tighter"
-          style={{ fontSize: 88, lineHeight: 96 }}
+          style={{ fontSize: 76, lineHeight: 82 }}
         >
           {tempDisplay}
         </Text>
-        <Text style={{ fontSize: 56 }}>{weatherInfo.emoji}</Text>
-        <Text className="text-lg text-md-on-surface font-medium tracking-tight mt-2 opacity-90">
+        <View className="h-16 w-16 items-center justify-center rounded-full bg-md-primary/12">
+          <Ionicons name={weatherInfo.icon} size={30} color={colors.primary} />
+        </View>
+        <Text className="text-base text-md-on-surface font-semibold tracking-tight opacity-90">
           {weatherInfo.description}
         </Text>
       </View>
@@ -119,7 +121,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
       </View>
 
       {/* 最後更新時間 */}
-      <Text className="text-xs text-md-on-surface-variant font-medium text-center">
+      <Text className="text-sm text-md-on-surface-variant font-medium text-center">
         最後更新：{formatTime(data.timestamp)}
       </Text>
     </View>

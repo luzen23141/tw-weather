@@ -34,9 +34,9 @@ const DailyItem = React.memo(
 
     return (
       <View
-        className={`flex-row items-center px-4 py-4 gap-3 bg-md-surface-container-low transition-colors hover:bg-md-surface-variant/30 ${
+        className={`flex-row items-center px-4 py-4 gap-3 bg-md-surface-container transition-colors hover:bg-md-surface-variant/30 ${
           !isLast ? 'border-b border-glass-border' : ''
-        } ${isFirst ? 'rounded-t-2xl' : ''} ${isLast ? 'rounded-b-2xl' : ''}`}
+        } ${isFirst ? 'rounded-t-3xl' : ''} ${isLast ? 'rounded-b-3xl' : ''}`}
       >
         {/* 星期 */}
         <Text className="w-8 text-sm font-semibold text-md-on-surface-variant">
@@ -44,7 +44,9 @@ const DailyItem = React.memo(
         </Text>
 
         {/* 天氣圖示 */}
-        <Text style={{ fontSize: 22, width: 28, textAlign: 'center' }}>{weatherInfo.emoji}</Text>
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-md-primary/10">
+          <Ionicons name={weatherInfo.icon} size={18} color="var(--color-md-primary)" />
+        </View>
 
         {/* 溫度範圍 bar */}
         <View className="flex-1 gap-1">
@@ -116,8 +118,10 @@ export const DailyForecastList = React.memo(function DailyForecastList({
 
   if (!forecasts || forecasts.length === 0) {
     return (
-      <View className="gap-3">
-        <Text className="text-base font-bold text-md-on-background px-4">7 日預報</Text>
+      <View className="gap-3.5">
+        <Text className="text-sm font-semibold tracking-wide text-md-on-surface-variant px-4">
+          7 日預報
+        </Text>
         <View
           className="bg-md-surface-variant border border-glass-border rounded-2xl p-4 mx-4 items-center justify-center"
           style={getGlassStyle(16)}
@@ -129,10 +133,12 @@ export const DailyForecastList = React.memo(function DailyForecastList({
   }
 
   return (
-    <View className="gap-3">
-      <Text className="text-base font-bold text-md-on-background px-4">7 日預報</Text>
+    <View className="gap-3.5">
+      <Text className="text-sm font-semibold tracking-wide text-md-on-surface-variant px-4">
+        7 日預報
+      </Text>
       <View
-        className="mx-4 rounded-2xl overflow-hidden border border-glass-border shadow-glass"
+        className="mx-4 overflow-hidden rounded-3xl border border-glass-border-strong shadow-glass"
         style={getGlassStyle(20)}
       >
         <FlatList

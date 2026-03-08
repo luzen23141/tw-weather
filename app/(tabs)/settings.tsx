@@ -1,39 +1,68 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, Switch, Text, View, Platform } from 'react-native';
+
 
 import type { LocationDisplayFormat, WeatherSource } from '@/api/types';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { GlassBackground } from '@/components/ui/GlassBackground';
+import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
+import { PageScrollView } from '@/components/ui/PageScrollView';
 import { RadioButton } from '@/components/ui/RadioButton';
 import { useSettingsStore } from '@/store/settings.store';
 import { getGlassStyle } from '@/utils/glass';
 
 const glassCardClassName =
-  'mx-4 rounded-3xl overflow-hidden border border-glass-border shadow-glass';
+  'mx-4 overflow-hidden rounded-3xl border border-glass-border-strong bg-md-surface-container shadow-glass';
 const glassCardStyle = getGlassStyle(20);
+const isWeb = Platform.OS === 'web';
 
 const settingsSectionsClassName = 'gap-6';
+const webColumnsClassName = 'flex-row items-start gap-1';
+const webColumnClassName = 'flex-1 gap-6 px-2';
 
 type SectionCardProps = {
   children: React.ReactNode;
   className?: string;
 };
 
+type SettingsSectionKey =
+  | 'sources'
+  | 'display-mode'
+  | 'temperature'
+  | 'wind-speed'
+  | 'location-display'
+  | 'refresh-interval'
+  | 'theme';
+
+type SettingsSectionConfig = {
+  key: SettingsSectionKey;
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  className?: string;
+};
+
+const settingsSectionConfigs: SettingsSectionConfig[] = [
+  { key: 'sources', title: '資料來源', icon: 'cloud-outline' },
+  { key: 'display-mode', title: '顯示模式', icon: 'layers-outline' },
+  { key: 'temperature', title: '溫度單位', icon: 'thermometer-outline' },
+  { key: 'wind-speed', title: '風速單位', icon: 'speedometer-outline' },
+  { key: 'location-display', title: '地點顯示', icon: 'location-outline' },
+  { key: 'refresh-interval', title: '重抓間隔', icon: 'refresh-outline' },
+  { key: 'theme', title: '主題外觀', icon: 'contrast-outline', className: 'mb-4' },
+];
+
+const webSectionColumns: SettingsSectionKey[][] = [
+  ['sources', 'display-mode', 'temperature'],
+  ['theme', 'wind-speed', 'location-display', 'refresh-interval'],
+];
+
 const SectionIntro = () => (
-  <View className="mx-4 mt-3 mb-1 rounded-3xl border border-glass-border bg-md-surface/80 px-5 py-5 shadow-glass">
-    <View className="flex-row items-center gap-3">
-      <View className="h-11 w-11 items-center justify-center rounded-2xl bg-md-primary/12 border border-glass-border">
-        <Ionicons name="options-outline" size={20} color="var(--color-md-primary)" />
-      </View>
-      <View className="flex-1 gap-1">
-        <Text className="text-lg font-bold text-md-on-surface">偏好設定</Text>
-        <Text className="text-sm leading-5 text-md-on-surface-variant">
-          調整資料來源、顯示模式與單位，讓天氣資訊更符合你的使用習慣。
-        </Text>
-      </View>
-    </View>
-  </View>
+  <PageHeaderCard
+    icon="options-outline"
+    title="偏好設定"
+    subtitle="調整資料來源、顯示模式與單位，讓天氣資訊更符合你的使用習慣。"
+    eyebrow="主題、來源與顯示規則"
+  />
 );
 
 const SectionCard = ({ children, className = '' }: SectionCardProps) => (
@@ -53,7 +82,7 @@ const SectionHeader = ({
     <View className="h-6 w-6 items-center justify-center rounded-full bg-md-primary/12">
       <Ionicons name={icon} size={13} color="var(--color-md-primary)" />
     </View>
-    <Text className="text-xs font-bold tracking-[1.6px] text-md-primary uppercase">{title}</Text>
+    <Text className="text-[11px] font-bold tracking-[1.2px] text-md-primary uppercase">{title}</Text>
   </View>
 );
 
@@ -67,7 +96,7 @@ const OptionContent = ({
   <View className="flex-1 gap-1 pr-4">
     <Text className="text-[15px] font-semibold leading-5 text-md-on-surface">{label}</Text>
     {description && (
-      <Text className="text-xs leading-5 text-md-on-surface-variant">{description}</Text>
+      <Text className="text-[13px] leading-5 text-md-on-surface-variant">{description}</Text>
     )}
   </View>
 );
@@ -87,15 +116,20 @@ const RadioOption = ({
   onPress: () => void;
   isLast?: boolean;
 }) => (
-  <TouchableOpacity
+  <Pressable
+    accessibilityRole="radio"
+    accessibilityLabel={label}
+    accessibilityHint={description}
+    accessibilityState={{ checked: value === selectedValue }}
     onPress={onPress}
-    className={`min-h-14 px-4 py-4 flex-row items-center justify-between bg-md-surface ${
+    className={`min-h-14 flex-row items-center justify-between bg-md-surface-container px-4 py-4 active:opacity-90 ${
       !isLast ? 'border-b border-glass-border' : ''
     }`}
+    style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}
   >
     <OptionContent label={label} description={description} />
     <RadioButton selected={value === selectedValue} />
-  </TouchableOpacity>
+  </Pressable>
 );
 
 const SourceToggleComponent = ({
@@ -116,12 +150,13 @@ const SourceToggleComponent = ({
   const isEnabled = enabledSources.includes(source);
   return (
     <View
-      className={`min-h-14 px-4 py-4 bg-md-surface flex-row items-center justify-between ${
+      className={`min-h-14 bg-md-surface-container px-4 py-4 flex-row items-center justify-between ${
         !isLast ? 'border-b border-glass-border' : ''
       }`}
     >
       <OptionContent label={label} description={description} />
       <Switch
+        accessibilityLabel={`${label} 開關`}
         value={isEnabled}
         onValueChange={() => toggleSource(source)}
         trackColor={{ false: 'var(--color-md-surface-variant)', true: 'var(--color-md-primary)' }}
@@ -218,8 +253,20 @@ const themeOptions = [
   { label: '跟隨系統', value: 'system' },
 ] as const;
 
+const SettingsSection = ({
+  section,
+  children,
+}: {
+  section: SettingsSectionConfig;
+  children: React.ReactNode;
+}) => (
+  <View className={section.className ?? ''}>
+    <SectionHeader title={section.title} icon={section.icon} />
+    <SectionCard>{children}</SectionCard>
+  </View>
+);
+
 export default function SettingsScreen() {
-  const insets = useSafeAreaInsets();
   const {
     theme,
     displayMode,
@@ -237,138 +284,134 @@ export default function SettingsScreen() {
     toggleSource,
   } = useSettingsStore();
 
+  const renderSection = (key: SettingsSectionKey) => {
+    switch (key) {
+      case 'sources':
+        return sourceOptions.map((option, index) => (
+          <SourceToggleComponent
+            key={option.source}
+            label={option.label}
+            description={option.description}
+            source={option.source}
+            enabledSources={enabledSources}
+            toggleSource={toggleSource}
+            isLast={index === sourceOptions.length - 1}
+          />
+        ));
+      case 'display-mode':
+        return displayModeOptions.map((option, index) => (
+          <RadioOption
+            key={option.value}
+            label={option.label}
+            description={option.description}
+            value={option.value}
+            selectedValue={displayMode}
+            onPress={() => setDisplayMode(option.value)}
+            isLast={index === displayModeOptions.length - 1}
+          />
+        ));
+      case 'temperature':
+        return temperatureOptions.map((option, index) => (
+          <RadioOption
+            key={option.value}
+            label={option.label}
+            value={option.value}
+            selectedValue={temperatureUnit}
+            onPress={() => setTemperatureUnit(option.value)}
+            isLast={index === temperatureOptions.length - 1}
+          />
+        ));
+      case 'wind-speed':
+        return windSpeedOptions.map((option, index) => (
+          <RadioOption
+            key={option.value}
+            label={option.label}
+            value={option.value}
+            selectedValue={windSpeedUnit}
+            onPress={() => setWindSpeedUnit(option.value)}
+            isLast={index === windSpeedOptions.length - 1}
+          />
+        ));
+      case 'location-display':
+        return locationDisplayOptions.map((option, index) => (
+          <RadioOption
+            key={option.value}
+            label={option.label}
+            description={option.description}
+            value={option.value}
+            selectedValue={locationDisplayFormat}
+            onPress={() => setLocationDisplayFormat(option.value)}
+            isLast={index === locationDisplayOptions.length - 1}
+          />
+        ));
+      case 'refresh-interval':
+        return refreshIntervalOptions.map((option, index) => (
+          <RadioOption
+            key={option.value}
+            label={option.label}
+            description="天氣與歷史資料多久視為 stale 並重新抓取"
+            value={String(option.value)}
+            selectedValue={String(refreshIntervalMinutes)}
+            onPress={() => setRefreshIntervalMinutes(option.value)}
+            isLast={index === refreshIntervalOptions.length - 1}
+          />
+        ));
+      case 'theme':
+        return themeOptions.map((option, index) => (
+          <RadioOption
+            key={option.value}
+            label={option.label}
+            value={option.value}
+            selectedValue={theme}
+            onPress={() => setTheme(option.value)}
+            isLast={index === themeOptions.length - 1}
+          />
+        ));
+    }
+  };
+
   return (
     <GlassBackground>
       <BlurDecorative color="secondary" size="lg" position="bottom-right" opacity={0.1} />
       <BlurDecorative color="accent" size="lg" position="top-left" opacity={0.05} />
 
-      <ScrollView
-        className="flex-1"
+      <PageScrollView
         contentContainerStyle={{
-          paddingBottom: insets.bottom + 88,
-          paddingTop: 4,
+          paddingTop: 8,
         }}
+        bottomOffset={isWeb ? 260 : 156}
       >
         <SectionIntro />
 
-        <View className={settingsSectionsClassName}>
-          <View>
-            <SectionHeader title="資料來源" icon="cloud-outline" />
-            <SectionCard>
-              {sourceOptions.map((option, index) => (
-                <SourceToggleComponent
-                  key={option.source}
-                  label={option.label}
-                  description={option.description}
-                  source={option.source}
-                  enabledSources={enabledSources}
-                  toggleSource={toggleSource}
-                  isLast={index === sourceOptions.length - 1}
-                />
-              ))}
-            </SectionCard>
-          </View>
+        {isWeb ? (
+          <View className={webColumnsClassName}>
+            {webSectionColumns.map((sectionKeys, columnIndex) => (
+              <View key={columnIndex} className={webColumnClassName}>
+                {sectionKeys.map((key) => {
+                  const section = settingsSectionConfigs.find((item) => item.key === key);
+                  if (!section) {
+                    return null;
+                  }
 
-          <View>
-            <SectionHeader title="顯示模式" icon="layers-outline" />
-            <SectionCard>
-              {displayModeOptions.map((option, index) => (
-                <RadioOption
-                  key={option.value}
-                  label={option.label}
-                  description={option.description}
-                  value={option.value}
-                  selectedValue={displayMode}
-                  onPress={() => setDisplayMode(option.value)}
-                  isLast={index === displayModeOptions.length - 1}
-                />
-              ))}
-            </SectionCard>
+                  return (
+                    <SettingsSection key={section.key} section={section}>
+                      {renderSection(section.key)}
+                    </SettingsSection>
+                  );
+                })}
+              </View>
+            ))}
           </View>
-
-          <View>
-            <SectionHeader title="溫度單位" icon="thermometer-outline" />
-            <SectionCard>
-              {temperatureOptions.map((option, index) => (
-                <RadioOption
-                  key={option.value}
-                  label={option.label}
-                  value={option.value}
-                  selectedValue={temperatureUnit}
-                  onPress={() => setTemperatureUnit(option.value)}
-                  isLast={index === temperatureOptions.length - 1}
-                />
-              ))}
-            </SectionCard>
+        ) : (
+          <View className={settingsSectionsClassName}>
+            {settingsSectionConfigs.map((section) => (
+              <SettingsSection key={section.key} section={section}>
+                {renderSection(section.key)}
+              </SettingsSection>
+            ))}
           </View>
-
-          <View>
-            <SectionHeader title="風速單位" icon="speedometer-outline" />
-            <SectionCard>
-              {windSpeedOptions.map((option, index) => (
-                <RadioOption
-                  key={option.value}
-                  label={option.label}
-                  value={option.value}
-                  selectedValue={windSpeedUnit}
-                  onPress={() => setWindSpeedUnit(option.value)}
-                  isLast={index === windSpeedOptions.length - 1}
-                />
-              ))}
-            </SectionCard>
-          </View>
-
-          <View>
-            <SectionHeader title="地點顯示" icon="location-outline" />
-            <SectionCard>
-              {locationDisplayOptions.map((option, index) => (
-                <RadioOption
-                  key={option.value}
-                  label={option.label}
-                  description={option.description}
-                  value={option.value}
-                  selectedValue={locationDisplayFormat}
-                  onPress={() => setLocationDisplayFormat(option.value)}
-                  isLast={index === locationDisplayOptions.length - 1}
-                />
-              ))}
-            </SectionCard>
-          </View>
-
-          <View>
-            <SectionHeader title="重抓間隔" icon="refresh-outline" />
-            <SectionCard>
-              {refreshIntervalOptions.map((option, index) => (
-                <RadioOption
-                  key={option.value}
-                  label={option.label}
-                  description="天氣與歷史資料多久視為 stale 並重新抓取"
-                  value={String(option.value)}
-                  selectedValue={String(refreshIntervalMinutes)}
-                  onPress={() => setRefreshIntervalMinutes(option.value)}
-                  isLast={index === refreshIntervalOptions.length - 1}
-                />
-              ))}
-            </SectionCard>
-          </View>
-
-          <View className="mb-4">
-            <SectionHeader title="主題外觀" icon="contrast-outline" />
-            <SectionCard>
-              {themeOptions.map((option, index) => (
-                <RadioOption
-                  key={option.value}
-                  label={option.label}
-                  value={option.value}
-                  selectedValue={theme}
-                  onPress={() => setTheme(option.value)}
-                  isLast={index === themeOptions.length - 1}
-                />
-              ))}
-            </SectionCard>
-          </View>
-        </View>
-      </ScrollView>
+        )}
+      </PageScrollView>
     </GlassBackground>
   );
 }

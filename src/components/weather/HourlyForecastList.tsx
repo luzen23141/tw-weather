@@ -20,10 +20,10 @@ const HourlyItem = React.memo(
 
     return (
       <View
-        className={`rounded-2xl p-3 gap-2 items-center transition-all ${
+        className={`rounded-3xl px-3 py-3 gap-2 items-center transition-all ${
           isCurrent
             ? 'bg-md-primary-container border border-glass-border-strong shadow-sm'
-            : 'bg-md-surface-variant border border-glass-border'
+            : 'bg-md-surface-container border border-glass-border'
         }`}
         style={[{ width: 80 }, getGlassStyle(16)]}
       >
@@ -32,7 +32,17 @@ const HourlyItem = React.memo(
         >
           {formatTime(item.timestamp)}
         </Text>
-        <Text style={{ fontSize: 24 }}>{weatherInfo.emoji}</Text>
+        <View
+          className={`h-10 w-10 items-center justify-center rounded-full ${
+            isCurrent ? 'bg-md-on-primary-container/10' : 'bg-md-primary/10'
+          }`}
+        >
+          <Ionicons
+            name={weatherInfo.icon}
+            size={18}
+            color={isCurrent ? 'var(--color-md-on-primary-container)' : 'var(--color-md-primary)'}
+          />
+        </View>
         <Text
           className={`text-sm font-bold ${isCurrent ? 'text-md-on-primary-container' : 'text-md-on-surface'}`}
         >
@@ -76,8 +86,10 @@ export const HourlyForecastList = React.memo(function HourlyForecastList({
 
   if (!forecasts || forecasts.length === 0) {
     return (
-      <View className="gap-3">
-        <Text className="text-base font-bold text-md-on-background px-4">逐時預報</Text>
+      <View className="gap-3.5">
+        <Text className="text-sm font-semibold tracking-wide text-md-on-surface-variant px-4">
+          逐時預報
+        </Text>
         <View
           className="bg-md-surface-variant border border-glass-border rounded-2xl p-4 mx-4 items-center justify-center"
           style={getGlassStyle(16)}
@@ -89,8 +101,10 @@ export const HourlyForecastList = React.memo(function HourlyForecastList({
   }
 
   return (
-    <View className="gap-3">
-      <Text className="text-base font-bold text-md-on-background px-4">逐時預報</Text>
+    <View className="gap-3.5">
+      <Text className="text-sm font-semibold tracking-wide text-md-on-surface-variant px-4">
+        逐時預報
+      </Text>
       <FlatList
         data={forecasts.slice(0, 24)}
         renderItem={renderItem}

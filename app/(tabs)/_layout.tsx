@@ -13,15 +13,21 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.onSurfaceVariant,
+        sceneStyle: Platform.OS === 'web' ? { flex: 1, minHeight: 0 } : undefined,
         tabBarStyle: {
           backgroundColor: colors.glassTab,
           borderTopColor: colors.glassBorder,
           borderTopWidth: 1,
-          height: 60,
+          height: 62,
           paddingBottom: 8,
           paddingTop: 4,
-          position: 'absolute',
-          ...(Platform.OS === 'web' ? getGlassStyle(24) : {}),
+          position: Platform.OS === 'web' ? 'relative' : 'absolute',
+          ...(Platform.OS === 'web'
+            ? {
+                marginTop: 'auto',
+                ...getGlassStyle(24),
+              }
+            : {}),
         },
         tabBarLabelStyle: {
           fontSize: 10,
@@ -30,7 +36,8 @@ export default function TabsLayout() {
         headerShown: true,
         headerStyle: {
           backgroundColor: colors.glassHeader,
-          ...(Platform.OS === 'web' ? getGlassStyle(24) : {}),
+          borderBottomColor: colors.glassBorder,
+          borderBottomWidth: 1,
         },
         headerShadowVisible: false,
         headerTintColor: colors.onSurface,

@@ -5,14 +5,16 @@ import { useMDColors } from '@/hooks/useMDColors';
 
 interface RadioButtonProps {
   selected: boolean;
+  disabled?: boolean;
 }
 
-export function RadioButton({ selected }: RadioButtonProps) {
+export function RadioButton({ selected, disabled = false }: RadioButtonProps) {
   const colors = useMDColors();
 
   return (
     <View
       style={{
+        pointerEvents: 'none',
         height: 20,
         width: 20,
         borderRadius: 10,
@@ -20,6 +22,7 @@ export function RadioButton({ selected }: RadioButtonProps) {
         borderColor: selected ? colors.primary : colors.outline,
         alignItems: 'center',
         justifyContent: 'center',
+        opacity: disabled ? 0.55 : 1,
       }}
     >
       {selected ? (

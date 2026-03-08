@@ -1,6 +1,6 @@
-import { View, ViewProps, Platform } from 'react-native';
+import { Platform, StyleProp, View, ViewProps, ViewStyle } from 'react-native';
 
-export interface BlurDecorativeProps extends ViewProps {
+export interface BlurDecorativeProps extends Omit<ViewProps, 'pointerEvents'> {
   color?: 'primary' | 'secondary' | 'tertiary' | 'accent';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
@@ -14,6 +14,7 @@ export function BlurDecorative({
   position = 'top-right',
   className = '',
   opacity = 0.15,
+  style,
   ...props
 }: BlurDecorativeProps) {
   let baseStyles = 'absolute rounded-full mix-blend-multiply ';
@@ -72,16 +73,16 @@ export function BlurDecorative({
       break;
   }
 
-  return (
-    <View
-      className={`${baseStyles} ${className}`.trim()}
-      style={{
-        opacity: Platform.OS === 'web' ? opacity : opacity * 2,
-        zIndex: -1,
-        ...((props.style as object) || {}),
-      }}
-      pointerEvents="none"
-      {...props}
-    />
-  );
+  const platformStyle: StyleProp<ViewStyle> = Platform.select({
+    web: { pointerEvents: 'none' },
+    default: undefined,
+  });
+
+  const sharedStyle: ViewStyle = {
+    opacity: Platform.OS === 'web' ? opacity : opacity * 2,
+    zIndex: -1,
+    pointerEvents: 'none',
+  };
+
+  return <View className={`${baseStyles} ${className}`.trim()} style={[sharedStyle, platformStyle, style]} {...props} />;
 }
