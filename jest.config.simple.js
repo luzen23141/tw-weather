@@ -9,7 +9,7 @@ module.exports = {
   },
   setupFiles: ['<rootDir>/jest-setup.js'],
   transformIgnorePatterns: [
-    'node_modules/(?!(\\.pnpm/)?(msw|@mswjs|until-async|expo|@expo|react-native|@react-native)/)',
+    'node_modules/(?!(\\.pnpm/)?(msw|@mswjs|until-async|expo|@expo|react-native|@react-native|@react-native-async-storage)/)',
   ],
   collectCoverage: true,
   collectCoverageFrom: [

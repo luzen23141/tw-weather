@@ -6,11 +6,13 @@ module.exports = function (api) {
       [
         'babel-preset-expo',
         {
-          jsxImportSource: 'nativewind',
           ...(isTest && { targets: { node: 'current' } }),
         },
       ],
-      'nativewind/babel',
+    ],
+    plugins: [
+      'babel-plugin-transform-import-meta',
+      ['babel-plugin-transform-define', { 'import.meta.env': 'process.env', 'import.meta': {} }],
     ],
   };
 };

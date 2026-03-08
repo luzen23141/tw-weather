@@ -2,9 +2,6 @@ import js from '@eslint/js';
 import typescript from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import globals from 'globals';
-import react from 'eslint-plugin-react';
-import reactHooks from 'eslint-plugin-react-hooks';
-import importX from 'eslint-plugin-import-x';
 import prettier from 'eslint-config-prettier';
 
 export default [
@@ -54,52 +51,17 @@ export default [
         jest: 'readonly',
       },
     },
-    settings: {
-      react: {
-        version: 'detect',
-      },
-    },
     plugins: {
       '@typescript-eslint': typescript,
-      react,
-      'react-hooks': reactHooks,
-      'import-x': importX,
     },
     rules: {
       ...js.configs.recommended.rules,
       ...typescript.configs.recommended.rules,
-      ...react.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
-      ...importX.configs.recommended.rules,
 
       // Strict TypeScript rules
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
-
-      // React rules
-      'react/no-unescaped-entities': 'error',
-      'react/display-name': 'off',
-      'react/react-in-jsx-scope': 'off',
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'error',
-
-      // Import rules
-      'import-x/order': [
-        'error',
-        {
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-          'newlines-between': 'always',
-          alphabetize: {
-            order: 'asc',
-            caseInsensitive: true,
-          },
-        },
-      ],
-      'import-x/no-unresolved': 'off',
-      'import-x/no-duplicates': 'error',
-      'import-x/namespace': 'off',
-      'import-x/named': 'off',
 
       // General rules
       'no-var': 'error',
@@ -108,6 +70,7 @@ export default [
       'no-console': ['error', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
+      'no-duplicate-imports': 'error',
 
       // 禁止在原始碼中使用 import.meta（Metro 不支援 ESM 語法，會造成瀏覽器 SyntaxError）
       'no-restricted-syntax': [

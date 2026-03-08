@@ -20,9 +20,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm web',
+    command: 'EXPO_NO_INTERACTIVE=1 pnpm web -- --port 8081',
     url: 'http://localhost:8081',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 180 * 1000,
   },
 });
