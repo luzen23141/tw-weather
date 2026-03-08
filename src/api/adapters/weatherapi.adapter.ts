@@ -220,22 +220,6 @@ class WeatherApiComAdapter implements WeatherApiAdapter {
   }
 
   /**
-   * 健康檢查
-   */
-  async healthCheck(): Promise<boolean> {
-    if (!PROXY_URL && !WEATHERAPI_KEY) {
-      return false;
-    }
-
-    try {
-      const response = await fetch(buildWaUrl('current.json', { q: '25.0,121.5' }));
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
    * 解析即時天氣
    */
   private parseCurrentWeather(current: WeatherApiForecastResponse['current']): CurrentWeather {

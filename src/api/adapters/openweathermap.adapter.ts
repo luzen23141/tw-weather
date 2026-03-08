@@ -147,19 +147,6 @@ class OpenWeatherMapAdapter implements WeatherApiAdapter {
     return [];
   }
 
-  async healthCheck(): Promise<boolean> {
-    if (!PROXY_URL && !OPENWEATHERMAP_KEY) return false;
-
-    try {
-      const response = await fetch(
-        buildOwmUrl('data/2.5/weather', { lat: '25.0330', lon: '121.5654' }),
-      );
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }
-
   private parseCurrentWeather(data: OwmWeatherResponse): CurrentWeather {
     const weatherCode = data.weather[0]?.id ?? 0;
     const wmoCode = mapOpenWeatherMapCodeToWmo(weatherCode);

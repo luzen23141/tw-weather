@@ -712,24 +712,6 @@ class CwaAdapter implements WeatherApiAdapter {
   async fetchHistory?(): Promise<HistoricalDayWeather[]> {
     return [];
   }
-
-  /**
-   * 健康檢查：呼叫即時觀測端點
-   */
-  async healthCheck(): Promise<boolean> {
-    if (!PROXY_URL && !CWA_API_KEY) {
-      return false;
-    }
-
-    try {
-      const url = buildCwaUrl('O-A0001-001', { format: 'JSON', limit: '1' });
-
-      const response = await fetch(url.toString());
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }
 }
 
 export default new CwaAdapter();

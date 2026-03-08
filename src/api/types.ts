@@ -168,8 +168,6 @@ export interface WeatherApiAdapter {
   fetchWeather(location: Location): Promise<Omit<WeatherData, 'history'>>;
   /** 取得歷史天氣（若 API 支援） */
   fetchHistory?(location: Location, days: number): Promise<HistoricalDayWeather[]>;
-  /** 健康檢查 */
-  healthCheck(): Promise<boolean>;
 }
 
 // ===== 資料源選擇與聚合設定 =====

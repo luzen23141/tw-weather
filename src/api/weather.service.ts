@@ -176,37 +176,6 @@ class WeatherService {
     );
   }
 
-  /**
-   * 健康檢查：確認各資料源是否可用
-   */
-  async healthCheck(sources: WeatherSource[]): Promise<Record<WeatherSource, boolean>> {
-    const results = await Promise.allSettled(
-      sources.map(async (source) => {
-        try {
-          const ok = await this.getAdapter(source).healthCheck();
-          return { source, ok };
-        } catch {
-          return { source, ok: false };
-        }
-      }),
-    );
-
-    const healthStatus: Record<WeatherSource, boolean> = {
-      cwa: false,
-      'open-meteo': false,
-      weatherapi: false,
-      openweathermap: false,
-      aggregate: false,
-    };
-
-    results.forEach((result) => {
-      if (result.status === 'fulfilled') {
-        healthStatus[result.value.source] = result.value.ok;
-      }
-    });
-
-    return healthStatus;
-  }
 }
 
 // 導出單例

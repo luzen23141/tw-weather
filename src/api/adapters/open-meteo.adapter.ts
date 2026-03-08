@@ -180,24 +180,6 @@ class OpenMeteoAdapter implements WeatherApiAdapter {
   }
 
   /**
-   * 健康檢查
-   */
-  async healthCheck(): Promise<boolean> {
-    try {
-      const params = new URLSearchParams({
-        latitude: '25.0', // 台北
-        longitude: '121.5',
-        current: 'temperature_2m',
-      });
-
-      const response = await fetch(`${FORECAST_URL}?${params.toString()}`);
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
    * 解析即時天氣
    */
   private parseCurrentWeather(current: OpenMeteoCurrentWeather): CurrentWeather {
