@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
@@ -8,6 +7,7 @@ import type {
   WeatherSource,
   WindSpeedUnit,
 } from '@/api/types';
+import { storage } from '@/cache/storage';
 
 export interface SettingsState {
   // 主題設定
@@ -86,7 +86,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'weather-settings',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => storage),
       partialize: ({
         refreshIntervalMinutes,
         theme,

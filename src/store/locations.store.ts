@@ -1,8 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 import type { Location } from '@/api/types';
+import { storage } from '@/cache/storage';
 
 export interface LocationsState {
   // 狀態
@@ -91,7 +91,7 @@ export const useLocationsStore = create<LocationsState>()(
     }),
     {
       name: 'weather-locations',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => storage),
     },
   ),
 );

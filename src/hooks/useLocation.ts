@@ -5,6 +5,20 @@ import { Platform } from 'react-native';
 import { Location } from '@/api/types';
 import { useLocationsStore } from '@/store/locations.store';
 import { formatLocationDisplayName } from '@/utils/location-display';
+import { resolveTaiwanLocation } from '@/utils/location-resolver';
+
+export function getLocationFallback(
+  selectedLocation: Location | null,
+  savedLocations: Location[],
+): Location | null {
+  if (selectedLocation) {
+    return selectedLocation;
+  }
+
+  const firstLocation = savedLocations[0];
+  return firstLocation ?? null;
+}
+
 
 /**
  * useLocation Hook
@@ -44,10 +58,9 @@ export function useLocation(): {
 
       if (status !== 'granted') {
         // 許可權被拒絕，使用已儲存的地點
-        if (selectedLocation) {
-          setLocation(selectedLocation);
-        } else if (savedLocations.length > 0 && savedLocations[0]) {
-          setLocation(savedLocations[0]);
+        const fallbackLocation = getLocationFallback(selectedLocation, savedLocations);
+        if (fallbackLocation) {
+          setLocation(fallbackLocation);
         } else {
           throw new Error('位置許可權被拒絕，且無儲存的地點');
         }
@@ -65,29 +78,7 @@ export function useLocation(): {
       ]);
 
       const { latitude, longitude } = currentLocation.coords;
-
-      // 嘗試反向地理編碼取得地點名稱
-      const reversedLocation = await ExpoLocation.reverseGeocodeAsync({
-        latitude,
-        longitude,
-      });
-
-      const placeName = reversedLocation[0];
-      const country = placeName?.country || '';
-      const city = placeName?.city || placeName?.region || '';
-      const township = placeName?.district || placeName?.subregion || '';
-      const neighborhood = placeName?.street || placeName?.name || '';
-
-      const newLocation: Location = {
-        latitude,
-        longitude,
-        name: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-        ...(country ? { country } : {}),
-        ...(city ? { city } : {}),
-        ...(township ? { district: township, township } : {}),
-        ...(neighborhood ? { neighborhood } : {}),
-      };
-
+      const newLocation = resolveTaiwanLocation(latitude, longitude);
       newLocation.name = formatLocationDisplayName(newLocation, 'township');
 
       setLocation(newLocation);
@@ -101,15 +92,10 @@ export function useLocation(): {
       setError(error);
 
       // 回退：使用已儲存的地點
-      if (selectedLocation) {
-        setLocation(selectedLocation);
+      const fallbackLocation = getLocationFallback(selectedLocation, savedLocations);
+      if (fallbackLocation) {
+        setLocation(fallbackLocation);
         setError(null); // 清除錯誤，因為我們有回退方案
-      } else if (savedLocations.length > 0) {
-        const firstLocation = savedLocations[0];
-        if (firstLocation) {
-          setLocation(firstLocation);
-        }
-        setError(null);
       }
     } finally {
       setIsLoading(false);

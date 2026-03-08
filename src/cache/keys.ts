@@ -24,24 +24,6 @@ export const CacheKeys = {
    */
   historyIndex: (latitude: number, longitude: number): string =>
     `history:index:${latitude},${longitude}`,
-
-  /**
-   * 使用者設定
-   * Key: app:settings
-   */
-  settings: 'app:settings',
-
-  /**
-   * 收藏地點
-   * Key: app:locations
-   */
-  savedLocations: 'app:locations',
-
-  /**
-   * 查詢時間戳（用於追蹤最後更新時間）
-   * Key: timestamp:{key}
-   */
-  timestamp: (key: string): string => `timestamp:${key}`,
 } as const;
 
 /**
@@ -53,20 +35,7 @@ export const CacheExpiry = {
 
   /** 歷史天氣：永不過期（過去天氣不會改變） */
   history: Number.MAX_SAFE_INTEGER,
-
-  /** 設定：永久 */
-  settings: Number.MAX_SAFE_INTEGER,
-
-  /** 地點：永久 */
-  locations: Number.MAX_SAFE_INTEGER,
 } as const;
-
-/**
- * 計算快取過期時間
- */
-export function getExpiryTime(keyType: keyof typeof CacheExpiry): number {
-  return Date.now() + CacheExpiry[keyType];
-}
 
 /**
  * 檢查快取是否過期
