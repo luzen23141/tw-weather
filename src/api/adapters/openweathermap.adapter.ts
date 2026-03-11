@@ -13,7 +13,6 @@ import {
 import { buildProxyUrl, proxyFetch } from '@/api/proxy-fetch';
 import { getWeatherDescription, mapOpenWeatherMapCodeToWmo } from '@/utils/weather-code';
 
-
 interface OwmWeatherResponse {
   dt: number;
   main: {
@@ -78,8 +77,8 @@ class OpenWeatherMapAdapter implements WeatherApiAdapter {
       };
 
       const [weatherRes, forecastRes] = await Promise.all([
-        proxyFetch(buildProxyUrl('openweathermap','data/2.5/weather', params)),
-        proxyFetch(buildProxyUrl('openweathermap','data/2.5/forecast', params)),
+        proxyFetch(buildProxyUrl('openweathermap', 'data/2.5/weather', params)),
+        proxyFetch(buildProxyUrl('openweathermap', 'data/2.5/forecast', params)),
       ]);
 
       if (!weatherRes.ok || !forecastRes.ok) {
