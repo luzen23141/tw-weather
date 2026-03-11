@@ -1,0 +1,40 @@
+{
+  "success": "true",
+  "records": {
+    "Station": [
+      {
+        "StationName": "崇德",
+        "StationId": "C0TB40",
+        "ObsTime": {
+          "DateTime": "2026-03-11T17:00:00+08:00"
+        },
+        "GeoInfo": {
+          "Coordinates": [
+            {
+              "CoordinateName": "TWD67",
+              "StationLatitude": 24.167948,
+              "StationLongitude": 121.649251
+            },
+            {
+              "CoordinateName": "WGS84",
+              "StationLatitude": 24.166144,
+              "StationLongitude": 121.657414
+            }
+          ]
+        },
+        "WeatherElement": {
+          "Weather": "陰",
+          "Now": {
+            "Precipitation": "0.0"
+          },
+          "WindDirection": "37",
+          "WindSpeed": "2.5",
+          "AirTemperature": "19.7",
+          "RelativeHumidity": "65",
+          "AirPressure": "1016.3",
+          "VisibilityDescription": "10公里"
+        }
+      }
+    ]
+  }
+}

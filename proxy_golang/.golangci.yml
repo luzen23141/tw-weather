@@ -1,0 +1,41 @@
+version: '2'
+
+linters:
+  # errcheck / govet / staticcheck / unused / ineffassign 已預設啟用
+  enable:
+    - bodyclose
+    - gocritic
+    - misspell
+    - nilerr
+    - prealloc
+    - revive
+    - unconvert
+    - unparam
+
+settings:
+  govet:
+    enable-all: true
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - 'checkPrivateReceivers'
+
+formatters:
+  enable:
+    - gofumpt
+  settings:
+    gofumpt:
+      module-path: proxy_golang
+
+run:
+  timeout: 3m
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 5

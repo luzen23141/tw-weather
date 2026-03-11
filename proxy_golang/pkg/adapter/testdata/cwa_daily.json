@@ -1,0 +1,78 @@
+{
+  "success": "true",
+  "records": {
+    "Locations": [
+      {
+        "Location": [
+          {
+            "LocationName": "大安區",
+            "Lat": "25.026",
+            "Lon": "121.543",
+            "WeatherElement": [
+              {
+                "ElementName": "最高溫度",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-12T06:00:00+08:00",
+                    "EndTime": "2026-03-12T18:00:00+08:00",
+                    "ElementValue": [{ "Value": "22", "Measures": "攝氏度" }]
+                  },
+                  {
+                    "StartTime": "2026-03-13T06:00:00+08:00",
+                    "EndTime": "2026-03-13T18:00:00+08:00",
+                    "ElementValue": [{ "Value": "20", "Measures": "攝氏度" }]
+                  }
+                ]
+              },
+              {
+                "ElementName": "最低溫度",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-12T06:00:00+08:00",
+                    "EndTime": "2026-03-12T18:00:00+08:00",
+                    "ElementValue": [{ "Value": "15", "Measures": "攝氏度" }]
+                  },
+                  {
+                    "StartTime": "2026-03-13T06:00:00+08:00",
+                    "EndTime": "2026-03-13T18:00:00+08:00",
+                    "ElementValue": [{ "Value": "13", "Measures": "攝氏度" }]
+                  }
+                ]
+              },
+              {
+                "ElementName": "12小時降雨機率",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-12T06:00:00+08:00",
+                    "EndTime": "2026-03-12T18:00:00+08:00",
+                    "ElementValue": [{ "Value": "10", "Measures": "%" }]
+                  },
+                  {
+                    "StartTime": "2026-03-13T06:00:00+08:00",
+                    "EndTime": "2026-03-13T18:00:00+08:00",
+                    "ElementValue": [{ "Value": "30", "Measures": "%" }]
+                  }
+                ]
+              },
+              {
+                "ElementName": "天氣現象",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-12T06:00:00+08:00",
+                    "EndTime": "2026-03-12T18:00:00+08:00",
+                    "ElementValue": [{ "Value": "晴", "Measures": "" }]
+                  },
+                  {
+                    "StartTime": "2026-03-13T06:00:00+08:00",
+                    "EndTime": "2026-03-13T18:00:00+08:00",
+                    "ElementValue": [{ "Value": "多雲", "Measures": "" }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

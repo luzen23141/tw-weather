@@ -1,28 +1,22 @@
-name: Deploy to GitHub Pages
+name: Deploy to Cloudflare Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build Web
+  build-and-deploy:
+    name: Build & Deploy to Cloudflare Pages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node-pnpm
 
-      # Restore Expo cache (useful for Webpack/Metro)
       - name: Expo cache
         uses: actions/cache@v4
         with:
@@ -30,6 +24,7 @@ jobs:
           key: ${{ runner.os }}-expo-${{ hashFiles('**/package.json') }}
           restore-keys: |
             ${{ runner.os }}-expo-
+
       - name: Export Expo Web (static)
         run: |
           npx expo export --platform web &
@@ -37,37 +32,28 @@ jobs:
           for i in $(seq 1 120); do
             sleep 5
             if ls dist/_expo/static/js/web/*.js >/dev/null 2>&1; then
-              echo "✅ Bundle 已生成，終止 Metro worker"
-              kill $EXPO_PID 2>/dev/null || true
-              wait $EXPO_PID 2>/dev/null || true
+              echo "Bundle ready, stopping Metro"
+              kill "$EXPO_PID" 2>/dev/null || true
+              wait "$EXPO_PID" 2>/dev/null || true
               exit 0
             fi
-            if ! kill -0 $EXPO_PID 2>/dev/null; then
-              wait $EXPO_PID; EC=$?
-              [ $EC -ne 0 ] && echo "❌ expo export 失敗 (exit $EC)" && exit $EC
+            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
+              wait "$EXPO_PID"; EC=$?
+              [ "$EC" -ne 0 ] && echo "expo export failed (exit $EC)" && exit "$EC"
               exit 0
             fi
           done
-          echo "❌ expo export 逾時（10 分鐘）"
-          kill -9 $EXPO_PID 2>/dev/null || true
+          echo "expo export timed out (10 min)"
+          kill -9 "$EXPO_PID" 2>/dev/null || true
           exit 1
         env:
-          EXPO_PUBLIC_PROXY_URL: ${{ vars.PROXY_URL }}
+          EXPO_PUBLIC_PROXY_URL: https://weatherb.agubear.black
           BASE_URL: /
-          CI: true
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist/
+          CI: "true"
 
-  deploy:
-    name: Deploy to Pages
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=tw-weather

@@ -1,8 +1,0 @@
-{
-  "name": "tw-weather-proxy",
-  "version": "1.0.0",
-  "private": true,
-  "devDependencies": {
-    "@vercel/node": "^5.0.0"
-  }
-}

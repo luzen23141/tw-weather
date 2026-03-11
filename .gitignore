@@ -68,3 +68,10 @@ weather-*.md
 weather-*.png
 weather_*.md
 weather_*.txt
+
+# Playwright MCP screenshots
+.playwright-mcp/
+
+# Vercel local project config
+.vercel/
+proxy_golang/.vercel/

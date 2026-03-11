@@ -1,0 +1,93 @@
+{
+  "location": {
+    "name": "Taipei",
+    "lat": 25.05,
+    "lon": 121.517
+  },
+  "current": {
+    "last_updated": "2026-03-11 17:45",
+    "temp_c": 18.1,
+    "feelslike_c": 18.1,
+    "humidity": 56,
+    "wind_kph": 15.5,
+    "wind_degree": 77,
+    "pressure_mb": 1019.0,
+    "vis_km": 10.0,
+    "precip_mm": 0.0,
+    "condition": {
+      "text": "Partly Cloudy",
+      "code": 1003
+    }
+  },
+  "forecast": {
+    "forecastday": [
+      {
+        "date": "2026-03-11",
+        "day": {
+          "maxtemp_c": 19.1,
+          "mintemp_c": 13.1,
+          "daily_chance_of_rain": 0,
+          "totalprecip_mm": 0.07,
+          "maxwind_kph": 16.9,
+          "avghumidity": 72,
+          "uv": 1.6,
+          "condition": {
+            "text": "Cloudy"
+          }
+        },
+        "hour": [
+          {
+            "time": "2026-03-11 00:00",
+            "temp_c": 13.1,
+            "feelslike_c": 12.3,
+            "humidity": 81,
+            "wind_kph": 10.1,
+            "wind_degree": 82,
+            "chance_of_rain": 0,
+            "precip_mm": 0.0,
+            "condition": { "text": "Cloudy" }
+          },
+          {
+            "time": "2026-03-11 01:00",
+            "temp_c": 13.4,
+            "feelslike_c": 12.6,
+            "humidity": 80,
+            "wind_kph": 10.1,
+            "wind_degree": 83,
+            "chance_of_rain": 85,
+            "precip_mm": 0.04,
+            "condition": { "text": "Patchy rain nearby" }
+          }
+        ]
+      },
+      {
+        "date": "2026-03-12",
+        "day": {
+          "maxtemp_c": 18.0,
+          "mintemp_c": 12.5,
+          "daily_chance_of_rain": 88,
+          "totalprecip_mm": 0.74,
+          "maxwind_kph": 20.2,
+          "avghumidity": 65,
+          "uv": 1.1,
+          "condition": {
+            "text": "Patchy rain nearby"
+          }
+        },
+        "hour": [
+          {
+            "time": "2026-03-12 00:00",
+            "temp_c": 14.7,
+            "feelslike_c": 14.7,
+            "humidity": 80,
+            "wind_kph": 6.8,
+            "wind_degree": 78,
+            "chance_of_rain": 79,
+            "precip_mm": 0.01,
+            "condition": { "text": "Patchy rain nearby" }
+          }
+        ]
+      }
+    ]
+  }
+}

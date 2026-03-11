@@ -1,0 +1,108 @@
+{
+  "success": "true",
+  "records": {
+    "Locations": [
+      {
+        "Location": [
+          {
+            "LocationName": "大安區",
+            "Lat": "25.026",
+            "Lon": "121.543",
+            "WeatherElement": [
+              {
+                "ElementName": "溫度",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-11T18:00:00+08:00",
+                    "EndTime": "2026-03-11T21:00:00+08:00",
+                    "ElementValue": [{ "Value": "18", "Measures": "攝氏度" }]
+                  },
+                  {
+                    "StartTime": "2026-03-11T21:00:00+08:00",
+                    "EndTime": "2026-03-12T00:00:00+08:00",
+                    "ElementValue": [{ "Value": "16", "Measures": "攝氏度" }]
+                  }
+                ]
+              },
+              {
+                "ElementName": "相對濕度",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-11T18:00:00+08:00",
+                    "EndTime": "2026-03-11T21:00:00+08:00",
+                    "ElementValue": [{ "Value": "75", "Measures": "%" }]
+                  },
+                  {
+                    "StartTime": "2026-03-11T21:00:00+08:00",
+                    "EndTime": "2026-03-12T00:00:00+08:00",
+                    "ElementValue": [{ "Value": "80", "Measures": "%" }]
+                  }
+                ]
+              },
+              {
+                "ElementName": "風速",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-11T18:00:00+08:00",
+                    "EndTime": "2026-03-11T21:00:00+08:00",
+                    "ElementValue": [{ "Value": "3.5", "Measures": "m/s" }]
+                  },
+                  {
+                    "StartTime": "2026-03-11T21:00:00+08:00",
+                    "EndTime": "2026-03-12T00:00:00+08:00",
+                    "ElementValue": [{ "Value": "2.0", "Measures": "m/s" }]
+                  }
+                ]
+              },
+              {
+                "ElementName": "風向",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-11T18:00:00+08:00",
+                    "EndTime": "2026-03-11T21:00:00+08:00",
+                    "ElementValue": [{ "Value": "45", "Measures": "度" }]
+                  },
+                  {
+                    "StartTime": "2026-03-11T21:00:00+08:00",
+                    "EndTime": "2026-03-12T00:00:00+08:00",
+                    "ElementValue": [{ "Value": "90", "Measures": "度" }]
+                  }
+                ]
+              },
+              {
+                "ElementName": "3小時降雨機率",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-11T18:00:00+08:00",
+                    "EndTime": "2026-03-11T21:00:00+08:00",
+                    "ElementValue": [{ "Value": "20", "Measures": "%" }]
+                  },
+                  {
+                    "StartTime": "2026-03-11T21:00:00+08:00",
+                    "EndTime": "2026-03-12T00:00:00+08:00",
+                    "ElementValue": [{ "Value": "30", "Measures": "%" }]
+                  }
+                ]
+              },
+              {
+                "ElementName": "天氣現象",
+                "Time": [
+                  {
+                    "StartTime": "2026-03-11T18:00:00+08:00",
+                    "EndTime": "2026-03-11T21:00:00+08:00",
+                    "ElementValue": [{ "Value": "陰", "Measures": "" }]
+                  },
+                  {
+                    "StartTime": "2026-03-11T21:00:00+08:00",
+                    "EndTime": "2026-03-12T00:00:00+08:00",
+                    "ElementValue": [{ "Value": "多雲", "Measures": "" }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
