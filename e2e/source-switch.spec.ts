@@ -147,526 +147,204 @@ async function seedState(
   await page.reload();
 }
 
+// ProxyWeatherResponse 格式的共用 mock 資料
+const MOCK_CURRENT = {
+  temperature: 20,
+  apparentTemperature: 21,
+  humidity: 82,
+  windSpeed: 2,
+  windDirection: 180,
+  pressure: 1012,
+  weatherCode: 4,
+  description: '陰天',
+  precipitation: 0,
+};
+
+const MOCK_HOURLY = [
+  {
+    time: '2026-03-07T12:00:00+08:00',
+    temperature: 21,
+    apparentTemperature: 22,
+    humidity: 80,
+    windSpeed: 3,
+    windDirection: 150,
+    precipitation: 0,
+    precipProb: 40,
+    weatherCode: 4,
+    description: '陰天',
+  },
+];
+
+const MOCK_DAILY = [
+  {
+    date: '2026-03-07T00:00:00+08:00',
+    tempMax: 24,
+    tempMin: 18,
+    humidity: 75,
+    windSpeed: 3,
+    precipitation: 0,
+    precipProb: 30,
+    weatherCode: 4,
+    description: '陰天',
+  },
+];
+
+function makeProxyResponse(
+  provider: string,
+  type: 'current' | 'hourly' | 'daily',
+  lat: number,
+  lon: number,
+) {
+  return {
+    provider,
+    type,
+    location: { name: '台北站', lat, lon },
+    updatedAt: '2026-03-07T10:00:00+08:00',
+    ...(type === 'current' && { current: MOCK_CURRENT }),
+    ...(type === 'hourly' && { hourly: MOCK_HOURLY }),
+    ...(type === 'daily' && { daily: MOCK_DAILY }),
+  };
+}
+
 async function mockAllWeatherApis(page: import('@playwright/test').Page): Promise<void> {
-  await page.route('**/opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001**', async (route) => {
+  // Mock proxy /api/weather/* 端點（cwa, open-meteo, weatherapi）
+  await page.route('**/api/weather/current**', async (route) => {
+    const url = new URL(route.request().url());
+    const provider = url.searchParams.get('provider') ?? 'cwa';
+    const lat = parseFloat(url.searchParams.get('lat') ?? '25.033');
+    const lon = parseFloat(url.searchParams.get('lon') ?? '121.5654');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        records: {
-          Station: [
-            {
-              StationName: '台北站',
-              GeoInfo: { StationLatitude: '25.0375', StationLongitude: '121.5637' },
-              ObsTime: { DateTime: '2026-03-07T10:00:00+08:00' },
-              WeatherElement: {
-                AirTemperature: '20',
-                RelativeHumidity: '82',
-                Weather: '陰',
-                WindSpeed: '2',
-                WindDirection: '180',
-                AirPressure: '1012',
-                Now: { Precipitation: '0' },
-              },
-            },
-          ],
-        },
-      }),
+      body: JSON.stringify(makeProxyResponse(provider, 'current', lat, lon)),
     });
   });
 
-  await page.route('**/opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-089**', async (route) => {
+  await page.route('**/api/weather/hourly**', async (route) => {
+    const url = new URL(route.request().url());
+    const provider = url.searchParams.get('provider') ?? 'cwa';
+    const lat = parseFloat(url.searchParams.get('lat') ?? '25.033');
+    const lon = parseFloat(url.searchParams.get('lon') ?? '121.5654');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        records: {
-          Locations: [
-            {
-              Location: [
-                {
-                  WeatherElement: [
-                    {
-                      ElementName: '溫度',
-                      Time: [
-                        {
-                          DataTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ Temperature: '21' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '3小時降雨機率',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '相對濕度',
-                      Time: [
-                        {
-                          DataTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ RelativeHumidity: '80' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '風速',
-                      Time: [
-                        {
-                          DataTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ WindSpeed: '3' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '風向',
-                      Time: [
-                        {
-                          DataTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ WindDirection: '150' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '體感溫度',
-                      Time: [
-                        {
-                          DataTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ Temperature: '22' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '天氣現象',
-                      Time: [
-                        {
-                          DataTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ WeatherCode: '04', Weather: '陰' }],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      }),
+      body: JSON.stringify(makeProxyResponse(provider, 'hourly', lat, lon)),
     });
   });
 
-  await page.route('**/opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091**', async (route) => {
+  await page.route('**/api/weather/daily**', async (route) => {
+    const url = new URL(route.request().url());
+    const provider = url.searchParams.get('provider') ?? 'cwa';
+    const lat = parseFloat(url.searchParams.get('lat') ?? '25.033');
+    const lon = parseFloat(url.searchParams.get('lon') ?? '121.5654');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        records: {
-          Locations: [
-            {
-              Location: [
-                {
-                  WeatherElement: [
-                    {
-                      ElementName: '最高溫度',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T06:00:00+08:00',
-                          ElementValue: [{ Temperature: '24' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '最低溫度',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T06:00:00+08:00',
-                          ElementValue: [{ Temperature: '18' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '12小時降雨機率',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T06:00:00+08:00',
-                          ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '天氣現象',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T06:00:00+08:00',
-                          ElementValue: [{ WeatherCode: '04', Weather: '陰' }],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      }),
+      body: JSON.stringify(makeProxyResponse(provider, 'daily', lat, lon)),
     });
   });
 
-  await page.route('**/api.open-meteo.com/v1/forecast**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        current: {
-          temperature_2m: 23,
-          relative_humidity_2m: 75,
-          apparent_temperature: 24,
-          is_day: 1,
-          weather_code: 3,
-          wind_speed_10m: 4,
-          wind_direction_10m: 170,
-          precipitation: 0,
-          pressure_msl: 1011,
+  // Mock proxy /api/proxy 端點（openweathermap 使用舊格式）
+  await page.route('**/api/proxy**', async (route) => {
+    const url = new URL(route.request().url());
+    const service = url.searchParams.get('service') ?? '';
+    const endpoint = url.searchParams.get('endpoint') ?? '';
+
+    if (service === 'openweathermap' && endpoint.includes('weather')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          dt: 1709800000,
+          main: {
+            temp: 23,
+            feels_like: 24,
+            temp_min: 21,
+            temp_max: 25,
+            pressure: 1011,
+            humidity: 74,
+          },
+          wind: { speed: 5, deg: 160 },
+          weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
           visibility: 10000,
-        },
-        hourly: {
-          time: ['2026-03-07T12:00'],
-          temperature_2m: [23],
-          apparent_temperature: [24],
-          weather_code: [3],
-          precipitation: [0],
-          precipitation_probability: [20],
-          relative_humidity_2m: [75],
-          wind_speed_10m: [4],
-          wind_direction_10m: [170],
-        },
-        daily: {
-          time: ['2026-03-07'],
-          weather_code: [3],
-          temperature_2m_max: [27],
-          temperature_2m_min: [20],
-          precipitation_sum: [1.2],
-          precipitation_probability_max: [40],
-          sunrise: ['2026-03-07T06:12'],
-          sunset: ['2026-03-07T17:58'],
-          wind_speed_10m_max: [8],
-          uv_index_max: [5],
-        },
-      }),
-    });
-  });
-
-  await page.route('**/archive-api.open-meteo.com/v1/archive**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        daily: {
-          time: ['2026-03-06'],
-          weather_code: [3],
-          temperature_2m_max: [27],
-          temperature_2m_min: [21],
-          temperature_2m_mean: [24],
-          precipitation_sum: [1.2],
-          wind_speed_10m_max: [8],
-          relative_humidity_2m_mean: [70],
-        },
-      }),
-    });
-  });
-
-  await page.route('**/api.weatherapi.com/v1/forecast.json**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        current: {
-          last_updated_epoch: 1709800000,
-          last_updated: '2026-03-07 12:00',
-          temp_c: 24,
-          is_day: 1,
-          condition: { code: 1003, text: 'Partly cloudy', icon: '' },
-          wind_kph: 7,
-          wind_degree: 150,
-          humidity: 70,
-          feelslike_c: 25,
-          precip_mm: 0,
-          pressure_mb: 1012,
-          vis_km: 10,
-        },
-        forecast: {
-          forecastday: [
+        }),
+      });
+    } else if (service === 'openweathermap' && endpoint.includes('forecast')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          list: [
             {
-              date: '2026-03-07',
-              day: {
-                date: '2026-03-07',
-                maxtemp_c: 29,
-                mintemp_c: 22,
-                avgtemp_c: 25,
-                condition: { text: 'Cloudy', code: 1006 },
-                daily_chance_of_rain: 30,
-                totalprecip_mm: 1.4,
-                maxwind_kph: 12,
-                sunrise: '06:10 AM',
-                sunset: '05:58 PM',
-                avg_humidity: 72,
-                uv: 6,
+              dt: 1709800000,
+              main: {
+                temp: 23,
+                feels_like: 24,
+                temp_min: 22,
+                temp_max: 24,
+                pressure: 1011,
+                humidity: 74,
               },
-              astro: { sunrise: '06:10 AM', sunset: '05:58 PM' },
-              hour: [
-                {
-                  time: '2026-03-07 12:00',
-                  temp_c: 24,
-                  feelslike_c: 25,
-                  humidity: 70,
-                  condition: { text: 'Cloudy', code: 1006 },
-                  chance_of_rain: 35,
-                  precip_mm: 0.1,
-                  wind_kph: 7,
-                  wind_degree: 150,
-                },
-              ],
+              weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
+              wind: { speed: 5, deg: 160 },
+              pop: 0.3,
+              rain: { '3h': 0.2 },
+              dt_txt: '2026-03-07 12:00:00',
             },
           ],
-        },
-      }),
-    });
-  });
-
-  await page.route('**/api.weatherapi.com/v1/history.json**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        current: {
-          last_updated_epoch: 1709800000,
-          last_updated: '2026-03-07 12:00',
-          temp_c: 24,
-          is_day: 1,
-          condition: { code: 1003, text: 'Partly cloudy', icon: '' },
-          wind_kph: 7,
-          wind_degree: 150,
-          humidity: 70,
-          feelslike_c: 25,
-          precip_mm: 0,
-          pressure_mb: 1012,
-          vis_km: 10,
-        },
-        forecast: {
-          forecastday: [
-            {
-              date: '2026-03-06',
-              day: {
-                date: '2026-03-06',
-                maxtemp_c: 28,
-                mintemp_c: 21,
-                avgtemp_c: 24,
-                condition: { text: 'Cloudy', code: 1006 },
-                daily_chance_of_rain: 40,
-                totalprecip_mm: 2.2,
-                maxwind_kph: 14,
-                sunrise: '06:10 AM',
-                sunset: '05:58 PM',
-                avg_humidity: 75,
-                uv: 5,
-              },
-              astro: { sunrise: '06:10 AM', sunset: '05:58 PM' },
-              hour: [],
-            },
-          ],
-        },
-      }),
-    });
-  });
-
-  await page.route('**/api.openweathermap.org/data/2.5/weather**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        dt: 1709800000,
-        main: {
-          temp: 23,
-          feels_like: 24,
-          temp_min: 21,
-          temp_max: 25,
-          pressure: 1011,
-          humidity: 74,
-        },
-        wind: { speed: 5, deg: 160 },
-        weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
-        visibility: 10000,
-      }),
-    });
-  });
-
-  await page.route('**/api.openweathermap.org/data/2.5/forecast**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        list: [
-          {
-            dt: 1709800000,
-            main: {
-              temp: 23,
-              feels_like: 24,
-              temp_min: 22,
-              temp_max: 24,
-              pressure: 1011,
-              humidity: 74,
-            },
-            weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
-            wind: { speed: 5, deg: 160 },
-            pop: 0.3,
-            rain: { '3h': 0.2 },
-            dt_txt: '2026-03-07 12:00:00',
-          },
-          {
-            dt: 1709886400,
-            main: {
-              temp: 22,
-              feels_like: 23,
-              temp_min: 20,
-              temp_max: 23,
-              pressure: 1010,
-              humidity: 76,
-            },
-            weather: [{ id: 500, main: 'Rain', description: 'light rain' }],
-            wind: { speed: 6, deg: 180 },
-            pop: 0.5,
-            rain: { '3h': 1.1 },
-            dt_txt: '2026-03-08 12:00:00',
-          },
-        ],
-        city: { sunrise: 1709772000, sunset: 1709815200 },
-      }),
-    });
+          city: { sunrise: 1709772000, sunset: 1709815200 },
+        }),
+      });
+    } else {
+      await route.fulfill({ status: 404, body: 'Not found' });
+    }
   });
 }
 
 async function mockCwaTownshipFallbackApis(page: import('@playwright/test').Page): Promise<void> {
-  await page.route('**/opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-089**', async (route) => {
-    const url = decodeURIComponent(route.request().url());
-
-    if (url.includes('LocationName=板橋區')) {
+  // 板橋區第一候選失敗，proxy 回傳 404 或空資料
+  // 改用 lat/lon 判斷：板橋區 lat≈25.0142，lon≈121.4592
+  await page.route('**/api/weather/hourly**', async (route) => {
+    const url = new URL(route.request().url());
+    const lat = parseFloat(url.searchParams.get('lat') ?? '0');
+    // 板橋區座標的第一次請求回傳 404（模擬失敗），其他回傳正常資料
+    if (Math.abs(lat - 25.0142) < 0.01) {
+      await route.fulfill({ status: 404, body: 'Not found' });
+    } else {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          records: { Locations: [{ Location: [] }] },
-        }),
+        body: JSON.stringify(
+          makeProxyResponse('cwa', 'hourly', lat, parseFloat(url.searchParams.get('lon') ?? '0')),
+        ),
       });
-      return;
     }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        records: {
-          Locations: [
-            {
-              Location: [
-                {
-                  WeatherElement: [
-                    {
-                      ElementName: '溫度',
-                      Time: [
-                        {
-                          DataTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ Temperature: '21' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '3小時降雨機率',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T12:00:00+08:00',
-                          ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      }),
-    });
   });
 
-  await page.route('**/opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091**', async (route) => {
-    const url = decodeURIComponent(route.request().url());
-
-    if (url.includes('LocationName=板橋區')) {
+  await page.route('**/api/weather/daily**', async (route) => {
+    const url = new URL(route.request().url());
+    const lat = parseFloat(url.searchParams.get('lat') ?? '0');
+    if (Math.abs(lat - 25.0142) < 0.01) {
+      await route.fulfill({ status: 404, body: 'Not found' });
+    } else {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          records: { Locations: [{ Location: [] }] },
-        }),
+        body: JSON.stringify(
+          makeProxyResponse('cwa', 'daily', lat, parseFloat(url.searchParams.get('lon') ?? '0')),
+        ),
       });
-      return;
     }
+  });
 
+  await page.route('**/api/weather/current**', async (route) => {
+    const url = new URL(route.request().url());
+    const lat = parseFloat(url.searchParams.get('lat') ?? '0');
+    const lon = parseFloat(url.searchParams.get('lon') ?? '0');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        records: {
-          Locations: [
-            {
-              Location: [
-                {
-                  WeatherElement: [
-                    {
-                      ElementName: '最高溫度',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T06:00:00+08:00',
-                          ElementValue: [{ Temperature: '24' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '最低溫度',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T06:00:00+08:00',
-                          ElementValue: [{ Temperature: '18' }],
-                        },
-                      ],
-                    },
-                    {
-                      ElementName: '12小時降雨機率',
-                      Time: [
-                        {
-                          StartTime: '2026-03-07T06:00:00+08:00',
-                          ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      }),
+      body: JSON.stringify(makeProxyResponse('cwa', 'current', lat, lon)),
     });
   });
 }
