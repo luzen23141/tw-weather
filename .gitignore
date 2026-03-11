@@ -52,3 +52,18 @@ __pycache__/
 
 # Claude local files
 .claude/worktrees/
+.claude/plans/
+.claude/scheduled_tasks.lock
+.claude/test-results.json
+
+# Stryker mutation testing temp
+.stryker-tmp/
+
+# Test & CI reports
+reports/
+
+# Manual investigation snapshots (Playwright / debug)
+weather-*.md
+weather-*.png
+weather_*.md
+weather_*.txt
