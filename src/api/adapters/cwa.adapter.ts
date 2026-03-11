@@ -14,8 +14,6 @@ import { TAIWAN_CITIES } from '@/constants/taiwan-locations';
 import { mapCwaCodeToWmo, getWeatherDescription } from '@/utils/weather-code';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
-const CWA_API_KEY = process.env.EXPO_PUBLIC_CWA_API_KEY;
-const CWA_DIRECT_BASE = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore';
 
 /**
  * 從能見度描述文字提取數值（km）
@@ -87,15 +85,13 @@ function getWeatherCodeFromDescription(description: string | undefined): number 
 }
 
 function buildCwaUrl(endpoint: string, params: Record<string, string>): URL {
-  if (PROXY_URL) {
-    const url = new URL(`${PROXY_URL}/api/proxy`);
-    url.searchParams.set('service', 'cwa');
-    url.searchParams.set('endpoint', endpoint);
-    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-    return url;
+  if (!PROXY_URL) {
+    throw new Error('EXPO_PUBLIC_PROXY_URL not found');
   }
-  const url = new URL(`${CWA_DIRECT_BASE}/${endpoint}`);
-  if (CWA_API_KEY) url.searchParams.set('Authorization', CWA_API_KEY);
+
+  const url = new URL(`${PROXY_URL}/api/proxy`);
+  url.searchParams.set('service', 'cwa');
+  url.searchParams.set('endpoint', endpoint);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   return url;
 }
@@ -343,12 +339,12 @@ class CwaAdapter implements WeatherApiAdapter {
   readonly source: WeatherSource = 'cwa';
 
   async fetchWeather(location: Location): Promise<Omit<WeatherData, 'history'>> {
-    if (!PROXY_URL && !CWA_API_KEY) {
+    if (!PROXY_URL) {
       throw new WeatherApiError(
-        'CWA API Key 未設定',
+        'Proxy URL 未設定',
         this.source,
         undefined,
-        new Error('EXPO_PUBLIC_CWA_API_KEY not found'),
+        new Error('EXPO_PUBLIC_PROXY_URL not found'),
       );
     }
 

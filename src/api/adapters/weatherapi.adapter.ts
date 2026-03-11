@@ -13,19 +13,15 @@ import {
 import { getWeatherDescription, mapWeatherApiCodeToWmo } from '@/utils/weather-code';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
-const WEATHERAPI_KEY = process.env.EXPO_PUBLIC_WEATHERAPI_KEY;
-const WEATHERAPI_DIRECT_BASE = 'https://api.weatherapi.com/v1';
 
 function buildWaUrl(endpoint: string, params: Record<string, string>): string {
-  if (PROXY_URL) {
-    const url = new URL(`${PROXY_URL}/api/proxy`);
-    url.searchParams.set('service', 'weatherapi');
-    url.searchParams.set('endpoint', endpoint);
-    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-    return url.toString();
+  if (!PROXY_URL) {
+    throw new Error('EXPO_PUBLIC_PROXY_URL not found');
   }
-  const url = new URL(`${WEATHERAPI_DIRECT_BASE}/${endpoint}`);
-  if (WEATHERAPI_KEY) url.searchParams.set('key', WEATHERAPI_KEY);
+
+  const url = new URL(`${PROXY_URL}/api/proxy`);
+  url.searchParams.set('service', 'weatherapi');
+  url.searchParams.set('endpoint', endpoint);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   return url.toString();
 }
@@ -85,20 +81,19 @@ interface WeatherApiForecastResponse {
 /**
  * WeatherAPI.com Adapter
  *
- * - 預報端點：https://api.weatherapi.com/v1/forecast.json
- * - 歷史端點：https://api.weatherapi.com/v1/history.json
- * - 需要 API Key (EXPO_PUBLIC_WEATHERAPI_KEY)
+ * - 使用 forecast.json 與 history.json 端點
+ * - 需透過 proxy 存取（EXPO_PUBLIC_PROXY_URL）
  */
 class WeatherApiComAdapter implements WeatherApiAdapter {
   readonly source: WeatherSource = 'weatherapi';
 
   async fetchWeather(location: Location): Promise<Omit<WeatherData, 'history'>> {
-    if (!PROXY_URL && !WEATHERAPI_KEY) {
+    if (!PROXY_URL) {
       throw new WeatherApiError(
-        'WeatherAPI Key 未設定',
+        'Proxy URL 未設定',
         this.source,
         undefined,
-        new Error('EXPO_PUBLIC_WEATHERAPI_KEY not found'),
+        new Error('EXPO_PUBLIC_PROXY_URL not found'),
       );
     }
 
@@ -152,12 +147,12 @@ class WeatherApiComAdapter implements WeatherApiAdapter {
    * 免費方案限 7 天內
    */
   async fetchHistory(location: Location, days: number): Promise<HistoricalDayWeather[]> {
-    if (!PROXY_URL && !WEATHERAPI_KEY) {
+    if (!PROXY_URL) {
       throw new WeatherApiError(
-        'WeatherAPI Key 未設定',
+        'Proxy URL 未設定',
         this.source,
         undefined,
-        new Error('EXPO_PUBLIC_WEATHERAPI_KEY not found'),
+        new Error('EXPO_PUBLIC_PROXY_URL not found'),
       );
     }
 

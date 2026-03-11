@@ -13,19 +13,15 @@ import {
 import { getWeatherDescription, mapOpenWeatherMapCodeToWmo } from '@/utils/weather-code';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
-const OPENWEATHERMAP_KEY = process.env.EXPO_PUBLIC_OPENWEATHERMAP_KEY;
-const OWM_DIRECT_BASE = 'https://api.openweathermap.org';
 
 function buildOwmUrl(endpoint: string, params: Record<string, string>): string {
-  if (PROXY_URL) {
-    const url = new URL(`${PROXY_URL}/api/proxy`);
-    url.searchParams.set('service', 'openweathermap');
-    url.searchParams.set('endpoint', endpoint);
-    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-    return url.toString();
+  if (!PROXY_URL) {
+    throw new Error('EXPO_PUBLIC_PROXY_URL not found');
   }
-  const url = new URL(`${OWM_DIRECT_BASE}/${endpoint}`);
-  if (OPENWEATHERMAP_KEY) url.searchParams.set('appid', OPENWEATHERMAP_KEY);
+
+  const url = new URL(`${PROXY_URL}/api/proxy`);
+  url.searchParams.set('service', 'openweathermap');
+  url.searchParams.set('endpoint', endpoint);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   return url.toString();
 }
@@ -79,19 +75,19 @@ interface OwmForecastResponse {
  * OpenWeatherMap Adapter
  *
  * - 使用免費 2.5 API：data/2.5/weather 與 data/2.5/forecast
- * - 需要 API Key (EXPO_PUBLIC_OPENWEATHERMAP_KEY)
+ * - 需透過 proxy 存取（EXPO_PUBLIC_PROXY_URL）
  * - 不支援歷史查詢（需付費版本）
  */
 class OpenWeatherMapAdapter implements WeatherApiAdapter {
   readonly source: WeatherSource = 'openweathermap';
 
   async fetchWeather(location: Location): Promise<Omit<WeatherData, 'history'>> {
-    if (!PROXY_URL && !OPENWEATHERMAP_KEY) {
+    if (!PROXY_URL) {
       throw new WeatherApiError(
-        'OpenWeatherMap API key not configured',
+        'Proxy URL 未設定',
         this.source,
         undefined,
-        new Error('EXPO_PUBLIC_OPENWEATHERMAP_KEY not set'),
+        new Error('EXPO_PUBLIC_PROXY_URL not found'),
       );
     }
 
