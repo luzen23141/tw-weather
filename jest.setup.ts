@@ -3,10 +3,15 @@ import '@testing-library/jest-dom';
 
 // Mock React Native modules
 jest.mock('react-native', () => ({
-  ...jest.requireActual('react-native'),
   Alert: {
     alert: jest.fn(),
   },
+  Text: 'Text',
+  View: 'View',
+  StyleSheet: {
+    flatten: jest.fn((style) => style),
+  },
+  useColorScheme: jest.fn(() => 'light'),
 }));
 
 // Mock Expo modules
@@ -45,7 +50,11 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: any[]) => {
-    if (typeof args[0] === 'string' && args[0].includes('Warning: ReactDOM.render')) {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: ReactDOM.render') ||
+        args[0].includes('react-test-renderer is deprecated'))
+    ) {
       return;
     }
     originalError.call(console, ...args);
