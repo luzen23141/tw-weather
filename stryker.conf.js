@@ -1,4 +1,3 @@
-/** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 module.exports = {
   testRunner: 'jest',
   plugins: ['@stryker-mutator/jest-runner'],
