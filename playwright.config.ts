@@ -6,7 +6,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : 2,
-  reporter: 'html',
+  reporter: [
+    ['html', { open: 'never' }],
+    ['json', { outputFile: 'test-results/playwright/results.json' }],
+  ],
   use: {
     baseURL: 'http://localhost:8081',
     trace: 'on-first-retry',

@@ -21,13 +21,17 @@ test.describe('Smoke Test', () => {
     });
 
     await page.goto('/');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          return document.body.innerText.trim().length;
+        }),
+      )
+      .toBeGreaterThan(10);
 
     expect(errors, `偵測到 JS 錯誤，頁面可能空白：\n${errors.join('\n')}`).toHaveLength(0);
-
-    // 確認 app 有實際內容（非空白頁面）
-    const bodyText = await page.evaluate(() => document.body.innerText.trim());
-    expect(bodyText.length, '頁面 body 是空的，可能白屏').toBeGreaterThan(10);
   });
 
   test('設定頁應正常載入且無 JS 錯誤', async ({ page }) => {
@@ -43,7 +47,15 @@ test.describe('Smoke Test', () => {
     });
 
     await page.goto('/settings');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          return document.body.innerText.trim().length;
+        }),
+      )
+      .toBeGreaterThan(10);
 
     expect(errors, `設定頁偵測到 JS 錯誤：\n${errors.join('\n')}`).toHaveLength(0);
   });

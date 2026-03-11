@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const FIXED_HISTORY_DATE = '2026-03-06';
+
 test.describe.skip('歷史天氣', () => {
   test('應能進入歷史天氣頁面', async ({ page }) => {
     await page.goto('/');
@@ -51,11 +53,8 @@ test.describe.skip('歷史天氣', () => {
         el.scrollTop += 300;
       });
 
-    await page.waitForTimeout(500);
-
     // 驗證可以看到多個記錄
-    const records = await page.locator('text=/°C/').count();
-    expect(records).toBeGreaterThan(0);
+    await expect.poll(() => page.locator('text=/°C/').count()).toBeGreaterThan(0);
   });
 
   test('歷史天氣應含有風速和濕度資訊', async ({ page }) => {
@@ -82,11 +81,7 @@ test.describe.skip('歷史天氣', () => {
     // 如果有日期選擇器，嘗試選擇日期
     const dateSelector = page.locator('input[type="date"]');
     if (await dateSelector.isVisible()) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const dateStr = yesterday.toISOString().split('T')[0] ?? '';
-
-      await dateSelector.fill(dateStr);
+      await dateSelector.fill(FIXED_HISTORY_DATE);
       await page.waitForLoadState('networkidle');
 
       // 驗證結果更新
