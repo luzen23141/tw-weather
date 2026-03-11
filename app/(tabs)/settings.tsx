@@ -16,8 +16,8 @@ const glassCardStyle = getGlassStyle(20);
 const isWeb = Platform.OS === 'web';
 
 const settingsSectionsClassName = 'gap-6';
-const webColumnsClassName = 'flex-row items-start gap-1';
-const webColumnClassName = 'flex-1 gap-6 px-2';
+const webColumnsClassName = 'flex-row items-start gap-6';
+const webColumnClassName = 'flex-1 gap-6';
 
 type SectionCardProps = {
   children: React.ReactNode;
@@ -40,16 +40,16 @@ const settingsSectionConfigs: SettingsSectionConfig[] = [
 ];
 
 const webSectionColumns: SettingsSectionKey[][] = [
-  ['sources', 'display-mode'],
-  ['location-display'],
+  ['sources'],
+  ['display-mode', 'location-display'],
 ];
 
 const SectionIntro = () => (
   <PageHeaderCard
     icon="options-outline"
     title="偏好設定"
-    subtitle="調整資料來源、顯示模式與單位，讓天氣資訊更符合你的使用習慣。"
-    eyebrow="主題、來源與顯示規則"
+    subtitle="選擇資料來源與顯示方式，讓天氣資訊更符合你的需求。"
+    eyebrow="來源與顯示設定"
   />
 );
 
