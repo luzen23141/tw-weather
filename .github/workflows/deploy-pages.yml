@@ -49,7 +49,7 @@ jobs:
         env:
           EXPO_PUBLIC_PROXY_URL: https://weatherb.agubear.black
           BASE_URL: /
-          CI: "true"
+          CI: 'true'
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
