@@ -82,7 +82,7 @@ export function resolveTaiwanLocation(latitude: number, longitude: number): Loca
       township: nearestDistrict.districtName,
     };
 
-    location.name = formatLocationDisplayName(location, 'township');
+    location.name = formatLocationDisplayName(location);
     return location;
   }
 
@@ -95,7 +95,7 @@ export function resolveTaiwanLocation(latitude: number, longitude: number): Loca
       city: nearestCity.name,
     };
 
-    location.name = formatLocationDisplayName(location, 'township');
+    location.name = formatLocationDisplayName(location);
     return location;
   }
 

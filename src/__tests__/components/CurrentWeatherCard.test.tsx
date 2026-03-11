@@ -44,11 +44,6 @@ jest.mock('@/components/ui/SourceBadge', () => {
   };
 });
 
-jest.mock('@/store/settings.store', () => ({
-  useSettingsStore: (selector: (state: { locationDisplayFormat: string }) => string) =>
-    selector({ locationDisplayFormat: 'township' }),
-}));
-
 const mockLocation: Location = {
   latitude: 25.033,
   longitude: 121.5654,
@@ -78,7 +73,7 @@ describe('CurrentWeatherCard', () => {
     );
 
     expect(getByText('台北市信義區')).toBeTruthy();
-    expect(getByText('台北市 · 市府站')).toBeTruthy();
+    expect(getByText('市府站')).toBeTruthy();
     expect(getByText('badge:weatherapi')).toBeTruthy();
     expect(getByText('25°')).toBeTruthy();
     expect(getByText('weather-3')).toBeTruthy();

@@ -4,7 +4,6 @@ import { useLocation } from './useLocation';
 
 import type { Location } from '@/api/types';
 import { useLocationsStore } from '@/store/locations.store';
-import { useSettingsStore } from '@/store/settings.store';
 import { formatLocationDisplayName } from '@/utils/location-display';
 
 export interface UseEffectiveLocationReturn {
@@ -22,7 +21,6 @@ export interface UseEffectiveLocationReturn {
 export function useEffectiveLocation(): UseEffectiveLocationReturn {
   const { location, isLoading: locationLoading, error: locationError } = useLocation();
   const selectedLocation = useLocationsStore((state) => state.selectedLocation);
-  const locationDisplayFormat = useSettingsStore((state) => state.locationDisplayFormat);
 
   const effectiveLocation = useMemo(() => {
     const baseLocation = selectedLocation || location;
@@ -32,9 +30,9 @@ export function useEffectiveLocation(): UseEffectiveLocationReturn {
 
     return {
       ...baseLocation,
-      name: formatLocationDisplayName(baseLocation, locationDisplayFormat),
+      name: formatLocationDisplayName(baseLocation),
     };
-  }, [selectedLocation, location, locationDisplayFormat]);
+  }, [selectedLocation, location]);
 
   const displayName = useMemo(() => {
     if (effectiveLocation) {

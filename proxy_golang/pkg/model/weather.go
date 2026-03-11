@@ -6,6 +6,7 @@ import "time"
 // WeatherType 天氣資料類型
 type WeatherType string
 
+// WeatherType 天氣資料類型常數
 const (
 	WeatherTypeCurrent WeatherType = "current"
 	WeatherTypeHourly  WeatherType = "hourly"
@@ -15,8 +16,7 @@ const (
 
 // WeatherQuery 天氣查詢請求
 type WeatherQuery struct {
-	Provider   string  `form:"provider"    binding:"required" validate:"required"`
-	Type       string  `form:"type"        binding:"required" validate:"required,oneof=current hourly daily history"`
+	Provider   string  `form:"provider"   binding:"required"`
 	Lat        float64 `form:"lat"`
 	Lon        float64 `form:"lon"`
 	LocationID string  `form:"locationId"` // CWA 測站 ID 或地區代碼
@@ -83,6 +83,8 @@ type DailyWeather struct {
 	Precipitation *float64  `json:"precipitation,omitempty"`
 	PrecipProb    *int      `json:"precipProb,omitempty"`
 	UV            *float64  `json:"uv,omitempty"`
+	Sunrise       *string   `json:"sunrise,omitempty"` // ISO 8601，部分 adapter 不提供
+	Sunset        *string   `json:"sunset,omitempty"`  // ISO 8601，部分 adapter 不提供
 	WeatherCode   int       `json:"weatherCode"`
 	Description   string    `json:"description"`
 }

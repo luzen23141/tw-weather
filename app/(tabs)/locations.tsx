@@ -43,10 +43,10 @@ const formatCoordinates = (location: Location): string =>
   `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
 
 const getLocationPrimaryText = (location: Location): string =>
-  formatLocationDisplayName(location, 'township');
+  formatLocationDisplayName(location);
 
 const getLocationSecondaryText = (location: Location): string => {
-  const secondary = formatLocationSecondaryName(location, 'township');
+  const secondary = formatLocationSecondaryName(location);
   const coordinates = formatCoordinates(location);
   return secondary ? `${secondary} · ${coordinates}` : coordinates;
 };

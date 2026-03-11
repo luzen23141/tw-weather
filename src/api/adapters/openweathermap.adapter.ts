@@ -10,21 +10,9 @@ import {
   WeatherSource,
 } from '../types';
 
+import { buildProxyUrl, proxyFetch } from '@/api/proxy-fetch';
 import { getWeatherDescription, mapOpenWeatherMapCodeToWmo } from '@/utils/weather-code';
 
-const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
-
-function buildOwmUrl(endpoint: string, params: Record<string, string>): string {
-  if (!PROXY_URL) {
-    throw new Error('EXPO_PUBLIC_PROXY_URL not found');
-  }
-
-  const url = new URL(`${PROXY_URL}/api/proxy`);
-  url.searchParams.set('service', 'openweathermap');
-  url.searchParams.set('endpoint', endpoint);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  return url.toString();
-}
 
 interface OwmWeatherResponse {
   dt: number;
@@ -82,15 +70,6 @@ class OpenWeatherMapAdapter implements WeatherApiAdapter {
   readonly source: WeatherSource = 'openweathermap';
 
   async fetchWeather(location: Location): Promise<Omit<WeatherData, 'history'>> {
-    if (!PROXY_URL) {
-      throw new WeatherApiError(
-        'Proxy URL 未設定',
-        this.source,
-        undefined,
-        new Error('EXPO_PUBLIC_PROXY_URL not found'),
-      );
-    }
-
     try {
       const params = {
         lat: location.latitude.toString(),
@@ -99,8 +78,8 @@ class OpenWeatherMapAdapter implements WeatherApiAdapter {
       };
 
       const [weatherRes, forecastRes] = await Promise.all([
-        fetch(buildOwmUrl('data/2.5/weather', params)),
-        fetch(buildOwmUrl('data/2.5/forecast', params)),
+        proxyFetch(buildProxyUrl('openweathermap','data/2.5/weather', params)),
+        proxyFetch(buildProxyUrl('openweathermap','data/2.5/forecast', params)),
       ]);
 
       if (!weatherRes.ok || !forecastRes.ok) {

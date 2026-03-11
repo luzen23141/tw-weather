@@ -3,9 +3,6 @@
 /** 天氣資料來源 */
 export type WeatherSource = 'cwa' | 'open-meteo' | 'weatherapi' | 'openweathermap' | 'aggregate';
 
-/** 地點顯示格式 */
-export type LocationDisplayFormat = 'township' | 'city-township' | 'full';
-
 /** 地理位置 */
 export interface Location {
   /** 緯度 */
@@ -99,10 +96,10 @@ export interface DailyForecast {
   precipitationProbability: number;
   /** 總降水量（mm） */
   precipitationSum: number;
-  /** 日出時間（ISO 8601） */
-  sunrise: string;
-  /** 日落時間（ISO 8601） */
-  sunset: string;
+  /** 日出時間（ISO 8601，若資料源不提供則省略） */
+  sunrise?: string;
+  /** 日落時間（ISO 8601，若資料源不提供則省略） */
+  sunset?: string;
   /** 最大風速（km/h） */
   windSpeedMax: number;
   /** 紫外線指數最大值 */

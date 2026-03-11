@@ -20,23 +20,15 @@ func TestWeatherAPI_ProviderID(t *testing.T) {
 	assert.Equal(t, "weatherapi", WeatherAPI{}.ProviderID())
 }
 
-func TestWeatherAPI_SupportedTypes(t *testing.T) {
-	types := WeatherAPI{}.SupportedTypes()
-	assert.Contains(t, types, model.WeatherTypeCurrent)
-	assert.Contains(t, types, model.WeatherTypeHourly)
-	assert.Contains(t, types, model.WeatherTypeDaily)
-	assert.Contains(t, types, model.WeatherTypeHistory)
-}
-
 // --- Current ---
 
 func TestWeatherAPI_FetchCurrent_RealFixture(t *testing.T) {
 	// 使用真實 WeatherAPI forecast.json 回傳結構的 fixture
 	client := fixtureClient("weatherapi_forecast.json")
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeCurrent)
+	
 
-	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, "test-key", client)
+	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "test-key", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -77,9 +69,9 @@ func TestWeatherAPI_FetchCurrent_RequestURL(t *testing.T) {
 	}
 
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeCurrent)
+	
 
-	_, err := WeatherAPI{}.Fetch(context.Background(), &q, "my-key", client)
+	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "my-key", client)
 	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "weatherapi.com")
@@ -90,18 +82,18 @@ func TestWeatherAPI_FetchCurrent_RequestURL(t *testing.T) {
 
 func TestWeatherAPI_FetchCurrent_NetworkError(t *testing.T) {
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeCurrent)
+	
 
-	_, err := WeatherAPI{}.Fetch(context.Background(), &q, "key", errorClient(assert.AnError))
+	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "key", errorClient(assert.AnError))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "WeatherAPI fetch failed")
 }
 
 func TestWeatherAPI_FetchCurrent_BadJSON(t *testing.T) {
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeCurrent)
+	
 
-	_, err := WeatherAPI{}.Fetch(context.Background(), &q, "key", badJSONClient())
+	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "key", badJSONClient())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "WeatherAPI parse failed")
 }
@@ -111,9 +103,9 @@ func TestWeatherAPI_FetchCurrent_BadJSON(t *testing.T) {
 func TestWeatherAPI_FetchHourly_RealFixture(t *testing.T) {
 	client := fixtureClient("weatherapi_forecast.json")
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeHourly)
+	
 
-	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, "test-key", client)
+	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "test-key", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -151,10 +143,10 @@ func TestWeatherAPI_FetchHourly_DefaultDays(t *testing.T) {
 	}
 
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeHourly)
+	
 	q.Days = 0
 
-	_, err := WeatherAPI{}.Fetch(context.Background(), &q, "key", client)
+	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", client)
 	require.NoError(t, err)
 	assert.Contains(t, capturedURL, "days=7")
 }
@@ -164,9 +156,9 @@ func TestWeatherAPI_FetchHourly_DefaultDays(t *testing.T) {
 func TestWeatherAPI_FetchDaily_RealFixture(t *testing.T) {
 	client := fixtureClient("weatherapi_forecast.json")
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeDaily)
+	
 
-	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, "test-key", client)
+	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "test-key", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -201,10 +193,10 @@ func TestWeatherAPI_FetchHistory_RealFixture(t *testing.T) {
 	// 使用真實 WeatherAPI history.json 回傳結構的 fixture
 	client := fixtureClient("weatherapi_history.json")
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeHistory)
+	
 	q.Date = "2026-03-10"
 
-	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, "test-key", client)
+	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "test-key", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -233,10 +225,10 @@ func TestWeatherAPI_FetchHistory_RequestURL(t *testing.T) {
 	}
 
 	q := *weatherAPIQuery
-	q.Type = string(model.WeatherTypeHistory)
+	
 	q.Date = "2026-03-10"
 
-	_, err := WeatherAPI{}.Fetch(context.Background(), &q, "key", client)
+	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "key", client)
 	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "history.json")

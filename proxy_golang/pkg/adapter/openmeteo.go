@@ -7,10 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/rotisserie/eris"
-
 	"proxy_golang/pkg/model"
-	"proxy_golang/pkg/service"
 )
 
 const (
@@ -21,74 +18,79 @@ const (
 // OpenMeteo adapter（無需 API Key）
 type OpenMeteo struct{}
 
+// ProviderID returns the unique identifier for the Open-Meteo provider.
 func (OpenMeteo) ProviderID() string { return "openmeteo" }
 
-func (OpenMeteo) SupportedTypes() []model.WeatherType {
-	return []model.WeatherType{
-		model.WeatherTypeCurrent,
-		model.WeatherTypeHourly,
-		model.WeatherTypeDaily,
-		model.WeatherTypeHistory,
-	}
-}
+// APIKeyEnvVar returns empty string because Open-Meteo does not require a key.
+func (OpenMeteo) APIKeyEnvVar() string { return "" }
 
-func (OpenMeteo) Fetch(ctx context.Context, query *model.WeatherQuery, _ string, client service.UpstreamClient) (*model.WeatherResponse, error) {
-	if model.WeatherType(query.Type) == model.WeatherTypeHistory {
+// RequiresKey returns false because Open-Meteo is a free API with no key needed.
+func (OpenMeteo) RequiresKey() bool { return false }
+
+// Fetch retrieves weather data from Open-Meteo based on the weather type.
+func (OpenMeteo) Fetch(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, _ string, client model.UpstreamClient) (*model.WeatherResponse, error) {
+	if weatherType == model.WeatherTypeHistory {
 		return fetchOpenMeteoHistory(ctx, query, client)
 	}
-	return fetchOpenMeteoForecast(ctx, query, client)
+	return fetchOpenMeteoForecast(ctx, query, weatherType, client)
 }
 
 // --- Raw response structs ---
 
+type openMeteoCurrent struct {
+	Time                string  `json:"time"`
+	Temperature2m       float64 `json:"temperature_2m"`
+	ApparentTemperature float64 `json:"apparent_temperature"`
+	RelativeHumidity2m  int     `json:"relative_humidity_2m"`
+	WeatherCode         int     `json:"weather_code"`
+	WindSpeed10m        float64 `json:"wind_speed_10m"`
+	WindDirection10m    int     `json:"wind_direction_10m"`
+	Precipitation       float64 `json:"precipitation"`
+	PressureMsl         float64 `json:"pressure_msl"`
+	Visibility          float64 `json:"visibility"`
+	IsDay               int     `json:"is_day"`
+}
+
+type openMeteoHourly struct {
+	Time                []string  `json:"time"`
+	Temperature2m       []float64 `json:"temperature_2m"`
+	ApparentTemperature []float64 `json:"apparent_temperature"`
+	RelativeHumidity2m  []int     `json:"relative_humidity_2m"`
+	WeatherCode         []int     `json:"weather_code"`
+	Precipitation       []float64 `json:"precipitation"`
+	PrecipitationProb   []int     `json:"precipitation_probability"`
+	WindSpeed10m        []float64 `json:"wind_speed_10m"`
+	WindDirection10m    []int     `json:"wind_direction_10m"`
+}
+
+type openMeteoDaily struct {
+	Time                 []string  `json:"time"`
+	WeatherCode          []int     `json:"weather_code"`
+	Temperature2mMax     []float64 `json:"temperature_2m_max"`
+	Temperature2mMin     []float64 `json:"temperature_2m_min"`
+	PrecipitationSum     []float64 `json:"precipitation_sum"`
+	PrecipitationProbMax []int     `json:"precipitation_probability_max"`
+	WindSpeed10mMax      []float64 `json:"wind_speed_10m_max"`
+	UvIndexMax           []float64 `json:"uv_index_max"`
+}
+
 type openMeteoForecastResponse struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Current   struct {
-		Time                string  `json:"time"`
-		Temperature2m       float64 `json:"temperature_2m"`
-		ApparentTemperature float64 `json:"apparent_temperature"`
-		RelativeHumidity2m  int     `json:"relative_humidity_2m"`
-		WeatherCode         int     `json:"weather_code"`
-		WindSpeed10m        float64 `json:"wind_speed_10m"`
-		WindDirection10m    int     `json:"wind_direction_10m"`
-		Precipitation       float64 `json:"precipitation"`
-		PressureMsl         float64 `json:"pressure_msl"`
-		Visibility          float64 `json:"visibility"`
-		IsDay               int     `json:"is_day"`
-	} `json:"current"`
-	Hourly struct {
-		Time                []string  `json:"time"`
-		Temperature2m       []float64 `json:"temperature_2m"`
-		ApparentTemperature []float64 `json:"apparent_temperature"`
-		RelativeHumidity2m  []int     `json:"relative_humidity_2m"`
-		WeatherCode         []int     `json:"weather_code"`
-		Precipitation       []float64 `json:"precipitation"`
-		PrecipitationProb   []int     `json:"precipitation_probability"`
-		WindSpeed10m        []float64 `json:"wind_speed_10m"`
-		WindDirection10m    []int     `json:"wind_direction_10m"`
-	} `json:"hourly"`
-	Daily struct {
-		Time                 []string  `json:"time"`
-		WeatherCode          []int     `json:"weather_code"`
-		Temperature2mMax     []float64 `json:"temperature_2m_max"`
-		Temperature2mMin     []float64 `json:"temperature_2m_min"`
-		PrecipitationSum     []float64 `json:"precipitation_sum"`
-		PrecipitationProbMax []int     `json:"precipitation_probability_max"`
-		WindSpeed10mMax      []float64 `json:"wind_speed_10m_max"`
-		UvIndexMax           []float64 `json:"uv_index_max"`
-	} `json:"daily"`
+	Latitude  float64          `json:"latitude"`
+	Longitude float64          `json:"longitude"`
+	Current   openMeteoCurrent `json:"current"`
+	Hourly    openMeteoHourly  `json:"hourly"`
+	Daily     openMeteoDaily   `json:"daily"`
 }
 
 // --- Fetch functions ---
 
-func fetchOpenMeteoForecast(ctx context.Context, query *model.WeatherQuery, client service.UpstreamClient) (*model.WeatherResponse, error) {
+func fetchOpenMeteoForecast(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	q := url.Values{}
 	q.Set("latitude", fmt.Sprintf("%f", query.Lat))
 	q.Set("longitude", fmt.Sprintf("%f", query.Lon))
 	q.Set("timezone", "Asia/Taipei")
 
-	switch model.WeatherType(query.Type) {
+	switch weatherType {
 	case model.WeatherTypeCurrent:
 		q.Set("current", "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,pressure_msl,visibility,is_day")
 	case model.WeatherTypeHourly:
@@ -110,12 +112,12 @@ func fetchOpenMeteoForecast(ctx context.Context, query *model.WeatherQuery, clie
 	rawURL := fmt.Sprintf("%s?%s", openMeteoForecastURL, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
 	if err != nil {
-		return nil, eris.Wrap(err, "Open-Meteo fetch failed")
+		return nil, fmt.Errorf("Open-Meteo fetch failed: %w", err)
 	}
 
 	var raw openMeteoForecastResponse
 	if err := json.Unmarshal(resp.Body, &raw); err != nil {
-		return nil, eris.Wrap(err, "Open-Meteo parse failed")
+		return nil, fmt.Errorf("Open-Meteo parse failed: %w", err)
 	}
 
 	loc := model.Location{
@@ -126,12 +128,12 @@ func fetchOpenMeteoForecast(ctx context.Context, query *model.WeatherQuery, clie
 
 	result := &model.WeatherResponse{
 		Provider:  "openmeteo",
-		Type:      model.WeatherType(query.Type),
+		Type:      weatherType,
 		Location:  loc,
 		UpdatedAt: time.Now(),
 	}
 
-	switch model.WeatherType(query.Type) {
+	switch weatherType {
 	case model.WeatherTypeCurrent:
 		result.Current = parseOpenMeteoCurrent(raw)
 	case model.WeatherTypeHourly:
@@ -143,7 +145,7 @@ func fetchOpenMeteoForecast(ctx context.Context, query *model.WeatherQuery, clie
 	return result, nil
 }
 
-func fetchOpenMeteoHistory(ctx context.Context, query *model.WeatherQuery, client service.UpstreamClient) (*model.WeatherResponse, error) {
+func fetchOpenMeteoHistory(ctx context.Context, query *model.WeatherQuery, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	q := url.Values{}
 	q.Set("latitude", fmt.Sprintf("%f", query.Lat))
 	q.Set("longitude", fmt.Sprintf("%f", query.Lon))
@@ -155,12 +157,12 @@ func fetchOpenMeteoHistory(ctx context.Context, query *model.WeatherQuery, clien
 	rawURL := fmt.Sprintf("%s?%s", openMeteoArchiveURL, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
 	if err != nil {
-		return nil, eris.Wrap(err, "Open-Meteo history fetch failed")
+		return nil, fmt.Errorf("Open-Meteo history fetch failed: %w", err)
 	}
 
 	var raw openMeteoForecastResponse
 	if err := json.Unmarshal(resp.Body, &raw); err != nil {
-		return nil, eris.Wrap(err, "Open-Meteo history parse failed")
+		return nil, fmt.Errorf("Open-Meteo history parse failed: %w", err)
 	}
 
 	return &model.WeatherResponse{

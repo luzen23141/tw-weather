@@ -7,10 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/rotisserie/eris"
-
 	"proxy_golang/pkg/model"
-	"proxy_golang/pkg/service"
 )
 
 const weatherAPIBaseURL = "https://api.weatherapi.com/v1"
@@ -18,18 +15,17 @@ const weatherAPIBaseURL = "https://api.weatherapi.com/v1"
 // WeatherAPI adapter
 type WeatherAPI struct{}
 
+// ProviderID returns the unique identifier for the WeatherAPI provider.
 func (WeatherAPI) ProviderID() string { return "weatherapi" }
 
-func (WeatherAPI) SupportedTypes() []model.WeatherType {
-	return []model.WeatherType{
-		model.WeatherTypeCurrent,
-		model.WeatherTypeHourly,
-		model.WeatherTypeDaily,
-		model.WeatherTypeHistory,
-	}
-}
+// APIKeyEnvVar returns the environment variable name for the WeatherAPI key.
+func (WeatherAPI) APIKeyEnvVar() string { return "WEATHERAPI_KEY" }
 
-func (WeatherAPI) Fetch(ctx context.Context, query *model.WeatherQuery, apiKey string, client service.UpstreamClient) (*model.WeatherResponse, error) {
+// RequiresKey returns true because WeatherAPI requires an API key.
+func (WeatherAPI) RequiresKey() bool { return true }
+
+// Fetch retrieves weather data from WeatherAPI based on the weather type.
+func (WeatherAPI) Fetch(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	days := query.Days
 	if days <= 0 {
 		days = 7
@@ -43,7 +39,7 @@ func (WeatherAPI) Fetch(ctx context.Context, query *model.WeatherQuery, apiKey s
 	q.Set("alerts", "no")
 
 	endpoint := "forecast.json"
-	if model.WeatherType(query.Type) == model.WeatherTypeHistory {
+	if weatherType == model.WeatherTypeHistory {
 		endpoint = "history.json"
 		q.Set("dt", query.Date)
 	}
@@ -51,12 +47,12 @@ func (WeatherAPI) Fetch(ctx context.Context, query *model.WeatherQuery, apiKey s
 	rawURL := fmt.Sprintf("%s/%s?%s", weatherAPIBaseURL, endpoint, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
 	if err != nil {
-		return nil, eris.Wrap(err, "WeatherAPI fetch failed")
+		return nil, fmt.Errorf("WeatherAPI fetch failed: %w", err)
 	}
 
 	var raw weatherAPIForecastResponse
 	if err := json.Unmarshal(resp.Body, &raw); err != nil {
-		return nil, eris.Wrap(err, "WeatherAPI parse failed")
+		return nil, fmt.Errorf("WeatherAPI parse failed: %w", err)
 	}
 
 	loc := model.Location{
@@ -67,12 +63,12 @@ func (WeatherAPI) Fetch(ctx context.Context, query *model.WeatherQuery, apiKey s
 
 	result := &model.WeatherResponse{
 		Provider:  "weatherapi",
-		Type:      model.WeatherType(query.Type),
+		Type:      weatherType,
 		Location:  loc,
 		UpdatedAt: time.Now(),
 	}
 
-	switch model.WeatherType(query.Type) {
+	switch weatherType {
 	case model.WeatherTypeCurrent:
 		result.Current = parseWeatherAPICurrent(raw)
 	case model.WeatherTypeHourly:
@@ -86,57 +82,67 @@ func (WeatherAPI) Fetch(ctx context.Context, query *model.WeatherQuery, apiKey s
 
 // --- Raw response structs ---
 
+type weatherAPIConditionFull struct {
+	Text string `json:"text"`
+	Code int    `json:"code"`
+}
+
+type weatherAPILocation struct {
+	Name string  `json:"name"`
+	Lat  float64 `json:"lat"`
+	Lon  float64 `json:"lon"`
+}
+
+type weatherAPICurrent struct {
+	LastUpdated string                  `json:"last_updated"`
+	TempC       float64                 `json:"temp_c"`
+	FeelslikeC  float64                 `json:"feelslike_c"`
+	Humidity    int                     `json:"humidity"`
+	WindKph     float64                 `json:"wind_kph"`
+	WindDegree  int                     `json:"wind_degree"`
+	PressureMb  float64                 `json:"pressure_mb"`
+	VisKm       float64                 `json:"vis_km"`
+	PrecipMm    float64                 `json:"precip_mm"`
+	Condition   weatherAPIConditionFull `json:"condition"`
+}
+
+type weatherAPIDayInfo struct {
+	MaxtempC          float64                 `json:"maxtemp_c"`
+	MintempC          float64                 `json:"mintemp_c"`
+	DailyChanceOfRain int                     `json:"daily_chance_of_rain"`
+	TotalprecipMm     float64                 `json:"totalprecip_mm"`
+	MaxwindKph        float64                 `json:"maxwind_kph"`
+	AvghumidityInt    int                     `json:"avghumidity"`
+	Uv                float64                 `json:"uv"`
+	Condition         weatherAPIConditionFull `json:"condition"`
+}
+
+type weatherAPIHourInfo struct {
+	Time         string                  `json:"time"`
+	TempC        float64                 `json:"temp_c"`
+	FeelslikeC   float64                 `json:"feelslike_c"`
+	Humidity     int                     `json:"humidity"`
+	WindKph      float64                 `json:"wind_kph"`
+	WindDegree   int                     `json:"wind_degree"`
+	ChanceOfRain int                     `json:"chance_of_rain"`
+	PrecipMm     float64                 `json:"precip_mm"`
+	Condition    weatherAPIConditionFull `json:"condition"`
+}
+
+type weatherAPIForecastDay struct {
+	Date string               `json:"date"`
+	Day  weatherAPIDayInfo    `json:"day"`
+	Hour []weatherAPIHourInfo `json:"hour"`
+}
+
+type weatherAPIForecast struct {
+	Forecastday []weatherAPIForecastDay `json:"forecastday"`
+}
+
 type weatherAPIForecastResponse struct {
-	Location struct {
-		Name string  `json:"name"`
-		Lat  float64 `json:"lat"`
-		Lon  float64 `json:"lon"`
-	} `json:"location"`
-	Current struct {
-		LastUpdated string  `json:"last_updated"`
-		TempC       float64 `json:"temp_c"`
-		FeelslikeC  float64 `json:"feelslike_c"`
-		Humidity    int     `json:"humidity"`
-		WindKph     float64 `json:"wind_kph"`
-		WindDegree  int     `json:"wind_degree"`
-		PressureMb  float64 `json:"pressure_mb"`
-		VisKm       float64 `json:"vis_km"`
-		PrecipMm    float64 `json:"precip_mm"`
-		Condition   struct {
-			Text string `json:"text"`
-			Code int    `json:"code"`
-		} `json:"condition"`
-	} `json:"current"`
-	Forecast struct {
-		Forecastday []struct {
-			Date string `json:"date"`
-			Day  struct {
-				MaxtempC          float64 `json:"maxtemp_c"`
-				MintempC          float64 `json:"mintemp_c"`
-				DailyChanceOfRain int     `json:"daily_chance_of_rain"`
-				TotalprecipMm     float64 `json:"totalprecip_mm"`
-				MaxwindKph        float64 `json:"maxwind_kph"`
-				AvghumidityInt    int     `json:"avghumidity"`
-				Uv                float64 `json:"uv"`
-				Condition         struct {
-					Text string `json:"text"`
-				} `json:"condition"`
-			} `json:"day"`
-			Hour []struct {
-				Time        string  `json:"time"`
-				TempC       float64 `json:"temp_c"`
-				FeelslikeC  float64 `json:"feelslike_c"`
-				Humidity    int     `json:"humidity"`
-				WindKph     float64 `json:"wind_kph"`
-				WindDegree  int     `json:"wind_degree"`
-				ChanceOfRain int    `json:"chance_of_rain"`
-				PrecipMm    float64 `json:"precip_mm"`
-				Condition   struct {
-					Text string `json:"text"`
-				} `json:"condition"`
-			} `json:"hour"`
-		} `json:"forecastday"`
-	} `json:"forecast"`
+	Location weatherAPILocation `json:"location"`
+	Current  weatherAPICurrent  `json:"current"`
+	Forecast weatherAPIForecast `json:"forecast"`
 }
 
 func parseWeatherAPICurrent(raw weatherAPIForecastResponse) *model.CurrentWeather {
@@ -176,7 +182,7 @@ func parseWeatherAPIHourly(raw weatherAPIForecastResponse) []model.HourlyWeather
 				WindDirection:       &h.WindDegree,
 				Precipitation:       &precip,
 				PrecipProb:          &precipProb,
-				WeatherCode:         weatherAPIConditionToWMO(0),
+				WeatherCode:         weatherAPIConditionToWMO(h.Condition.Code),
 				Description:         h.Condition.Text,
 			})
 		}
@@ -206,7 +212,7 @@ func parseWeatherAPIDaily(raw weatherAPIForecastResponse) []model.DailyWeather {
 			Precipitation: &precip,
 			PrecipProb:    &precipProb,
 			UV:            &uv,
-			WeatherCode:   weatherAPIConditionToWMO(0),
+			WeatherCode:   weatherAPIConditionToWMO(d.Condition.Code),
 			Description:   d.Condition.Text,
 		})
 	}

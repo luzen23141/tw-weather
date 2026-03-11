@@ -1,8 +1,5 @@
 import {
-  CurrentWeather,
-  DailyForecast,
   HistoricalDayWeather,
-  HourlyForecast,
   Location,
   WeatherApiAdapter,
   WeatherApiError,
@@ -10,120 +7,59 @@ import {
   WeatherSource,
 } from '../types';
 
-import { getWeatherDescription } from '@/utils/weather-code';
-
-const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
-const ARCHIVE_URL = 'https://archive-api.open-meteo.com/v1/archive';
-
-interface OpenMeteoCurrentWeather {
-  temperature_2m?: number;
-  temperature?: number;
-  relative_humidity_2m?: number;
-  relative_humidity?: number;
-  apparent_temperature: number;
-  is_day: number;
-  weather_code?: number;
-  weathercode?: number;
-  wind_speed_10m: number;
-  wind_direction_10m: number;
-  precipitation: number;
-  pressure_msl?: number;
-  visibility?: number;
-}
-
-interface OpenMeteoForecastResponse {
-  current: OpenMeteoCurrentWeather;
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    apparent_temperature: number[];
-    weather_code: number[];
-    precipitation: number[];
-    precipitation_probability: number[];
-    relative_humidity_2m: number[];
-    wind_speed_10m: number[];
-    wind_direction_10m: number[];
-  };
-  daily: {
-    time: string[];
-    weather_code: number[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    precipitation_sum: number[];
-    precipitation_probability_max: number[];
-    sunrise: string[];
-    sunset: string[];
-    wind_speed_10m_max: number[];
-    uv_index_max?: number[];
-  };
-}
-
-interface OpenMeteoArchiveResponse {
-  daily: {
-    time: string[];
-    weather_code: number[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    temperature_2m_mean: number[];
-    precipitation_sum: number[];
-    wind_speed_10m_max: number[];
-    relative_humidity_2m_mean: number[];
-  };
-}
+import { buildWeatherUrl, proxyFetch } from '@/api/proxy-fetch';
+import {
+  ProxyWeatherResponse,
+  toCurrentWeather,
+  toDailyForecast,
+  toHistoricalWeather,
+  toHourlyForecast,
+  toLocation,
+} from '@/api/proxy-weather-response';
 
 /**
  * Open-Meteo API Adapter
  *
- * 免費開放天氣 API，無需認証
- * - 預報端點：https://api.open-meteo.com/v1/forecast
- * - 歷史端點：https://archive-api.open-meteo.com/v1/archive
+ * 透過 proxy_golang /api/weather/* 取得資料（後端 provider ID: "openmeteo"）：
+ * - /api/weather/current  → 即時天氣
+ * - /api/weather/hourly   → 逐時預報
+ * - /api/weather/daily    → 每日預報
+ * - /api/weather/history  → 歷史天氣（指定日期）
+ *
+ * Open-Meteo 無需 API Key，由後端直接轉發。
  */
 class OpenMeteoAdapter implements WeatherApiAdapter {
   readonly source: WeatherSource = 'open-meteo';
 
+  /** 後端 provider ID（不同於前端 source） */
+  private readonly providerID = 'openmeteo';
+
   async fetchWeather(location: Location): Promise<Omit<WeatherData, 'history'>> {
     try {
-      const params = new URLSearchParams({
-        latitude: String(location.latitude),
-        longitude: String(location.longitude),
-        current:
-          'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,pressure_msl,visibility',
-        hourly:
-          'temperature_2m,apparent_temperature,precipitation,weather_code,precipitation_probability,relative_humidity_2m,wind_speed_10m,wind_direction_10m',
-        daily:
-          'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,sunrise,sunset,wind_speed_10m_max,uv_index_max',
-        timezone: 'Asia/Taipei',
-        forecast_days: '7',
-      });
+      const params = this.buildLocationParams(location);
 
-      const response = await fetch(`${FORECAST_URL}?${params.toString()}`);
-      if (!response.ok) {
-        throw new WeatherApiError(
-          `Open-Meteo 預報 API 失敗: ${response.statusText}`,
-          this.source,
-          response.status,
-        );
-      }
-
-      const data: OpenMeteoForecastResponse = await response.json();
-
-      const fetchedAt = new Date().toISOString();
-      const current = this.parseCurrentWeather(data.current);
-      const hourlyForecast = this.parseHourlyForecast(data.hourly);
-      const dailyForecast = this.parseDailyForecast(data.daily);
+      const [currentResp, hourlyResp, dailyResp] = await Promise.all([
+        this.fetchEndpoint('current', params),
+        this.fetchEndpoint('hourly', params),
+        this.fetchEndpoint('daily', params),
+      ]);
 
       return {
-        location,
+        location: toLocation(currentResp.location),
         source: this.source,
-        fetchedAt,
-        current,
-        hourlyForecast,
-        dailyForecast,
+        fetchedAt: new Date().toISOString(),
+        current: toCurrentWeather(
+          currentResp.current ??
+            (() => {
+              throw new WeatherApiError('Open-Meteo current 回應缺少資料', this.source);
+            })(),
+          currentResp.updatedAt,
+        ),
+        hourlyForecast: toHourlyForecast(hourlyResp.hourly ?? []),
+        dailyForecast: toDailyForecast(dailyResp.daily ?? []),
       };
     } catch (error) {
-      if (error instanceof WeatherApiError) {
-        throw error;
-      }
+      if (error instanceof WeatherApiError) throw error;
       throw new WeatherApiError(
         `Open-Meteo 預報取得失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
         this.source,
@@ -133,29 +69,23 @@ class OpenMeteoAdapter implements WeatherApiAdapter {
     }
   }
 
-  /**
-   * 取得歷史天氣資料（過去 N 天）
-   */
   async fetchHistory(location: Location, days: number): Promise<HistoricalDayWeather[]> {
     try {
-      // 計算日期範圍
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - days);
 
       const formatDate = (date: Date): string => date.toISOString().split('T')[0] ?? '';
 
-      const params = new URLSearchParams({
-        latitude: String(location.latitude),
-        longitude: String(location.longitude),
-        start_date: formatDate(startDate),
-        end_date: formatDate(endDate),
-        daily:
-          'weather_code,temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,wind_speed_10m_max,relative_humidity_2m_mean',
-        timezone: 'Asia/Taipei',
-      });
+      // Open-Meteo 歷史 API 以 start_date ~ end_date 一次取得
+      // 後端以第一天作為 date 參數；前端傳 startDate
+      const params = {
+        ...this.buildLocationParams(location),
+        date: formatDate(startDate),
+        days: String(days),
+      };
 
-      const response = await fetch(`${ARCHIVE_URL}?${params.toString()}`);
+      const response = await proxyFetch(buildWeatherUrl('history', params));
       if (!response.ok) {
         throw new WeatherApiError(
           `Open-Meteo 歷史資料 API 失敗: ${response.statusText}`,
@@ -164,12 +94,10 @@ class OpenMeteoAdapter implements WeatherApiAdapter {
         );
       }
 
-      const data: OpenMeteoArchiveResponse = await response.json();
-      return this.parseHistoryData(data.daily);
+      const resp = (await response.json()) as ProxyWeatherResponse;
+      return toHistoricalWeather(resp.daily ?? [], this.source);
     } catch (error) {
-      if (error instanceof WeatherApiError) {
-        throw error;
-      }
+      if (error instanceof WeatherApiError) throw error;
       throw new WeatherApiError(
         `Open-Meteo 歷史資料取得失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
         this.source,
@@ -179,111 +107,28 @@ class OpenMeteoAdapter implements WeatherApiAdapter {
     }
   }
 
-  /**
-   * 解析即時天氣
-   */
-  private parseCurrentWeather(current: OpenMeteoCurrentWeather): CurrentWeather {
-    const temperature = current.temperature_2m ?? current.temperature ?? 20;
-    const humidity = current.relative_humidity_2m ?? current.relative_humidity ?? 50;
-    const weatherCode = current.weather_code ?? current.weathercode ?? 0;
-
+  private buildLocationParams(location: Location): Record<string, string> {
     return {
-      timestamp: new Date().toISOString(),
-      temperature,
-      apparentTemperature: current.apparent_temperature,
-      humidity,
-      description: getWeatherDescription(weatherCode),
-      weatherCode,
-      windSpeed: current.wind_speed_10m,
-      windDirection: current.wind_direction_10m,
-      precipitation: current.precipitation,
-      pressure: current.pressure_msl || 1013,
-      visibility: current.visibility || 10,
+      provider: this.providerID,
+      lat: String(location.latitude),
+      lon: String(location.longitude),
     };
   }
 
-  /**
-   * 解析逐時預報
-   */
-  private parseHourlyForecast(hourly: OpenMeteoForecastResponse['hourly']): HourlyForecast[] {
-    const forecasts: HourlyForecast[] = [];
-
-    // 取前 72 小時（3 天）
-    const limit = Math.min(72, hourly.time.length);
-
-    for (let i = 0; i < limit; i++) {
-      const timestamp = hourly.time[i];
-      // 跳過無效時間戳
-      if (!timestamp) continue;
-
-      forecasts.push({
-        timestamp,
-        temperature: hourly.temperature_2m[i] ?? 20,
-        apparentTemperature: hourly.apparent_temperature[i] ?? 20,
-        weatherCode: hourly.weather_code[i] ?? 0,
-        description: getWeatherDescription(hourly.weather_code[i] ?? 0),
-        precipitationProbability: hourly.precipitation_probability[i] ?? 0,
-        precipitation: hourly.precipitation[i] ?? 0,
-        humidity: hourly.relative_humidity_2m[i] ?? 50,
-        windSpeed: hourly.wind_speed_10m[i] ?? 0,
-        windDirection: hourly.wind_direction_10m[i] ?? 0,
-      });
+  private async fetchEndpoint(
+    endpoint: 'current' | 'hourly' | 'daily',
+    params: Record<string, string>,
+  ): Promise<ProxyWeatherResponse> {
+    const url = buildWeatherUrl(endpoint, params);
+    const response = await proxyFetch(url);
+    if (!response.ok) {
+      throw new WeatherApiError(
+        `Open-Meteo ${endpoint} API 失敗: ${response.statusText}`,
+        this.source,
+        response.status,
+      );
     }
-
-    return forecasts;
-  }
-
-  /**
-   * 解析每日預報
-   */
-  private parseDailyForecast(daily: OpenMeteoForecastResponse['daily']): DailyForecast[] {
-    const forecasts: DailyForecast[] = [];
-
-    for (let i = 0; i < daily.time.length; i++) {
-      const date = daily.time[i];
-      // 跳過無效日期
-      if (!date) continue;
-
-      forecasts.push({
-        date,
-        temperatureMax: daily.temperature_2m_max[i] ?? 25,
-        temperatureMin: daily.temperature_2m_min[i] ?? 15,
-        weatherCode: daily.weather_code[i] ?? 0,
-        description: getWeatherDescription(daily.weather_code[i] ?? 0),
-        precipitationProbability: daily.precipitation_probability_max[i] ?? 0,
-        precipitationSum: daily.precipitation_sum[i] ?? 0,
-        sunrise: daily.sunrise[i] ?? '06:00',
-        sunset: daily.sunset[i] ?? '18:00',
-        windSpeedMax: daily.wind_speed_10m_max[i] ?? 0,
-        uvIndexMax: daily.uv_index_max?.[i] ?? 0,
-      });
-    }
-
-    return forecasts;
-  }
-
-  /**
-   * 解析歷史資料
-   */
-  private parseHistoryData(daily: OpenMeteoArchiveResponse['daily']): HistoricalDayWeather[] {
-    const history: HistoricalDayWeather[] = [];
-
-    for (let i = 0; i < daily.time.length; i++) {
-      history.push({
-        date: daily.time[i] ?? '',
-        temperatureMax: daily.temperature_2m_max[i] ?? 25,
-        temperatureMin: daily.temperature_2m_min[i] ?? 15,
-        temperatureAvg: daily.temperature_2m_mean[i] ?? 20,
-        weatherCode: daily.weather_code[i] ?? 0,
-        description: getWeatherDescription(daily.weather_code[i] ?? 0),
-        precipitationSum: daily.precipitation_sum[i] ?? 0,
-        windSpeedAvg: daily.wind_speed_10m_max[i] ?? 0,
-        humidityAvg: daily.relative_humidity_2m_mean[i] ?? 50,
-        source: this.source,
-      });
-    }
-
-    return history;
+    return response.json() as Promise<ProxyWeatherResponse>;
   }
 }
 

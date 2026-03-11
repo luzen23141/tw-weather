@@ -255,9 +255,9 @@ class AggregationEngine {
         description,
         precipitationProbability,
         precipitationSum,
-        sunrise,
-        sunset,
         windSpeedMax,
+        ...(sunrise !== undefined && { sunrise }),
+        ...(sunset !== undefined && { sunset }),
       };
 
       if (uvIndexMax !== undefined) {

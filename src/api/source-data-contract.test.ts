@@ -1,3 +1,10 @@
+/**
+ * 資料源資料契約測試
+ *
+ * 驗證各 adapter 回傳的格式符合前端頁面所需的欄位契約。
+ * 所有 adapter 現在透過 proxy_golang /api/weather/* 取得資料。
+ */
+
 import type {
   CurrentWeather,
   DailyForecast,
@@ -5,6 +12,36 @@ import type {
   HourlyForecast,
   Location,
 } from '@/api/types';
+
+// Mock proxyFetch（新版 adapter 統一使用 proxyFetch）
+jest.mock('@/api/proxy-fetch', () => ({
+  buildWeatherUrl: jest.fn(
+    (endpoint: string, params: Record<string, string>) =>
+      `https://proxy.test/api/weather/${endpoint}?${new URLSearchParams(params).toString()}`,
+  ),
+  proxyFetch: jest.fn(),
+}));
+
+// Mock 舊版 proxy 函式（openweathermap adapter 仍使用舊版）
+jest.mock('@/api/proxy-fetch', () => ({
+  buildProxyUrl: jest.fn(
+    (service: string, endpoint: string, params: Record<string, string>) =>
+      `https://proxy.test/api/proxy?service=${service}&endpoint=${endpoint}&${new URLSearchParams(params).toString()}`,
+  ),
+  buildWeatherUrl: jest.fn(
+    (endpoint: string, params: Record<string, string>) =>
+      `https://proxy.test/api/weather/${endpoint}?${new URLSearchParams(params).toString()}`,
+  ),
+  proxyFetch: jest.fn(),
+}));
+
+import { proxyFetch } from '@/api/proxy-fetch';
+import cwaAdapter from '@/api/adapters/cwa.adapter';
+import openMeteoAdapter from '@/api/adapters/open-meteo.adapter';
+import weatherApiAdapter from '@/api/adapters/weatherapi.adapter';
+import { weatherService } from '@/api/weather.service';
+
+const mockProxyFetch = proxyFetch as jest.MockedFunction<typeof proxyFetch>;
 
 const TEST_LOCATION: Location = {
   name: '台北市信義區',
@@ -14,15 +51,89 @@ const TEST_LOCATION: Location = {
   longitude: 121.5654,
 };
 
-function createJsonResponse(data: unknown, ok = true, status = 200) {
-  return {
-    ok,
-    status,
-    statusText: ok ? 'OK' : 'ERROR',
-    json: async () => data,
-    text: async () => JSON.stringify(data),
-  } as Response;
-}
+// ─── 共用 mock 資料 ────────────────────────────────────────────────────────────
+
+const MOCK_CURRENT_RESPONSE = {
+  provider: 'cwa',
+  type: 'current',
+  location: { name: '台北', lat: 25.037, lon: 121.563 },
+  updatedAt: '2026-03-07T10:00:00+08:00',
+  current: {
+    temperature: 20.1,
+    apparentTemperature: 19.5,
+    humidity: 82,
+    windSpeed: 1.2,
+    windDirection: 200,
+    pressure: 1012.5,
+    visibility: 10.0,
+    weatherCode: 3,
+    description: '陰',
+    precipitation: 0,
+  },
+};
+
+const MOCK_HOURLY_RESPONSE = {
+  provider: 'cwa',
+  type: 'hourly',
+  location: { name: '信義區', lat: 25.033, lon: 121.565 },
+  updatedAt: '2026-03-07T10:00:00+08:00',
+  hourly: [
+    {
+      time: '2026-03-07T12:00:00+08:00',
+      temperature: 21.0,
+      apparentTemperature: 22.0,
+      humidity: 80,
+      windSpeed: 3.0,
+      windDirection: 150,
+      precipitation: 0,
+      precipProb: 40,
+      weatherCode: 3,
+      description: '陰',
+    },
+  ],
+};
+
+const MOCK_DAILY_RESPONSE = {
+  provider: 'cwa',
+  type: 'daily',
+  location: { name: '信義區', lat: 25.033, lon: 121.565 },
+  updatedAt: '2026-03-07T10:00:00+08:00',
+  daily: [
+    {
+      date: '2026-03-07T00:00:00Z',
+      tempMax: 24.0,
+      tempMin: 18.0,
+      humidity: 75,
+      windSpeed: 5.0,
+      precipitation: 0,
+      precipProb: 30,
+      weatherCode: 3,
+      description: '陰',
+    },
+  ],
+};
+
+const MOCK_HISTORY_RESPONSE = {
+  provider: 'openmeteo',
+  type: 'history',
+  location: { name: '', lat: 25.033, lon: 121.565 },
+  updatedAt: '2026-03-07T00:00:00Z',
+  daily: [
+    {
+      date: '2026-03-06T00:00:00Z',
+      tempMax: 28.0,
+      tempMin: 21.0,
+      humidity: 75,
+      windSpeed: 14.0,
+      precipitation: 2.2,
+      precipProb: 40,
+      weatherCode: 2,
+      description: '多雲',
+    },
+  ],
+};
+
+// ─── 資料契約驗證輔助函式 ────────────────────────────────────────────────────
 
 function expectCurrentContract(current: CurrentWeather) {
   expect(Number.isFinite(current.temperature)).toBe(true);
@@ -84,189 +195,37 @@ function expectHistoryContract(history: HistoricalDayWeather[]) {
   expect(Number.isFinite(first.humidityAvg)).toBe(true);
 }
 
+function makeOkResponse(body: unknown): Response {
+  return {
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    json: () => Promise.resolve(body),
+  } as unknown as Response;
+}
+
+function makeErrorResponse(status = 500): Response {
+  return {
+    ok: false,
+    status,
+    statusText: 'ERROR',
+    json: () => Promise.resolve({ error: 'failed' }),
+  } as unknown as Response;
+}
+
+// ─── 測試 ─────────────────────────────────────────────────────────────────────
+
 describe('資料源資料契約（頁面使用欄位）', () => {
   beforeEach(() => {
-    jest.resetModules();
     jest.clearAllMocks();
-
     process.env.EXPO_PUBLIC_PROXY_URL = 'https://proxy.test';
-
-    global.fetch = jest.fn();
   });
 
   it('CWA adapter 應回傳首頁與預報頁需要的欄位', async () => {
-    const { default: cwaAdapter } = await import('@/api/adapters/cwa.adapter');
-
-    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
-      const urlString = url.toString();
-
-      if (urlString.includes('O-A0001-001')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Station: [
-                {
-                  StationName: '台北站',
-                  GeoInfo: { StationLatitude: '25.0375', StationLongitude: '121.5637' },
-                  ObsTime: { DateTime: '2026-03-07T10:00:00+08:00' },
-                  WeatherElement: {
-                    AirTemperature: '20.1',
-                    RelativeHumidity: '82',
-                    Weather: '陰',
-                    WindSpeed: '1.2',
-                    WindDirection: '200',
-                    AirPressure: '1012.5',
-                    Now: { Precipitation: '0' },
-                  },
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      if (urlString.includes('F-D0047-089')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Locations: [
-                {
-                  Location: [
-                    {
-                      WeatherElement: [
-                        {
-                          ElementName: '溫度',
-                          Time: [
-                            {
-                              DataTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ Temperature: '21' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '3小時降雨機率',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '相對濕度',
-                          Time: [
-                            {
-                              DataTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ RelativeHumidity: '80' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '風速',
-                          Time: [
-                            {
-                              DataTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ WindSpeed: '3' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '風向',
-                          Time: [
-                            {
-                              DataTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ WindDirection: '150' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '體感溫度',
-                          Time: [
-                            {
-                              DataTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ Temperature: '22' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '天氣現象',
-                          Time: [
-                            {
-                              DataTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ WeatherCode: '04', Weather: '陰' }],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      if (urlString.includes('F-D0047-091')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Locations: [
-                {
-                  Location: [
-                    {
-                      WeatherElement: [
-                        {
-                          ElementName: '最高溫度',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '24' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '最低溫度',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '18' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '12小時降雨機率',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '天氣現象',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ WeatherCode: '04', Weather: '陰' }],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      throw new Error(`Unexpected URL: ${urlString}`);
-    });
+    mockProxyFetch
+      .mockResolvedValueOnce(makeOkResponse(MOCK_CURRENT_RESPONSE))
+      .mockResolvedValueOnce(makeOkResponse(MOCK_HOURLY_RESPONSE))
+      .mockResolvedValueOnce(makeOkResponse(MOCK_DAILY_RESPONSE));
 
     const result = await cwaAdapter.fetchWeather(TEST_LOCATION);
     expectCurrentContract(result.current);
@@ -275,7 +234,6 @@ describe('資料源資料契約（頁面使用欄位）', () => {
   });
 
   it('CWA township-only location 在資料契約下仍成立', async () => {
-    const { default: cwaAdapter } = await import('@/api/adapters/cwa.adapter');
     const townshipOnlyLocation: Location = {
       name: '新北市板橋區',
       city: '新北市',
@@ -284,136 +242,18 @@ describe('資料源資料契約（頁面使用欄位）', () => {
       longitude: 121.4592,
     };
 
-    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
-      const urlString = url.toString();
-      const decodedUrl = decodeURIComponent(urlString);
-
-      if (urlString.includes('O-A0001-001')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Station: [
-                {
-                  StationName: '板橋站',
-                  GeoInfo: { StationLatitude: '25.0130', StationLongitude: '121.4630' },
-                  ObsTime: { DateTime: '2026-03-07T10:00:00+08:00' },
-                  WeatherElement: {
-                    AirTemperature: '20.1',
-                    RelativeHumidity: '82',
-                    Weather: '陰',
-                    WindSpeed: '1.2',
-                    WindDirection: '200',
-                    AirPressure: '1012.5',
-                    Now: { Precipitation: '0' },
-                  },
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      if (urlString.includes('F-D0047-089') && decodedUrl.includes('LocationName=板橋區')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Locations: [
-                {
-                  Location: [
-                    {
-                      WeatherElement: [
-                        {
-                          ElementName: '溫度',
-                          Time: [
-                            {
-                              DataTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ Temperature: '21' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '3小時降雨機率',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      if (urlString.includes('F-D0047-091') && decodedUrl.includes('LocationName=板橋區')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Locations: [
-                {
-                  Location: [
-                    {
-                      WeatherElement: [
-                        {
-                          ElementName: '最高溫度',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '24' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '最低溫度',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '18' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '12小時降雨機率',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      throw new Error(`Unexpected URL: ${urlString}`);
-    });
+    mockProxyFetch
+      .mockResolvedValueOnce(makeOkResponse({ ...MOCK_CURRENT_RESPONSE, provider: 'cwa' }))
+      .mockResolvedValueOnce(makeOkResponse(MOCK_HOURLY_RESPONSE))
+      .mockResolvedValueOnce(makeOkResponse(MOCK_DAILY_RESPONSE));
 
     const result = await cwaAdapter.fetchWeather(townshipOnlyLocation);
+    expectCurrentContract(result.current);
     expectHourlyContract(result.hourlyForecast);
     expectDailyContract(result.dailyForecast);
-
-    const requestUrls = (global.fetch as jest.Mock).mock.calls.map(([url]) =>
-      decodeURIComponent(String(url)),
-    );
-    expect(requestUrls.some((url) => url.includes('LocationName=板橋區'))).toBe(true);
   });
 
   it('CWA fallback 路徑下 hourly/daily 資料契約仍成立', async () => {
-    const { default: cwaAdapter } = await import('@/api/adapters/cwa.adapter');
     const fallbackLocation: Location = {
       name: '新北市板橋區',
       city: '新北市',
@@ -422,189 +262,25 @@ describe('資料源資料契約（頁面使用欄位）', () => {
       longitude: 121.4592,
     };
 
-    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
-      const urlString = url.toString();
-      const decodedUrl = decodeURIComponent(urlString);
-
-      if (urlString.includes('O-A0001-001')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Station: [
-                {
-                  StationName: '板橋站',
-                  GeoInfo: { StationLatitude: '25.0130', StationLongitude: '121.4630' },
-                  ObsTime: { DateTime: '2026-03-07T10:00:00+08:00' },
-                  WeatherElement: {
-                    AirTemperature: '20.1',
-                    RelativeHumidity: '82',
-                    Weather: '陰',
-                    WindSpeed: '1.2',
-                    WindDirection: '200',
-                    AirPressure: '1012.5',
-                    Now: { Precipitation: '0' },
-                  },
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      if (urlString.includes('F-D0047-089') && decodedUrl.includes('LocationName=板橋區')) {
-        return Promise.resolve(
-          createJsonResponse({ success: true, records: { Locations: [{ Location: [] }] } }),
-        );
-      }
-
-      if (urlString.includes('F-D0047-089') && decodedUrl.includes('LocationName=新北市')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Locations: [
-                {
-                  Location: [
-                    {
-                      WeatherElement: [
-                        {
-                          ElementName: '溫度',
-                          Time: [
-                            {
-                              DataTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ Temperature: '21' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '3小時降雨機率',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T12:00:00+08:00',
-                              ElementValue: [{ ProbabilityOfPrecipitation: '40' }],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      if (urlString.includes('F-D0047-091') && decodedUrl.includes('LocationName=板橋區')) {
-        return Promise.resolve(
-          createJsonResponse({ success: true, records: { Locations: [{ Location: [] }] } }),
-        );
-      }
-
-      if (urlString.includes('F-D0047-091') && decodedUrl.includes('LocationName=新北市')) {
-        return Promise.resolve(
-          createJsonResponse({
-            success: true,
-            records: {
-              Locations: [
-                {
-                  Location: [
-                    {
-                      WeatherElement: [
-                        {
-                          ElementName: '最高溫度',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '24' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '最低溫度',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ Temperature: '18' }],
-                            },
-                          ],
-                        },
-                        {
-                          ElementName: '12小時降雨機率',
-                          Time: [
-                            {
-                              StartTime: '2026-03-07T06:00:00+08:00',
-                              ElementValue: [{ ProbabilityOfPrecipitation: '30' }],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      throw new Error(`Unexpected URL: ${urlString}`);
-    });
+    mockProxyFetch
+      .mockResolvedValueOnce(makeOkResponse(MOCK_CURRENT_RESPONSE))
+      .mockResolvedValueOnce(makeOkResponse(MOCK_HOURLY_RESPONSE))
+      .mockResolvedValueOnce(makeOkResponse(MOCK_DAILY_RESPONSE));
 
     const result = await cwaAdapter.fetchWeather(fallbackLocation);
     expectHourlyContract(result.hourlyForecast);
     expectDailyContract(result.dailyForecast);
-
-    const requestUrls = (global.fetch as jest.Mock).mock.calls.map(([url]) =>
-      decodeURIComponent(String(url)),
-    );
-    expect(requestUrls.some((url) => url.includes('LocationName=板橋區'))).toBe(true);
-    expect(requestUrls.some((url) => url.includes('LocationName=新北市'))).toBe(true);
   });
 
   it('Open-Meteo adapter 應回傳首頁與預報頁需要的欄位', async () => {
-    const { default: openMeteoAdapter } = await import('@/api/adapters/open-meteo.adapter');
+    const openMeteoCurrentResp = { ...MOCK_CURRENT_RESPONSE, provider: 'openmeteo' };
+    const openMeteoHourlyResp = { ...MOCK_HOURLY_RESPONSE, provider: 'openmeteo' };
+    const openMeteoDailyResp = { ...MOCK_DAILY_RESPONSE, provider: 'openmeteo' };
 
-    (global.fetch as jest.Mock).mockResolvedValue(
-      createJsonResponse({
-        current: {
-          temperature_2m: 23,
-          relative_humidity_2m: 75,
-          apparent_temperature: 24,
-          is_day: 1,
-          weather_code: 3,
-          wind_speed_10m: 4,
-          wind_direction_10m: 170,
-          precipitation: 0,
-          pressure_msl: 1011,
-          visibility: 10000,
-        },
-        hourly: {
-          time: ['2026-03-07T12:00'],
-          temperature_2m: [23],
-          apparent_temperature: [24],
-          weather_code: [3],
-          precipitation: [0],
-          precipitation_probability: [20],
-          relative_humidity_2m: [75],
-          wind_speed_10m: [4],
-          wind_direction_10m: [170],
-        },
-        daily: {
-          time: ['2026-03-07'],
-          weather_code: [3],
-          temperature_2m_max: [27],
-          temperature_2m_min: [20],
-          precipitation_sum: [1.2],
-          precipitation_probability_max: [40],
-          sunrise: ['2026-03-07T06:12'],
-          sunset: ['2026-03-07T17:58'],
-          wind_speed_10m_max: [8],
-          uv_index_max: [5],
-        },
-      }),
-    );
+    mockProxyFetch
+      .mockResolvedValueOnce(makeOkResponse(openMeteoCurrentResp))
+      .mockResolvedValueOnce(makeOkResponse(openMeteoHourlyResp))
+      .mockResolvedValueOnce(makeOkResponse(openMeteoDailyResp));
 
     const result = await openMeteoAdapter.fetchWeather(TEST_LOCATION);
     expectCurrentContract(result.current);
@@ -613,61 +289,14 @@ describe('資料源資料契約（頁面使用欄位）', () => {
   });
 
   it('WeatherAPI adapter 應回傳首頁與預報頁需要的欄位', async () => {
-    const { default: weatherApiAdapter } = await import('@/api/adapters/weatherapi.adapter');
+    const weatherApiCurrentResp = { ...MOCK_CURRENT_RESPONSE, provider: 'weatherapi' };
+    const weatherApiHourlyResp = { ...MOCK_HOURLY_RESPONSE, provider: 'weatherapi' };
+    const weatherApiDailyResp = { ...MOCK_DAILY_RESPONSE, provider: 'weatherapi' };
 
-    (global.fetch as jest.Mock).mockResolvedValue(
-      createJsonResponse({
-        current: {
-          last_updated_epoch: 1709800000,
-          last_updated: '2026-03-07 12:00',
-          temp_c: 24,
-          is_day: 1,
-          condition: { code: 1003, text: 'Partly cloudy', icon: '' },
-          wind_kph: 7,
-          wind_degree: 150,
-          humidity: 70,
-          feelslike_c: 25,
-          precip_mm: 0,
-          pressure_mb: 1012,
-          vis_km: 10,
-        },
-        forecast: {
-          forecastday: [
-            {
-              date: '2026-03-07',
-              day: {
-                date: '2026-03-07',
-                maxtemp_c: 29,
-                mintemp_c: 22,
-                avgtemp_c: 25,
-                condition: { text: 'Cloudy', code: 1006 },
-                daily_chance_of_rain: 30,
-                totalprecip_mm: 1.4,
-                maxwind_kph: 12,
-                sunrise: '06:10 AM',
-                sunset: '05:58 PM',
-                avg_humidity: 72,
-                uv: 6,
-              },
-              astro: { sunrise: '06:10 AM', sunset: '05:58 PM' },
-              hour: [
-                {
-                  time: '2026-03-07 12:00',
-                  temp_c: 24,
-                  feelslike_c: 25,
-                  humidity: 70,
-                  condition: { text: 'Cloudy', code: 1006 },
-                  chance_of_rain: 35,
-                  precip_mm: 0.1,
-                  wind_kph: 7,
-                  wind_degree: 150,
-                },
-              ],
-            },
-          ],
-        },
-      }),
-    );
+    mockProxyFetch
+      .mockResolvedValueOnce(makeOkResponse(weatherApiCurrentResp))
+      .mockResolvedValueOnce(makeOkResponse(weatherApiHourlyResp))
+      .mockResolvedValueOnce(makeOkResponse(weatherApiDailyResp));
 
     const result = await weatherApiAdapter.fetchWeather(TEST_LOCATION);
     expectCurrentContract(result.current);
@@ -679,72 +308,67 @@ describe('資料源資料契約（頁面使用欄位）', () => {
     const { default: openWeatherMapAdapter } =
       await import('@/api/adapters/openweathermap.adapter');
 
-    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
-      const urlString = url.toString();
-      const decodedUrl = decodeURIComponent(urlString);
+    const owmCurrentData = {
+      dt: 1709800000,
+      main: { temp: 23, feels_like: 24, temp_min: 21, temp_max: 25, pressure: 1011, humidity: 74 },
+      wind: { speed: 5, deg: 160 },
+      weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
+      visibility: 10000,
+    };
 
-      if (decodedUrl.includes('endpoint=data/2.5/weather')) {
-        return Promise.resolve(
-          createJsonResponse({
-            dt: 1709800000,
-            main: {
-              temp: 23,
-              feels_like: 24,
-              temp_min: 21,
-              temp_max: 25,
-              pressure: 1011,
-              humidity: 74,
-            },
-            wind: { speed: 5, deg: 160 },
-            weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
-            visibility: 10000,
-          }),
-        );
+    const owmForecastData = {
+      list: [
+        {
+          dt: 1709800000,
+          main: {
+            temp: 23,
+            feels_like: 24,
+            temp_min: 22,
+            temp_max: 24,
+            pressure: 1011,
+            humidity: 74,
+          },
+          weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
+          wind: { speed: 5, deg: 160 },
+          pop: 0.3,
+          rain: { '3h': 0.2 },
+          dt_txt: '2026-03-07 12:00:00',
+        },
+        {
+          dt: 1709886400,
+          main: {
+            temp: 22,
+            feels_like: 23,
+            temp_min: 20,
+            temp_max: 23,
+            pressure: 1010,
+            humidity: 76,
+          },
+          weather: [{ id: 500, main: 'Rain', description: 'light rain' }],
+          wind: { speed: 6, deg: 180 },
+          pop: 0.5,
+          rain: { '3h': 1.1 },
+          dt_txt: '2026-03-08 12:00:00',
+        },
+      ],
+      city: { sunrise: 1709772000, sunset: 1709815200 },
+    };
+
+    // OpenWeatherMap 仍使用舊版 /api/proxy 路由（proxyFetch 已被 mock）
+    mockProxyFetch.mockImplementation((url: string) => {
+      if (
+        url.includes('endpoint=data%2F2.5%2Fweather') ||
+        url.includes('endpoint=data/2.5/weather')
+      ) {
+        return Promise.resolve(makeOkResponse(owmCurrentData));
       }
-
-      if (decodedUrl.includes('endpoint=data/2.5/forecast')) {
-        return Promise.resolve(
-          createJsonResponse({
-            list: [
-              {
-                dt: 1709800000,
-                main: {
-                  temp: 23,
-                  feels_like: 24,
-                  temp_min: 22,
-                  temp_max: 24,
-                  pressure: 1011,
-                  humidity: 74,
-                },
-                weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
-                wind: { speed: 5, deg: 160 },
-                pop: 0.3,
-                rain: { '3h': 0.2 },
-                dt_txt: '2026-03-07 12:00:00',
-              },
-              {
-                dt: 1709886400,
-                main: {
-                  temp: 22,
-                  feels_like: 23,
-                  temp_min: 20,
-                  temp_max: 23,
-                  pressure: 1010,
-                  humidity: 76,
-                },
-                weather: [{ id: 500, main: 'Rain', description: 'light rain' }],
-                wind: { speed: 6, deg: 180 },
-                pop: 0.5,
-                rain: { '3h': 1.1 },
-                dt_txt: '2026-03-08 12:00:00',
-              },
-            ],
-            city: { sunrise: 1709772000, sunset: 1709815200 },
-          }),
-        );
+      if (
+        url.includes('endpoint=data%2F2.5%2Fforecast') ||
+        url.includes('endpoint=data/2.5/forecast')
+      ) {
+        return Promise.resolve(makeOkResponse(owmForecastData));
       }
-
-      throw new Error(`Unexpected URL: ${urlString}`);
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
     });
 
     const result = await openWeatherMapAdapter.fetchWeather(TEST_LOCATION);
@@ -754,79 +378,16 @@ describe('資料源資料契約（頁面使用欄位）', () => {
   });
 
   it('單一來源 weatherService 在 WeatherAPI 歷史失敗時仍可回傳首頁與預報資料', async () => {
-    const { weatherService } = await import('@/api/weather.service');
+    const weatherApiCurrentResp = { ...MOCK_CURRENT_RESPONSE, provider: 'weatherapi' };
+    const weatherApiHourlyResp = { ...MOCK_HOURLY_RESPONSE, provider: 'weatherapi' };
+    const weatherApiDailyResp = { ...MOCK_DAILY_RESPONSE, provider: 'weatherapi' };
 
-    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
-      const urlString = url.toString();
-      const decodedUrl = decodeURIComponent(urlString);
-
-      if (
-        decodedUrl.includes('service=weatherapi') &&
-        decodedUrl.includes('endpoint=forecast.json')
-      ) {
-        return Promise.resolve(
-          createJsonResponse({
-            current: {
-              last_updated_epoch: 1709800000,
-              last_updated: '2026-03-07 12:00',
-              temp_c: 24,
-              is_day: 1,
-              condition: { code: 1003, text: 'Partly cloudy', icon: '' },
-              wind_kph: 7,
-              wind_degree: 150,
-              humidity: 70,
-              feelslike_c: 25,
-              precip_mm: 0,
-              pressure_mb: 1012,
-              vis_km: 10,
-            },
-            forecast: {
-              forecastday: [
-                {
-                  date: '2026-03-07',
-                  day: {
-                    date: '2026-03-07',
-                    maxtemp_c: 29,
-                    mintemp_c: 22,
-                    avgtemp_c: 25,
-                    condition: { text: 'Cloudy', code: 1006 },
-                    daily_chance_of_rain: 30,
-                    totalprecip_mm: 1.4,
-                    maxwind_kph: 12,
-                    sunrise: '06:10 AM',
-                    sunset: '05:58 PM',
-                    avg_humidity: 72,
-                    uv: 6,
-                  },
-                  astro: { sunrise: '06:10 AM', sunset: '05:58 PM' },
-                  hour: [
-                    {
-                      time: '2026-03-07 12:00',
-                      temp_c: 24,
-                      feelslike_c: 25,
-                      humidity: 70,
-                      condition: { text: 'Cloudy', code: 1006 },
-                      chance_of_rain: 35,
-                      precip_mm: 0.1,
-                      wind_kph: 7,
-                      wind_degree: 150,
-                    },
-                  ],
-                },
-              ],
-            },
-          }),
-        );
-      }
-
-      if (
-        decodedUrl.includes('service=weatherapi') &&
-        decodedUrl.includes('endpoint=history.json')
-      ) {
-        return Promise.reject(new Error('history gateway timeout'));
-      }
-
-      throw new Error(`Unexpected URL: ${urlString}`);
+    mockProxyFetch.mockImplementation((url: string) => {
+      if (url.includes('/current')) return Promise.resolve(makeOkResponse(weatherApiCurrentResp));
+      if (url.includes('/hourly')) return Promise.resolve(makeOkResponse(weatherApiHourlyResp));
+      if (url.includes('/daily')) return Promise.resolve(makeOkResponse(weatherApiDailyResp));
+      if (url.includes('/history')) return Promise.reject(new Error('history gateway timeout'));
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
     });
 
     const result = await weatherService.fetchWeather(TEST_LOCATION, 'weatherapi');
@@ -837,64 +398,22 @@ describe('資料源資料契約（頁面使用欄位）', () => {
   });
 
   it('歷史頁資料契約：weatherService 應在 Open-Meteo 失敗時 fallback 到 WeatherAPI', async () => {
-    const { weatherService } = await import('@/api/weather.service');
+    const weatherApiHistoryResp = { ...MOCK_HISTORY_RESPONSE, provider: 'weatherapi' };
 
-    (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
-      const urlString = url.toString();
-      const decodedUrl = decodeURIComponent(urlString);
-
-      if (urlString.includes('archive-api.open-meteo.com')) {
-        return Promise.resolve(createJsonResponse({ error: 'failed' }, false, 500));
+    mockProxyFetch.mockImplementation((url: string) => {
+      // Open-Meteo history → 失敗
+      if (url.includes('provider=openmeteo') && url.includes('/history')) {
+        return Promise.resolve(makeErrorResponse(500));
       }
-
-      if (
-        decodedUrl.includes('service=weatherapi') &&
-        decodedUrl.includes('endpoint=history.json')
-      ) {
-        return Promise.resolve(
-          createJsonResponse({
-            current: {
-              last_updated_epoch: 1709800000,
-              last_updated: '2026-03-07 12:00',
-              temp_c: 24,
-              is_day: 1,
-              condition: { code: 1003, text: 'Partly cloudy', icon: '' },
-              wind_kph: 7,
-              wind_degree: 150,
-              humidity: 70,
-              feelslike_c: 25,
-              precip_mm: 0,
-              pressure_mb: 1012,
-              vis_km: 10,
-            },
-            forecast: {
-              forecastday: [
-                {
-                  date: '2026-03-06',
-                  day: {
-                    date: '2026-03-06',
-                    maxtemp_c: 28,
-                    mintemp_c: 21,
-                    avgtemp_c: 24,
-                    condition: { text: 'Cloudy', code: 1006 },
-                    daily_chance_of_rain: 40,
-                    totalprecip_mm: 2.2,
-                    maxwind_kph: 14,
-                    sunrise: '06:10 AM',
-                    sunset: '05:58 PM',
-                    avg_humidity: 75,
-                    uv: 5,
-                  },
-                  astro: { sunrise: '06:10 AM', sunset: '05:58 PM' },
-                  hour: [],
-                },
-              ],
-            },
-          }),
-        );
+      // WeatherAPI history → 成功
+      if (url.includes('provider=weatherapi') && url.includes('/history')) {
+        return Promise.resolve(makeOkResponse(weatherApiHistoryResp));
       }
-
-      throw new Error(`Unexpected URL: ${urlString}`);
+      // 其他請求（fetchWeather 的 current/hourly/daily）
+      if (url.includes('/current')) return Promise.resolve(makeOkResponse(MOCK_CURRENT_RESPONSE));
+      if (url.includes('/hourly')) return Promise.resolve(makeOkResponse(MOCK_HOURLY_RESPONSE));
+      if (url.includes('/daily')) return Promise.resolve(makeOkResponse(MOCK_DAILY_RESPONSE));
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
     });
 
     const history = await weatherService.fetchHistory(TEST_LOCATION, 1);

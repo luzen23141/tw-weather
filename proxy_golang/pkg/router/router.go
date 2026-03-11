@@ -12,6 +12,7 @@ import (
 func Setup(
 	proxyCtrl *controller.ProxyController,
 	debugCtrl *controller.DebugController,
+	weatherCtrl *controller.WeatherController,
 	proxySecret string,
 ) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
@@ -25,6 +26,14 @@ func Setup(
 	{
 		api.GET("/proxy", middleware.HMACAuth(proxySecret), proxyCtrl.Handle)
 		api.GET("/debug", debugCtrl.Handle)
+
+		weather := api.Group("/weather", middleware.HMACAuth(proxySecret))
+		{
+			weather.GET("/current", weatherCtrl.HandleCurrentWeather)
+			weather.GET("/hourly", weatherCtrl.HandleHourlyWeather)
+			weather.GET("/daily", weatherCtrl.HandleDailyWeather)
+			weather.GET("/history", weatherCtrl.HandleHistoryWeather)
+		}
 	}
 
 	return r

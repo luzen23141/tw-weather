@@ -5,14 +5,14 @@ import (
 	"context"
 
 	"proxy_golang/pkg/model"
-	"proxy_golang/pkg/service"
 )
 
 // Adapter 天氣資料來源介面
 type Adapter interface {
 	ProviderID() string
-	SupportedTypes() []model.WeatherType
-	Fetch(ctx context.Context, query *model.WeatherQuery, apiKey string, client service.UpstreamClient) (*model.WeatherResponse, error)
+	APIKeyEnvVar() string
+	RequiresKey() bool
+	Fetch(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error)
 }
 
 // Registry adapter 登錄表
@@ -33,4 +33,12 @@ func NewRegistry(adapters ...Adapter) *Registry {
 func (r *Registry) Get(providerID string) (Adapter, bool) {
 	a, ok := r.adapters[providerID]
 	return a, ok
+}
+
+// RequiresKey 回傳指定 provider 是否需要 API Key（找不到時視為需要）
+func (r *Registry) RequiresKey(providerID string) bool {
+	if a, ok := r.adapters[providerID]; ok {
+		return a.RequiresKey()
+	}
+	return true
 }

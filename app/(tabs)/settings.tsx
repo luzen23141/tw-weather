@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Switch, Text, View, Platform } from 'react-native';
 
-import type { LocationDisplayFormat, WeatherSource } from '@/api/types';
+import type { WeatherSource } from '@/api/types';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
@@ -24,7 +24,7 @@ type SectionCardProps = {
   className?: string;
 };
 
-type SettingsSectionKey = 'sources' | 'display-mode' | 'location-display';
+type SettingsSectionKey = 'sources' | 'display-mode';
 
 type SettingsSectionConfig = {
   key: SettingsSectionKey;
@@ -36,13 +36,9 @@ type SettingsSectionConfig = {
 const settingsSectionConfigs: SettingsSectionConfig[] = [
   { key: 'sources', title: '資料來源', icon: 'cloud-outline' },
   { key: 'display-mode', title: '顯示模式', icon: 'layers-outline' },
-  { key: 'location-display', title: '地點顯示', icon: 'location-outline', className: 'mb-4' },
 ];
 
-const webSectionColumns: SettingsSectionKey[][] = [
-  ['sources'],
-  ['display-mode', 'location-display'],
-];
+const webSectionColumns: SettingsSectionKey[][] = [['sources'], ['display-mode']];
 
 const SectionIntro = () => (
   <PageHeaderCard
@@ -196,28 +192,6 @@ const displayModeOptions = [
   },
 ] as const;
 
-const locationDisplayOptions: Array<{
-  label: string;
-  description: string;
-  value: LocationDisplayFormat;
-}> = [
-  {
-    label: '鄉鎮市（預設）',
-    description: '僅顯示鄉鎮市區名稱',
-    value: 'township',
-  },
-  {
-    label: '縣市 / 鄉鎮市',
-    description: '同時顯示縣市與鄉鎮市區',
-    value: 'city-township',
-  },
-  {
-    label: '完整地址層級',
-    description: '顯示國家、縣市、鄉鎮市與鄰里',
-    value: 'full',
-  },
-];
-
 const SettingsSection = ({
   section,
   children,
@@ -232,14 +206,7 @@ const SettingsSection = ({
 );
 
 export default function SettingsScreen() {
-  const {
-    displayMode,
-    locationDisplayFormat,
-    enabledSources,
-    setDisplayMode,
-    setLocationDisplayFormat,
-    toggleSource,
-  } = useSettingsStore();
+  const { displayMode, enabledSources, setDisplayMode, toggleSource } = useSettingsStore();
 
   const renderSection = (key: SettingsSectionKey) => {
     switch (key) {
@@ -265,18 +232,6 @@ export default function SettingsScreen() {
             selectedValue={displayMode}
             onPress={() => setDisplayMode(option.value)}
             isLast={index === displayModeOptions.length - 1}
-          />
-        ));
-      case 'location-display':
-        return locationDisplayOptions.map((option, index) => (
-          <RadioOption
-            key={option.value}
-            label={option.label}
-            description={option.description}
-            value={option.value}
-            selectedValue={locationDisplayFormat}
-            onPress={() => setLocationDisplayFormat(option.value)}
-            isLast={index === locationDisplayOptions.length - 1}
           />
         ));
     }

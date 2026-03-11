@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"testing"
 
-	"github.com/rotisserie/eris"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -28,25 +28,23 @@ func testConfig(cwaKey string) *config.Config {
 
 func newTestProxyService(
 	cfg *config.Config,
-	validator *mockValidatorService,
 	cache *mockCacheRepository,
 	upstream *mockUpstreamClient,
 ) ProxyService {
-	return NewProxyService(cfg, validator, cache, upstream)
+	return NewProxyService(cfg, cache, upstream)
 }
 
 func TestForward_Success(t *testing.T) {
 	cfg := testConfig("test-cwa-key")
-	validator := &mockValidatorService{}
 	cache := newMockCacheRepository()
 	upstream := &mockUpstreamClient{
 		doFn: func(_ context.Context, req *model.UpstreamRequest) (*model.UpstreamResponse, error) {
-			assert.Contains(t, req.URL, "key=test-cwa-key")
+			assert.Contains(t, req.URL, "Authorization=test-cwa-key")
 			return &model.UpstreamResponse{StatusCode: 200, Body: []byte(`{"temp": 25}`)}, nil
 		},
 	}
 
-	svc := newTestProxyService(cfg, validator, cache, upstream)
+	svc := newTestProxyService(cfg, cache, upstream)
 	query := &model.ProxyQuery{Service: "cwa", Endpoint: "O-A0001-001"}
 	rawQuery := url.Values{"service": {"cwa"}, "endpoint": {"O-A0001-001"}}
 
@@ -59,14 +57,13 @@ func TestForward_Success(t *testing.T) {
 
 func TestForward_CacheHit(t *testing.T) {
 	cfg := testConfig("test-key")
-	validator := &mockValidatorService{
-		buildCacheKeyFn: func(_, _ string, _ url.Values) string { return "cached-key" },
-	}
 	cache := newMockCacheRepository()
-	cache.store["cached-key"] = &model.CacheEntry{Data: []byte(`{"cached": true}`), StatusCode: 200}
+	// 預先填入 cache，key 由真實 buildCacheKey 產生
+	cacheKey := buildCacheKey("cwa", "O-A0001-001", url.Values{})
+	cache.store[cacheKey] = &model.CacheEntry{Data: []byte(`{"cached": true}`), StatusCode: 200}
 	upstream := &mockUpstreamClient{}
 
-	svc := newTestProxyService(cfg, validator, cache, upstream)
+	svc := newTestProxyService(cfg, cache, upstream)
 	query := &model.ProxyQuery{Service: "cwa", Endpoint: "O-A0001-001"}
 
 	result, err := svc.Forward(context.Background(), query, url.Values{})
@@ -77,15 +74,11 @@ func TestForward_CacheHit(t *testing.T) {
 
 func TestForward_ValidationError(t *testing.T) {
 	cfg := testConfig("test-key")
-	validator := &mockValidatorService{
-		validateRequestFn: func(_ *model.ProxyQuery) (*model.ServiceRoute, error) {
-			return nil, eris.New("invalid service: bad")
-		},
-	}
 	cache := newMockCacheRepository()
 	upstream := &mockUpstreamClient{}
 
-	svc := newTestProxyService(cfg, validator, cache, upstream)
+	svc := newTestProxyService(cfg, cache, upstream)
+	// 使用不存在的 service 觸發驗證錯誤
 	query := &model.ProxyQuery{Service: "bad", Endpoint: "test"}
 
 	_, err := svc.Forward(context.Background(), query, url.Values{})
@@ -98,11 +91,10 @@ func TestForward_ValidationError(t *testing.T) {
 
 func TestForward_MissingAPIKey(t *testing.T) {
 	cfg := testConfig("") // 空的 API Key
-	validator := &mockValidatorService{}
 	cache := newMockCacheRepository()
 	upstream := &mockUpstreamClient{}
 
-	svc := newTestProxyService(cfg, validator, cache, upstream)
+	svc := newTestProxyService(cfg, cache, upstream)
 	query := &model.ProxyQuery{Service: "cwa", Endpoint: "O-A0001-001"}
 
 	_, err := svc.Forward(context.Background(), query, url.Values{})
@@ -115,15 +107,14 @@ func TestForward_MissingAPIKey(t *testing.T) {
 
 func TestForward_UpstreamError(t *testing.T) {
 	cfg := testConfig("test-key")
-	validator := &mockValidatorService{}
 	cache := newMockCacheRepository()
 	upstream := &mockUpstreamClient{
 		doFn: func(_ context.Context, _ *model.UpstreamRequest) (*model.UpstreamResponse, error) {
-			return nil, eris.New("connection refused")
+			return nil, errors.New("connection refused")
 		},
 	}
 
-	svc := newTestProxyService(cfg, validator, cache, upstream)
+	svc := newTestProxyService(cfg, cache, upstream)
 	query := &model.ProxyQuery{Service: "cwa", Endpoint: "O-A0001-001"}
 
 	_, err := svc.Forward(context.Background(), query, url.Values{})
@@ -136,7 +127,6 @@ func TestForward_UpstreamError(t *testing.T) {
 
 func TestForward_CachesOnly2xx(t *testing.T) {
 	cfg := testConfig("test-key")
-	validator := &mockValidatorService{}
 	cache := newMockCacheRepository()
 	upstream := &mockUpstreamClient{
 		doFn: func(_ context.Context, _ *model.UpstreamRequest) (*model.UpstreamResponse, error) {
@@ -144,7 +134,7 @@ func TestForward_CachesOnly2xx(t *testing.T) {
 		},
 	}
 
-	svc := newTestProxyService(cfg, validator, cache, upstream)
+	svc := newTestProxyService(cfg, cache, upstream)
 	query := &model.ProxyQuery{Service: "cwa", Endpoint: "O-A0001-001"}
 
 	result, err := svc.Forward(context.Background(), query, url.Values{})

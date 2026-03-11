@@ -1,8 +1,6 @@
 import {
   CurrentWeather,
-  DailyForecast,
   HistoricalDayWeather,
-  HourlyForecast,
   Location,
   WeatherApiAdapter,
   WeatherApiError,
@@ -10,129 +8,48 @@ import {
   WeatherSource,
 } from '../types';
 
-import { getWeatherDescription, mapWeatherApiCodeToWmo } from '@/utils/weather-code';
-
-const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
-
-function buildWaUrl(endpoint: string, params: Record<string, string>): string {
-  if (!PROXY_URL) {
-    throw new Error('EXPO_PUBLIC_PROXY_URL not found');
-  }
-
-  const url = new URL(`${PROXY_URL}/api/proxy`);
-  url.searchParams.set('service', 'weatherapi');
-  url.searchParams.set('endpoint', endpoint);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  return url.toString();
-}
-
-interface WeatherApiHour {
-  time: string;
-  temp_c: number;
-  feelslike_c: number;
-  humidity: number;
-  condition: { text: string; code: number };
-  chance_of_rain: number;
-  precip_mm: number;
-  wind_kph: number;
-  wind_degree: number;
-}
-
-interface WeatherApiDay {
-  date: string;
-  maxtemp_c: number;
-  mintemp_c: number;
-  avgtemp_c: number;
-  condition: { text: string; code: number };
-  daily_chance_of_rain: number;
-  totalprecip_mm: number;
-  maxwind_kph: number;
-  sunrise: string;
-  sunset: string;
-  avg_humidity: number;
-  uv: number;
-}
-
-interface WeatherApiForecastResponse {
-  current: {
-    last_updated_epoch: number;
-    last_updated: string;
-    temp_c: number;
-    is_day: number;
-    condition: { code: number; text: string; icon: string };
-    wind_kph: number;
-    wind_degree: number;
-    humidity: number;
-    feelslike_c: number;
-    precip_mm: number;
-    pressure_mb: number;
-    vis_km: number;
-  };
-  forecast: {
-    forecastday: Array<{
-      date: string;
-      day: WeatherApiDay;
-      astro: { sunrise: string; sunset: string };
-      hour: WeatherApiHour[];
-    }>;
-  };
-}
+import { buildWeatherUrl, proxyFetch } from '@/api/proxy-fetch';
+import {
+  ProxyWeatherResponse,
+  toCurrentWeather,
+  toDailyForecast,
+  toHistoricalWeather,
+  toHourlyForecast,
+  toLocation,
+} from '@/api/proxy-weather-response';
 
 /**
  * WeatherAPI.com Adapter
  *
- * - 使用 forecast.json 與 history.json 端點
- * - 需透過 proxy 存取（EXPO_PUBLIC_PROXY_URL）
+ * 透過 proxy_golang /api/weather/* 取得資料：
+ * - /api/weather/current  → 即時天氣
+ * - /api/weather/hourly   → 逐時預報
+ * - /api/weather/daily    → 每日預報
+ * - /api/weather/history  → 歷史天氣（逐日，最多 7 天）
  */
 class WeatherApiComAdapter implements WeatherApiAdapter {
   readonly source: WeatherSource = 'weatherapi';
 
   async fetchWeather(location: Location): Promise<Omit<WeatherData, 'history'>> {
-    if (!PROXY_URL) {
-      throw new WeatherApiError(
-        'Proxy URL 未設定',
-        this.source,
-        undefined,
-        new Error('EXPO_PUBLIC_PROXY_URL not found'),
-      );
-    }
-
     try {
-      const response = await fetch(
-        buildWaUrl('forecast.json', {
-          q: `${location.latitude},${location.longitude}`,
-          days: '7',
-          aqi: 'no',
-          alerts: 'no',
-        }),
-      );
-      if (!response.ok) {
-        throw new WeatherApiError(
-          `WeatherAPI 預報 API 失敗: ${response.statusText}`,
-          this.source,
-          response.status,
-        );
-      }
+      const params = this.buildLocationParams(location);
 
-      const data: WeatherApiForecastResponse = await response.json();
-
-      const fetchedAt = new Date().toISOString();
-      const current = this.parseCurrentWeather(data.current);
-      const hourlyForecast = this.parseHourlyForecast(data.forecast.forecastday);
-      const dailyForecast = this.parseDailyForecast(data.forecast.forecastday);
+      const [currentResp, hourlyResp, dailyResp] = await Promise.all([
+        this.fetchEndpoint('current', params),
+        this.fetchEndpoint('hourly', params),
+        this.fetchEndpoint('daily', params),
+      ]);
 
       return {
-        location,
+        location: toLocation(currentResp.location),
         source: this.source,
-        fetchedAt,
-        current,
-        hourlyForecast,
-        dailyForecast,
+        fetchedAt: new Date().toISOString(),
+        current: this.parseCurrentWeather(currentResp),
+        hourlyForecast: toHourlyForecast(hourlyResp.hourly ?? []),
+        dailyForecast: toDailyForecast(dailyResp.daily ?? []),
       };
     } catch (error) {
-      if (error instanceof WeatherApiError) {
-        throw error;
-      }
+      if (error instanceof WeatherApiError) throw error;
       throw new WeatherApiError(
         `WeatherAPI 預報取得失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
         this.source,
@@ -142,69 +59,35 @@ class WeatherApiComAdapter implements WeatherApiAdapter {
     }
   }
 
-  /**
-   * 取得歷史天氣資料（逐日查詢）
-   * 免費方案限 7 天內
-   */
   async fetchHistory(location: Location, days: number): Promise<HistoricalDayWeather[]> {
-    if (!PROXY_URL) {
-      throw new WeatherApiError(
-        'Proxy URL 未設定',
-        this.source,
-        undefined,
-        new Error('EXPO_PUBLIC_PROXY_URL not found'),
-      );
-    }
-
     try {
       const history: HistoricalDayWeather[] = [];
       const now = new Date();
-
-      // 逐日查詢（最多往回 7 天，受免費方案限制）
-      const queryDays = Math.min(days, 7);
+      const queryDays = Math.min(days, 7); // 免費方案限 7 天
 
       for (let i = 1; i <= queryDays; i++) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0] ?? '';
 
-        const response = await fetch(
-          buildWaUrl('history.json', {
-            q: `${location.latitude},${location.longitude}`,
-            dt: dateStr,
-          }),
-        );
+        const params = {
+          ...this.buildLocationParams(location),
+          date: dateStr,
+        };
+
+        const response = await proxyFetch(buildWeatherUrl('history', params));
         if (!response.ok) {
-          // 某一天失敗時，繼續查詢其他日期
           console.warn(`WeatherAPI 歷史資料 ${dateStr} 查詢失敗`);
           continue;
         }
 
-        const data: WeatherApiForecastResponse = await response.json();
-        const day = data.forecast.forecastday[0]?.day;
-
-        if (day) {
-          const weatherCode = mapWeatherApiCodeToWmo(day.condition.code);
-          history.push({
-            date: dateStr,
-            temperatureMax: day.maxtemp_c,
-            temperatureMin: day.mintemp_c,
-            temperatureAvg: day.avgtemp_c,
-            weatherCode,
-            description: getWeatherDescription(weatherCode),
-            precipitationSum: day.totalprecip_mm,
-            windSpeedAvg: day.maxwind_kph,
-            humidityAvg: day.avg_humidity,
-            source: this.source,
-          });
-        }
+        const resp = (await response.json()) as ProxyWeatherResponse;
+        history.push(...toHistoricalWeather(resp.daily ?? [], this.source));
       }
 
       return history.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     } catch (error) {
-      if (error instanceof WeatherApiError) {
-        throw error;
-      }
+      if (error instanceof WeatherApiError) throw error;
       throw new WeatherApiError(
         `WeatherAPI 歷史資料取得失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
         this.source,
@@ -214,85 +97,35 @@ class WeatherApiComAdapter implements WeatherApiAdapter {
     }
   }
 
-  /**
-   * 解析即時天氣
-   */
-  private parseCurrentWeather(current: WeatherApiForecastResponse['current']): CurrentWeather {
-    const weatherCode = mapWeatherApiCodeToWmo(current.condition.code);
-
+  private buildLocationParams(location: Location): Record<string, string> {
     return {
-      timestamp: new Date(current.last_updated).toISOString(),
-      temperature: current.temp_c,
-      apparentTemperature: current.feelslike_c,
-      humidity: current.humidity,
-      description: getWeatherDescription(weatherCode),
-      weatherCode,
-      windSpeed: current.wind_kph,
-      windDirection: current.wind_degree,
-      precipitation: current.precip_mm,
-      pressure: current.pressure_mb,
-      visibility: current.vis_km,
+      provider: 'weatherapi',
+      lat: String(location.latitude),
+      lon: String(location.longitude),
     };
   }
 
-  /**
-   * 解析逐時預報（取前 72 小時）
-   */
-  private parseHourlyForecast(
-    forecastdays: WeatherApiForecastResponse['forecast']['forecastday'],
-  ): HourlyForecast[] {
-    const forecasts: HourlyForecast[] = [];
-
-    let hourCount = 0;
-    for (const day of forecastdays) {
-      for (const hour of day.hour) {
-        if (hourCount >= 72) break;
-
-        const weatherCode = mapWeatherApiCodeToWmo(hour.condition.code);
-        forecasts.push({
-          timestamp: hour.time,
-          temperature: hour.temp_c,
-          apparentTemperature: hour.feelslike_c,
-          weatherCode,
-          description: getWeatherDescription(weatherCode),
-          precipitationProbability: hour.chance_of_rain,
-          precipitation: hour.precip_mm,
-          humidity: hour.humidity,
-          windSpeed: hour.wind_kph,
-          windDirection: hour.wind_degree,
-        });
-
-        hourCount++;
-      }
-      if (hourCount >= 72) break;
+  private async fetchEndpoint(
+    endpoint: 'current' | 'hourly' | 'daily',
+    params: Record<string, string>,
+  ): Promise<ProxyWeatherResponse> {
+    const url = buildWeatherUrl(endpoint, params);
+    const response = await proxyFetch(url);
+    if (!response.ok) {
+      throw new WeatherApiError(
+        `WeatherAPI ${endpoint} API 失敗: ${response.statusText}`,
+        this.source,
+        response.status,
+      );
     }
-
-    return forecasts;
+    return response.json() as Promise<ProxyWeatherResponse>;
   }
 
-  /**
-   * 解析每日預報
-   */
-  private parseDailyForecast(
-    forecastdays: WeatherApiForecastResponse['forecast']['forecastday'],
-  ): DailyForecast[] {
-    return forecastdays.map((day) => {
-      const weatherCode = mapWeatherApiCodeToWmo(day.day.condition.code);
-
-      return {
-        date: day.date,
-        temperatureMax: day.day.maxtemp_c,
-        temperatureMin: day.day.mintemp_c,
-        weatherCode,
-        description: getWeatherDescription(weatherCode),
-        precipitationProbability: day.day.daily_chance_of_rain,
-        precipitationSum: day.day.totalprecip_mm,
-        sunrise: day.astro.sunrise,
-        sunset: day.astro.sunset,
-        windSpeedMax: day.day.maxwind_kph,
-        uvIndexMax: day.day.uv,
-      };
-    });
+  private parseCurrentWeather(resp: ProxyWeatherResponse): CurrentWeather {
+    if (!resp.current) {
+      throw new WeatherApiError('WeatherAPI current 回應缺少資料', this.source);
+    }
+    return toCurrentWeather(resp.current, resp.updatedAt);
   }
 }
 

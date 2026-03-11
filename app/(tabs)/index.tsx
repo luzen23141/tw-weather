@@ -37,7 +37,7 @@ export default function HomeScreen() {
   const isLoadingCombined = locationLoading || isLoading;
   const errorCombined = locationError || error;
   const townshipDisplayName = effectiveLocation
-    ? formatLocationDisplayName(effectiveLocation, 'township')
+    ? formatLocationDisplayName(effectiveLocation)
     : displayName;
   const weatherCardLocation = effectiveLocation
     ? { ...effectiveLocation, name: townshipDisplayName }

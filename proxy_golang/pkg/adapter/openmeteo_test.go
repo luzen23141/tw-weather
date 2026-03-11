@@ -20,23 +20,15 @@ func TestOpenMeteo_ProviderID(t *testing.T) {
 	assert.Equal(t, "openmeteo", OpenMeteo{}.ProviderID())
 }
 
-func TestOpenMeteo_SupportedTypes(t *testing.T) {
-	types := OpenMeteo{}.SupportedTypes()
-	assert.Contains(t, types, model.WeatherTypeCurrent)
-	assert.Contains(t, types, model.WeatherTypeHourly)
-	assert.Contains(t, types, model.WeatherTypeDaily)
-	assert.Contains(t, types, model.WeatherTypeHistory)
-}
-
 // --- Current ---
 
 func TestOpenMeteo_FetchCurrent_RealFixture(t *testing.T) {
 	// 使用真實 Open-Meteo API 回傳結構的 fixture
 	client := fixtureClient("openmeteo_forecast.json")
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeCurrent)
+	
 
-	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, "", client)
+	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -77,9 +69,9 @@ func TestOpenMeteo_FetchCurrent_RequestURL(t *testing.T) {
 	}
 
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeCurrent)
+	
 
-	_, err := OpenMeteo{}.Fetch(context.Background(), &q, "", client)
+	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "", client)
 	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "api.open-meteo.com")
@@ -89,18 +81,18 @@ func TestOpenMeteo_FetchCurrent_RequestURL(t *testing.T) {
 
 func TestOpenMeteo_FetchCurrent_NetworkError(t *testing.T) {
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeCurrent)
+	
 
-	_, err := OpenMeteo{}.Fetch(context.Background(), &q, "", errorClient(assert.AnError))
+	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "", errorClient(assert.AnError))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Open-Meteo fetch failed")
 }
 
 func TestOpenMeteo_FetchCurrent_BadJSON(t *testing.T) {
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeCurrent)
+	
 
-	_, err := OpenMeteo{}.Fetch(context.Background(), &q, "", badJSONClient())
+	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "", badJSONClient())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Open-Meteo parse failed")
 }
@@ -110,10 +102,10 @@ func TestOpenMeteo_FetchCurrent_BadJSON(t *testing.T) {
 func TestOpenMeteo_FetchHourly_RealFixture(t *testing.T) {
 	client := fixtureClient("openmeteo_forecast.json")
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeHourly)
+	
 	q.Days = 3
 
-	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, "", client)
+	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -146,10 +138,10 @@ func TestOpenMeteo_FetchHourly_DefaultDays(t *testing.T) {
 	}
 
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeHourly)
+	
 	q.Days = 0
 
-	_, err := OpenMeteo{}.Fetch(context.Background(), &q, "", client)
+	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "", client)
 	require.NoError(t, err)
 	assert.Contains(t, capturedURL, "forecast_days=7")
 }
@@ -159,9 +151,9 @@ func TestOpenMeteo_FetchHourly_DefaultDays(t *testing.T) {
 func TestOpenMeteo_FetchDaily_RealFixture(t *testing.T) {
 	client := fixtureClient("openmeteo_forecast.json")
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeDaily)
+	
 
-	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, "", client)
+	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -191,10 +183,10 @@ func TestOpenMeteo_FetchHistory_RealFixture(t *testing.T) {
 	// 使用真實 Open-Meteo archive API 回傳結構
 	client := fixtureClient("openmeteo_archive.json")
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeHistory)
+	
 	q.Date = "2026-03-06"
 
-	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, "", client)
+	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -223,10 +215,10 @@ func TestOpenMeteo_FetchHistory_RequestURL(t *testing.T) {
 	}
 
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeHistory)
+	
 	q.Date = "2026-03-06"
 
-	_, err := OpenMeteo{}.Fetch(context.Background(), &q, "", client)
+	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", client)
 	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "archive-api.open-meteo.com")
@@ -236,18 +228,18 @@ func TestOpenMeteo_FetchHistory_RequestURL(t *testing.T) {
 
 func TestOpenMeteo_FetchHistory_NetworkError(t *testing.T) {
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeHistory)
+	
 
-	_, err := OpenMeteo{}.Fetch(context.Background(), &q, "", errorClient(assert.AnError))
+	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", errorClient(assert.AnError))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Open-Meteo history fetch failed")
 }
 
 func TestOpenMeteo_FetchHistory_BadJSON(t *testing.T) {
 	q := *openMeteoQuery
-	q.Type = string(model.WeatherTypeHistory)
+	
 
-	_, err := OpenMeteo{}.Fetch(context.Background(), &q, "", badJSONClient())
+	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", badJSONClient())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Open-Meteo history parse failed")
 }

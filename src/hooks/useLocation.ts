@@ -78,7 +78,7 @@ export function useLocation(): {
 
       const { latitude, longitude } = currentLocation.coords;
       const newLocation = resolveTaiwanLocation(latitude, longitude);
-      newLocation.name = formatLocationDisplayName(newLocation, 'township');
+      newLocation.name = formatLocationDisplayName(newLocation);
 
       setLocation(newLocation);
     } catch (err) {

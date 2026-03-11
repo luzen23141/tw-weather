@@ -22,7 +22,7 @@ import { formatLocationSecondaryName } from '@/utils/location-display';
 
 export default function HistoryScreen() {
   const colors = useMDColors();
-  const { displayMode, locationDisplayFormat } = useSettingsStore();
+  const { displayMode } = useSettingsStore();
   const {
     effectiveLocation,
     isLoading: locationLoading,
@@ -46,7 +46,7 @@ export default function HistoryScreen() {
   const selectedDayData = historyData?.find((d) => d.date === selectedDate);
 
   const locationSecondaryText = effectiveLocation
-    ? formatLocationSecondaryName(effectiveLocation, locationDisplayFormat)
+    ? formatLocationSecondaryName(effectiveLocation)
     : null;
 
   return (

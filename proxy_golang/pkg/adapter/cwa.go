@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/rotisserie/eris"
-
 	"proxy_golang/pkg/model"
-	"proxy_golang/pkg/service"
 )
 
 const cwaBaseURL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore"
@@ -21,14 +19,18 @@ const cwaBaseURL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore"
 // CWA adapter
 type CWA struct{}
 
+// ProviderID returns the unique identifier for the CWA provider.
 func (CWA) ProviderID() string { return "cwa" }
 
-func (CWA) SupportedTypes() []model.WeatherType {
-	return []model.WeatherType{model.WeatherTypeCurrent, model.WeatherTypeHourly, model.WeatherTypeDaily}
-}
+// APIKeyEnvVar returns the environment variable name for the CWA API key.
+func (CWA) APIKeyEnvVar() string { return "CWA_API_KEY" }
 
-func (CWA) Fetch(ctx context.Context, query *model.WeatherQuery, apiKey string, client service.UpstreamClient) (*model.WeatherResponse, error) {
-	switch model.WeatherType(query.Type) {
+// RequiresKey returns true because CWA requires an API key.
+func (CWA) RequiresKey() bool { return true }
+
+// Fetch retrieves weather data from CWA based on the weather type.
+func (CWA) Fetch(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
+	switch weatherType {
 	case model.WeatherTypeCurrent:
 		return fetchCWACurrent(ctx, query, apiKey, client)
 	case model.WeatherTypeHourly:
@@ -36,71 +38,112 @@ func (CWA) Fetch(ctx context.Context, query *model.WeatherQuery, apiKey string, 
 	case model.WeatherTypeDaily:
 		return fetchCWADaily(ctx, query, apiKey, client)
 	default:
-		return nil, eris.Errorf("CWA does not support type: %s", query.Type)
+		return nil, fmt.Errorf("CWA does not support type: %s", weatherType)
 	}
 }
 
 // --- Raw response structs ---
 
+// cwaCoordinate CWA 測站座標
+type cwaCoordinate struct {
+	Lat float64 `json:"StationLatitude"`
+	Lon float64 `json:"StationLongitude"`
+}
+
+// cwaGeoInfo CWA 測站地理資訊
+type cwaGeoInfo struct {
+	Coordinates []cwaCoordinate `json:"Coordinates"`
+}
+
+// cwaObsTime CWA 觀測時間
+type cwaObsTime struct {
+	DateTime string `json:"DateTime"`
+}
+
+// cwaPrecipitationNow CWA 即時降水
+type cwaPrecipitationNow struct {
+	Precipitation string `json:"Precipitation"`
+}
+
+// cwaWeatherElement CWA 測站觀測氣象要素
+type cwaWeatherElement struct {
+	AirTemperature        string              `json:"AirTemperature"`
+	RelativeHumidity      string              `json:"RelativeHumidity"`
+	WindSpeed             string              `json:"WindSpeed"`
+	WindDirection         string              `json:"WindDirection"`
+	AirPressure           string              `json:"AirPressure"`
+	VisibilityDescription string              `json:"VisibilityDescription"`
+	Weather               string              `json:"Weather"`
+	Now                   cwaPrecipitationNow `json:"Now"`
+}
+
+// cwaStation CWA 測站觀測資料
+type cwaStation struct {
+	StationID      string            `json:"StationId"`
+	StationName    string            `json:"StationName"`
+	GeoInfo        cwaGeoInfo        `json:"GeoInfo"`
+	ObsTime        cwaObsTime        `json:"ObsTime"`
+	WeatherElement cwaWeatherElement `json:"WeatherElement"`
+}
+
+// cwaObsRecords CWA 觀測紀錄
+type cwaObsRecords struct {
+	Station []cwaStation `json:"Station"`
+}
+
 type cwaObsResponse struct {
-	Records struct {
-		Station []struct {
-			StationId   string `json:"StationId"`
-			StationName string `json:"StationName"`
-			GeoInfo     struct {
-				Coordinates []struct {
-					Lat float64 `json:"StationLatitude"`
-					Lon float64 `json:"StationLongitude"`
-				} `json:"Coordinates"`
-			} `json:"GeoInfo"`
-			ObsTime struct {
-				DateTime string `json:"DateTime"`
-			} `json:"ObsTime"`
-			WeatherElement struct {
-				AirTemperature        string `json:"AirTemperature"`
-				RelativeHumidity      string `json:"RelativeHumidity"`
-				WindSpeed             string `json:"WindSpeed"`
-				WindDirection         string `json:"WindDirection"`
-				AirPressure           string `json:"AirPressure"`
-				VisibilityDescription string `json:"VisibilityDescription"`
-				Weather               string `json:"Weather"`
-				Now                   struct {
-					Precipitation string `json:"Precipitation"`
-				} `json:"Now"`
-			} `json:"WeatherElement"`
-		} `json:"Station"`
-	} `json:"records"`
+	Records cwaObsRecords `json:"records"`
+}
+
+// cwaElementValue CWA 預報要素值
+type cwaElementValue struct {
+	Value    string `json:"Value"`
+	Measures string `json:"Measures"`
+}
+
+// cwaForecastTime CWA 預報時間區間
+type cwaForecastTime struct {
+	StartTime    string            `json:"StartTime"`
+	EndTime      string            `json:"EndTime"`
+	ElementValue []cwaElementValue `json:"ElementValue"`
+}
+
+// cwaForecastElement CWA 預報氣象要素
+type cwaForecastElement struct {
+	ElementName string            `json:"ElementName"`
+	Time        []cwaForecastTime `json:"Time"`
+}
+
+// cwaForecastLocation CWA 預報地點
+type cwaForecastLocation struct {
+	LocationName   string               `json:"LocationName"`
+	Lat            string               `json:"Lat"`
+	Lon            string               `json:"Lon"`
+	WeatherElement []cwaForecastElement `json:"WeatherElement"`
+}
+
+// cwaLocationsGroup CWA 預報地點群組
+type cwaLocationsGroup struct {
+	Location []cwaForecastLocation `json:"Location"`
+}
+
+// cwaForecastRecords CWA 預報紀錄
+type cwaForecastRecords struct {
+	Locations []cwaLocationsGroup `json:"Locations"`
 }
 
 type cwaForecastResponse struct {
-	Records struct {
-		Locations []struct {
-			Location []struct {
-				LocationName   string `json:"LocationName"`
-				Lat            string `json:"Lat"`
-				Lon            string `json:"Lon"`
-				WeatherElement []struct {
-					ElementName string `json:"ElementName"`
-					Time        []struct {
-						StartTime    string `json:"StartTime"`
-						EndTime      string `json:"EndTime"`
-						ElementValue []struct {
-							Value    string `json:"Value"`
-							Measures string `json:"Measures"`
-						} `json:"ElementValue"`
-					} `json:"Time"`
-				} `json:"WeatherElement"`
-			} `json:"Location"`
-		} `json:"Locations"`
-	} `json:"records"`
+	Records cwaForecastRecords `json:"records"`
 }
 
 // --- Fetch functions ---
 
-func fetchCWACurrent(ctx context.Context, query *model.WeatherQuery, apiKey string, client service.UpstreamClient) (*model.WeatherResponse, error) {
+func fetchCWACurrent(ctx context.Context, query *model.WeatherQuery, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	q := url.Values{}
 	q.Set("Authorization", apiKey)
 	q.Set("format", "JSON")
+
+	// 有明確 LocationID 時直接帶入 StationId；lat/lon 模式則抓所有測站
 	if query.LocationID != "" {
 		q.Set("StationId", query.LocationID)
 	}
@@ -108,24 +151,33 @@ func fetchCWACurrent(ctx context.Context, query *model.WeatherQuery, apiKey stri
 	rawURL := fmt.Sprintf("%s/O-A0001-001?%s", cwaBaseURL, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
 	if err != nil {
-		return nil, eris.Wrap(err, "CWA current fetch failed")
+		return nil, fmt.Errorf("CWA current fetch failed: %w", err)
 	}
 
 	var raw cwaObsResponse
 	if err := json.Unmarshal(resp.Body, &raw); err != nil {
-		return nil, eris.Wrap(err, "CWA current parse failed")
+		return nil, fmt.Errorf("CWA current parse failed: %w", err)
 	}
 
 	stations := raw.Records.Station
 	if len(stations) == 0 {
-		return nil, eris.New("CWA: no station data")
+		return nil, fmt.Errorf("CWA: no station data")
 	}
-	st := stations[0]
+
+	// 當有 lat/lon 且沒有指定 LocationID 時，找最近的測站
+	stIdx := 0
+	if query.LocationID == "" && (query.Lat != 0 || query.Lon != 0) {
+		if found := findNearestStation(stations, query.Lat, query.Lon); found >= 0 {
+			stIdx = found
+		}
+		// found == -1 代表所有測站皆無座標資料，fallback 到第一筆
+	}
+	st := stations[stIdx]
 	we := st.WeatherElement
 
 	temp := parseFloat(we.AirTemperature)
 	humidity := parseInt(we.RelativeHumidity)
-	windSpeed := parseFloat(we.WindSpeed)
+	windSpeed := parseFloat(we.WindSpeed) * 3.6 // m/s → km/h
 	windDir := parseInt(we.WindDirection)
 	pressure := parseFloat(we.AirPressure)
 	visibility := parseVisibility(we.VisibilityDescription)
@@ -145,7 +197,7 @@ func fetchCWACurrent(ctx context.Context, query *model.WeatherQuery, apiKey stri
 		Type:      model.WeatherTypeCurrent,
 		UpdatedAt: updatedAt,
 		Location: model.Location{
-			ID:   st.StationId,
+			ID:   st.StationID,
 			Name: st.StationName,
 			Lat:  lat,
 			Lon:  lon,
@@ -164,7 +216,7 @@ func fetchCWACurrent(ctx context.Context, query *model.WeatherQuery, apiKey stri
 	}, nil
 }
 
-func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey string, client service.UpstreamClient) (*model.WeatherResponse, error) {
+func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	q := url.Values{}
 	q.Set("Authorization", apiKey)
 	q.Set("format", "JSON")
@@ -175,17 +227,17 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 	rawURL := fmt.Sprintf("%s/F-D0047-089?%s", cwaBaseURL, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
 	if err != nil {
-		return nil, eris.Wrap(err, "CWA hourly fetch failed")
+		return nil, fmt.Errorf("CWA hourly fetch failed: %w", err)
 	}
 
 	var raw cwaForecastResponse
 	if err := json.Unmarshal(resp.Body, &raw); err != nil {
-		return nil, eris.Wrap(err, "CWA hourly parse failed")
+		return nil, fmt.Errorf("CWA hourly parse failed: %w", err)
 	}
 
 	loc, elements := extractCWALocation(raw)
 	if loc == nil {
-		return nil, eris.New("CWA: no location data")
+		return nil, fmt.Errorf("CWA: no location data")
 	}
 
 	// 建立 element 索引
@@ -200,7 +252,7 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 		}
 		temp := getCWAValue(elemMap, "溫度", slot)
 		humidity := getCWAValue(elemMap, "相對濕度", slot)
-		windSpeed := getCWAValue(elemMap, "風速", slot)
+		windSpeed := getCWAValue(elemMap, "風速", slot) * 3.6 // m/s → km/h
 		windDir := getCWAValue(elemMap, "風向", slot)
 		precipProb := getCWAValue(elemMap, "3小時降雨機率", slot)
 		weather := getCWAStringValue(elemMap, "天氣現象", slot)
@@ -233,7 +285,7 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 	}, nil
 }
 
-func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string, client service.UpstreamClient) (*model.WeatherResponse, error) {
+func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	q := url.Values{}
 	q.Set("Authorization", apiKey)
 	q.Set("format", "JSON")
@@ -244,17 +296,17 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 	rawURL := fmt.Sprintf("%s/F-D0047-091?%s", cwaBaseURL, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
 	if err != nil {
-		return nil, eris.Wrap(err, "CWA daily fetch failed")
+		return nil, fmt.Errorf("CWA daily fetch failed: %w", err)
 	}
 
 	var raw cwaForecastResponse
 	if err := json.Unmarshal(resp.Body, &raw); err != nil {
-		return nil, eris.Wrap(err, "CWA daily parse failed")
+		return nil, fmt.Errorf("CWA daily parse failed: %w", err)
 	}
 
 	loc, elements := extractCWALocation(raw)
 	if loc == nil {
-		return nil, eris.New("CWA: no location data")
+		return nil, fmt.Errorf("CWA: no location data")
 	}
 
 	elemMap := buildCWAElementMap(elements)
@@ -304,25 +356,7 @@ type cwaLocation struct {
 	Lon          string
 }
 
-type cwaWeatherElement struct {
-	ElementName string
-	Times       map[string]struct {
-		Value  string
-		StrVal string
-	}
-}
-
-func extractCWALocation(raw cwaForecastResponse) (*cwaLocation, []struct {
-	ElementName string `json:"ElementName"`
-	Time        []struct {
-		StartTime    string `json:"StartTime"`
-		EndTime      string `json:"EndTime"`
-		ElementValue []struct {
-			Value    string `json:"Value"`
-			Measures string `json:"Measures"`
-		} `json:"ElementValue"`
-	} `json:"Time"`
-}) {
+func extractCWALocation(raw cwaForecastResponse) (*cwaLocation, []cwaForecastElement) {
 	if len(raw.Records.Locations) == 0 {
 		return nil, nil
 	}
@@ -338,17 +372,7 @@ func extractCWALocation(raw cwaForecastResponse) (*cwaLocation, []struct {
 	}, l.WeatherElement
 }
 
-func buildCWAElementMap(elements []struct {
-	ElementName string `json:"ElementName"`
-	Time        []struct {
-		StartTime    string `json:"StartTime"`
-		EndTime      string `json:"EndTime"`
-		ElementValue []struct {
-			Value    string `json:"Value"`
-			Measures string `json:"Measures"`
-		} `json:"ElementValue"`
-	} `json:"Time"`
-}) map[string]map[string]string {
+func buildCWAElementMap(elements []cwaForecastElement) map[string]map[string]string {
 	result := make(map[string]map[string]string)
 	for _, el := range elements {
 		timeMap := make(map[string]string)
@@ -405,7 +429,7 @@ func parseCWATime(s string) (time.Time, error) {
 			return t, nil
 		}
 	}
-	return time.Time{}, eris.Errorf("cannot parse CWA time: %s", s)
+	return time.Time{}, fmt.Errorf("cannot parse CWA time: %s", s)
 }
 
 var visibilityRe = regexp.MustCompile(`(\d+(?:\.\d+)?)`)
@@ -429,4 +453,37 @@ func parseInt(s string) int {
 	s = strings.TrimSpace(s)
 	v, _ := strconv.Atoi(s)
 	return v
+}
+
+// findNearestStation 從測站列表中找出距離 lat/lon 最近的測站（Haversine）。
+// 回傳最近測站的 index；若所有測站均無座標資料，回傳 -1。
+func findNearestStation(stations []cwaStation, lat, lon float64) int {
+	nearest := -1
+	minDist := math.MaxFloat64
+
+	for i, st := range stations {
+		if len(st.GeoInfo.Coordinates) == 0 {
+			continue
+		}
+		sLat := st.GeoInfo.Coordinates[0].Lat
+		sLon := st.GeoInfo.Coordinates[0].Lon
+		d := haversine(lat, lon, sLat, sLon)
+		if d < minDist {
+			minDist = d
+			nearest = i
+		}
+	}
+	return nearest
+}
+
+// haversine 計算兩點間的球面距離（公里）
+func haversine(lat1, lon1, lat2, lon2 float64) float64 {
+	const earthRadiusKm = 6371.0
+	dLat := (lat2 - lat1) * math.Pi / 180
+	dLon := (lon2 - lon1) * math.Pi / 180
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
+			math.Sin(dLon/2)*math.Sin(dLon/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return earthRadiusKm * c
 }

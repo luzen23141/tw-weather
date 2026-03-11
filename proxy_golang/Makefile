@@ -2,7 +2,7 @@
 
 # Build
 build:
-	go build -o bin/proxy-server .
+	go build -o bin/proxy-server ./cmd/proxy
 
 run: build
 	./bin/proxy-server

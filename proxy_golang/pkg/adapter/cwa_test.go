@@ -21,22 +21,14 @@ func TestCWA_ProviderID(t *testing.T) {
 	assert.Equal(t, "cwa", CWA{}.ProviderID())
 }
 
-func TestCWA_SupportedTypes(t *testing.T) {
-	types := CWA{}.SupportedTypes()
-	assert.Contains(t, types, model.WeatherTypeCurrent)
-	assert.Contains(t, types, model.WeatherTypeHourly)
-	assert.Contains(t, types, model.WeatherTypeDaily)
-}
-
 // --- Current ---
 
 func TestCWA_FetchCurrent_RealFixture(t *testing.T) {
 	// 使用真實 API 回傳結構的 fixture（CWA O-A0001-001）
 	client := fixtureClient("cwa_current.json")
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeCurrent)
 
-	resp, err := CWA{}.Fetch(context.Background(), &q, "test-key", client)
+	resp, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "test-key", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -50,7 +42,7 @@ func TestCWA_FetchCurrent_RealFixture(t *testing.T) {
 	require.NotNil(t, resp.Current)
 	assert.InDelta(t, 19.7, resp.Current.Temperature, 0.01)
 	assert.Equal(t, 65, resp.Current.Humidity)
-	assert.InDelta(t, 2.5, resp.Current.WindSpeed, 0.01)
+	assert.InDelta(t, 9.0, resp.Current.WindSpeed, 0.01)
 
 	require.NotNil(t, resp.Current.WindDirection)
 	assert.Equal(t, 37, *resp.Current.WindDirection)
@@ -78,10 +70,10 @@ func TestCWA_FetchCurrent_WithStationID(t *testing.T) {
 	}
 
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeCurrent)
+
 	q.LocationID = "C0TB40"
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "my-key", client)
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "my-key", client)
 	require.NoError(t, err)
 	assert.Contains(t, capturedURL, "StationId=C0TB40")
 	assert.Contains(t, capturedURL, "Authorization=my-key")
@@ -95,27 +87,24 @@ func TestCWA_FetchCurrent_NoStations(t *testing.T) {
 	}
 
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeCurrent)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", client)
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "key", client)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no station data")
 }
 
 func TestCWA_FetchCurrent_NetworkError(t *testing.T) {
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeCurrent)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", errorClient(assert.AnError))
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "key", errorClient(assert.AnError))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "CWA current fetch failed")
 }
 
 func TestCWA_FetchCurrent_BadJSON(t *testing.T) {
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeCurrent)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", badJSONClient())
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "key", badJSONClient())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "CWA current parse failed")
 }
@@ -125,10 +114,10 @@ func TestCWA_FetchCurrent_BadJSON(t *testing.T) {
 func TestCWA_FetchHourly_RealFixture(t *testing.T) {
 	client := fixtureClient("cwa_hourly.json")
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeHourly)
+
 	q.LocationID = "大安區"
 
-	resp, err := CWA{}.Fetch(context.Background(), &q, "test-key", client)
+	resp, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "test-key", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -143,7 +132,7 @@ func TestCWA_FetchHourly_RealFixture(t *testing.T) {
 	first := resp.Hourly[0]
 	assert.InDelta(t, 18.0, first.Temperature, 0.01)
 	assert.Equal(t, 75, first.Humidity)
-	assert.InDelta(t, 3.5, first.WindSpeed, 0.01)
+	assert.InDelta(t, 12.6, first.WindSpeed, 0.01)
 	require.NotNil(t, first.WindDirection)
 	assert.Equal(t, 45, *first.WindDirection)
 	require.NotNil(t, first.PrecipProb)
@@ -161,28 +150,26 @@ func TestCWA_FetchHourly_WithLocationID(t *testing.T) {
 	}
 
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeHourly)
+
 	q.LocationID = "F-D0047-061"
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", client)
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", client)
 	require.NoError(t, err)
 	assert.Contains(t, capturedURL, "locationId=F-D0047-061")
 }
 
 func TestCWA_FetchHourly_NetworkError(t *testing.T) {
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeHourly)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", errorClient(assert.AnError))
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", errorClient(assert.AnError))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "CWA hourly fetch failed")
 }
 
 func TestCWA_FetchHourly_BadJSON(t *testing.T) {
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeHourly)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", badJSONClient())
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", badJSONClient())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "CWA hourly parse failed")
 }
@@ -195,9 +182,8 @@ func TestCWA_FetchHourly_EmptyLocations(t *testing.T) {
 	}
 
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeHourly)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", client)
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", client)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no location data")
 }
@@ -207,15 +193,18 @@ func TestCWA_FetchHourly_EmptyLocations(t *testing.T) {
 func TestCWA_FetchDaily_RealFixture(t *testing.T) {
 	client := fixtureClient("cwa_daily.json")
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeDaily)
 
-	resp, err := CWA{}.Fetch(context.Background(), &q, "test-key", client)
+	resp, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "test-key", client)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, model.WeatherTypeDaily, resp.Type)
 
 	require.NotEmpty(t, resp.Daily)
+	// 按日期排序確保順序確定（map 遍歷順序不確定）
+	sort.Slice(resp.Daily, func(i, j int) bool {
+		return resp.Daily[i].Date.Before(resp.Daily[j].Date)
+	})
 	first := resp.Daily[0]
 	assert.InDelta(t, 22.0, first.TempMax, 0.01)
 	assert.InDelta(t, 15.0, first.TempMin, 0.01)
@@ -228,18 +217,16 @@ func TestCWA_FetchDaily_RealFixture(t *testing.T) {
 
 func TestCWA_FetchDaily_NetworkError(t *testing.T) {
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeDaily)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", errorClient(assert.AnError))
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "key", errorClient(assert.AnError))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "CWA daily fetch failed")
 }
 
 func TestCWA_FetchDaily_BadJSON(t *testing.T) {
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeDaily)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", badJSONClient())
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "key", badJSONClient())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "CWA daily parse failed")
 }
@@ -248,9 +235,8 @@ func TestCWA_FetchDaily_BadJSON(t *testing.T) {
 
 func TestCWA_Fetch_UnsupportedType(t *testing.T) {
 	q := *cwaQuery
-	q.Type = string(model.WeatherTypeHistory)
 
-	_, err := CWA{}.Fetch(context.Background(), &q, "key", &mockUpstreamClient{})
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherType("unsupported"), "key", &mockUpstreamClient{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "CWA does not support type")
 }

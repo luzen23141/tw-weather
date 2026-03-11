@@ -75,3 +75,7 @@ weather_*.txt
 # Vercel local project config
 .vercel/
 proxy_golang/.vercel/
+
+# Go build artifacts & coverage
+proxy_golang/bin/
+proxy_golang/coverage_*.out

@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"proxy_golang/pkg/adapter"
 	"proxy_golang/pkg/config"
 	"proxy_golang/pkg/controller"
 	"proxy_golang/pkg/repository"
@@ -33,17 +34,29 @@ func New() *App {
 	// Repository 層
 	cacheRepo := repository.NewCacheRepository()
 
-	// Service 層
-	validatorSvc := service.NewValidatorService()
+	// 共用 upstream client
 	upstreamClient := service.NewUpstreamClient()
-	proxySvc := service.NewProxyService(cfg, validatorSvc, cacheRepo, upstreamClient)
+
+	// Service 層 - Proxy
+	proxySvc := service.NewProxyService(cfg, cacheRepo, upstreamClient)
+
+	// Adapter Registry
+	adapterRegistry := adapter.NewRegistry(
+		adapter.CWA{},
+		adapter.WeatherAPI{},
+		adapter.OpenMeteo{},
+	)
+
+	// Service 層 - Weather
+	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient)
 
 	// Controller 層
 	proxyCtrl := controller.NewProxyController(proxySvc)
 	debugCtrl := controller.NewDebugController()
+	weatherCtrl := controller.NewWeatherController(weatherSvc)
 
 	// 路由設定
-	r := router.Setup(proxyCtrl, debugCtrl, cfg.ProxySecret)
+	r := router.Setup(proxyCtrl, debugCtrl, weatherCtrl, cfg.ProxySecret)
 
 	return &App{
 		Config:  cfg,

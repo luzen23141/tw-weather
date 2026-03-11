@@ -8,7 +8,7 @@ describe('location-resolver', () => {
     expect(location.city).toBe('台北市');
     expect(location.township).toBe('信義區');
     expect(location.district).toBe('信義區');
-    expect(location.name).toBe('信義區');
+    expect(location.name).toBe('台北市 / 信義區');
   });
 
   it('台灣外座標應回退為座標字串', () => {
