@@ -199,7 +199,7 @@ API 層 (Adapters) → Service (統一介面) → Aggregator → UI Hooks → Co
 - 覆蓋率目標：>= 70%
 - 位置：`src/**/*.test.ts` 或 `__tests__/`
 - 執行：`pnpm test` / `pnpm test:watch` / `pnpm test:coverage`
-- 配置：`jest.config.ts`（使用 jest-expo preset）
+- 配置：`jest.config.unit.js` / `jest.config.integration.js`（使用 jest-expo preset）
 
 ### E2E 測試（Web）
 

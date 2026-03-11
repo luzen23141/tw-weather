@@ -10,6 +10,7 @@ const config: KnipConfig = {
     'jest.setup.ts',
     'debug_cwa.ts',
     'commitlint.config.js',
+    'postcss.config.js',
   ],
   project: [
     'app/**/*.{ts,tsx}',
