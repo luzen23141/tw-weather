@@ -1,105 +1,117 @@
-describe('CurrentWeatherCard Component', () => {
-  describe('渲染測試', () => {
-    it('應正確渲染天氣卡片', () => {
-      const mockData = {
-        temperature: 25,
-        description: '晴天',
-        humidity: 65,
-      };
+import React from 'react';
+import { render } from '@testing-library/react-native';
 
-      expect(mockData.temperature).toBeDefined();
-      expect(mockData.description).toBeDefined();
-    });
+import { CurrentWeatherCard } from '@/components/weather/CurrentWeatherCard';
+import type { CurrentWeather, Location } from '@/api/types';
 
-    it('應顯示溫度', () => {
-      const data = { temperature: 25.5 };
-      const display = `${data.temperature}°C`;
-      expect(display).toContain('25.5');
-    });
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: ({ name }: { name: string }) => name,
+}));
 
-    it('應顯示天氣描述', () => {
-      const data = { description: '晴天' };
-      expect(data.description).toBe('晴天');
-    });
+jest.mock('@/hooks/useMDColors', () => ({
+  useMDColors: () => ({
+    primary: '#3366ff',
+    outline: '#778899',
+  }),
+}));
 
-    it('應顯示濕度', () => {
-      const data = { humidity: 65 };
-      const display = `${data.humidity}%`;
-      expect(display).toContain('65');
-    });
+jest.mock('@/utils/date', () => ({
+  formatTime: jest.fn((value: string) => `formatted:${value}`),
+}));
+
+jest.mock('@/utils/glass', () => ({
+  getGlassStyle: jest.fn(() => ({})),
+}));
+
+jest.mock('@/utils/unit-conversion', () => ({
+  formatWindSpeed: jest.fn((value: number, unit: string) => `${value}-${unit}`),
+}));
+
+jest.mock('@/utils/weather-code', () => ({
+  getWeatherCodeInfo: jest.fn((code: number) => ({
+    icon: `icon-${code}`,
+    description: `weather-${code}`,
+  })),
+}));
+
+jest.mock('@/components/ui/SourceBadge', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+
+  return {
+    SourceBadge: ({ source }: { source: string }) => React.createElement(Text, null, `badge:${source}`),
+  };
+});
+
+jest.mock('@/store/settings.store', () => ({
+  useSettingsStore: (selector: (state: { locationDisplayFormat: string }) => string) =>
+    selector({ locationDisplayFormat: 'township' }),
+}));
+
+const mockLocation: Location = {
+  latitude: 25.033,
+  longitude: 121.5654,
+  name: '台北市信義區',
+  city: '台北市',
+  township: '信義區',
+  neighborhood: '市府站',
+};
+
+const mockCurrentWeather: CurrentWeather = {
+  timestamp: '2026-03-09T06:30:00.000Z',
+  temperature: 25.4,
+  apparentTemperature: 27.2,
+  humidity: 66,
+  description: '原始描述不應直接顯示',
+  weatherCode: 3,
+  windSpeed: 18,
+  windDirection: 90,
+  precipitation: 1.25,
+  precipitationProbability: 70,
+};
+
+describe('CurrentWeatherCard', () => {
+  it('應渲染主要資訊、次要地點文字與來源 badge', () => {
+    const { getByText, queryByText } = render(
+      <CurrentWeatherCard data={mockCurrentWeather} location={mockLocation} source="weatherapi" />,
+    );
+
+    expect(getByText('台北市信義區')).toBeTruthy();
+    expect(getByText('台北市 · 市府站')).toBeTruthy();
+    expect(getByText('badge:weatherapi')).toBeTruthy();
+    expect(getByText('25°')).toBeTruthy();
+    expect(getByText('weather-3')).toBeTruthy();
+    expect(getByText('體感溫度')).toBeTruthy();
+    expect(getByText('27°')).toBeTruthy();
+    expect(getByText('濕度')).toBeTruthy();
+    expect(getByText('66%')).toBeTruthy();
+    expect(getByText('降水量')).toBeTruthy();
+    expect(getByText('1.3 mm')).toBeTruthy();
+    expect(getByText('最後更新：formatted:2026-03-09T06:30:00.000Z')).toBeTruthy();
+    expect(queryByText('原始描述不應直接顯示')).toBeNull();
   });
 
-  describe('undefined 值防護', () => {
-    it('應處理 undefined 溫度', () => {
-      const data: any = {};
-      const temperature = data.temperature ?? 'N/A';
-      expect(temperature).toBe('N/A');
-    });
+  it('應依 windSpeedUnit 顯示格式化風速', () => {
+    const { getByText, rerender } = render(
+      <CurrentWeatherCard
+        data={mockCurrentWeather}
+        location={mockLocation}
+        source="cwa"
+        windSpeedUnit="mph"
+      />,
+    );
 
-    it('應處理 undefined 濕度', () => {
-      const data: any = {};
-      const humidity = data.humidity ?? 'N/A';
-      expect(humidity).toBe('N/A');
-    });
+    expect(getByText('18-mph')).toBeTruthy();
 
-    it('應處理 undefined 風速', () => {
-      const data: any = {};
-      const windSpeed = data.windSpeed ?? 'N/A';
-      expect(windSpeed).toBe('N/A');
-    });
+    rerender(
+      <CurrentWeatherCard
+        data={mockCurrentWeather}
+        location={mockLocation}
+        source="cwa"
+        windSpeedUnit="ms"
+      />,
+    );
 
-    it('應處理 undefined 描述', () => {
-      const data: any = {};
-      const description = data.description ?? '未知';
-      expect(description).toBe('未知');
-    });
-
-    it('應提供預設值', () => {
-      const temperature = undefined;
-      const display = temperature !== undefined ? `${temperature}°C` : '--';
-      expect(display).toBe('--');
-    });
-  });
-
-  describe('數據驗證', () => {
-    it('應驗證溫度範圍', () => {
-      const temperature = 25;
-      const isValid = temperature >= -50 && temperature <= 60;
-      expect(isValid).toBe(true);
-    });
-
-    it('應驗證濕度百分比', () => {
-      const humidity = 65;
-      const isValid = humidity >= 0 && humidity <= 100;
-      expect(isValid).toBe(true);
-    });
-
-    it('應拒絕無效溫度', () => {
-      const temperature = 150;
-      const isValid = temperature >= -50 && temperature <= 60;
-      expect(isValid).toBe(false);
-    });
-  });
-
-  describe('快照測試', () => {
-    it('應匹配天氣卡片快照', () => {
-      const data = {
-        temperature: 25,
-        description: '晴天',
-        humidity: 65,
-        windSpeed: 10,
-      };
-
-      const snapshot = JSON.stringify(data);
-      expect(snapshot).toContain('temperature');
-      expect(snapshot).toContain('晴天');
-    });
-
-    it('應匹配不同天氣的快照', () => {
-      const rainy = { temperature: 18, description: '下雨', humidity: 85 };
-      const sunny = { temperature: 28, description: '晴天', humidity: 45 };
-
-      expect(rainy.description).not.toBe(sunny.description);
-    });
+    expect(getByText('18-ms')).toBeTruthy();
   });
 });

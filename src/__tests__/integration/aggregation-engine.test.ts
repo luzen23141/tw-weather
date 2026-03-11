@@ -1,161 +1,372 @@
+import { AggregationEngine } from '@/aggregator/AggregationEngine';
+import { DEFAULT_AGGREGATION_CONFIG, type WeatherData, type WeatherSource } from '@/api/types';
+
+const FIXED_NOW = '2026-03-09T08:00:00.000Z';
+
+function createWeatherData(
+  source: WeatherSource,
+  values: {
+    currentTemp: number;
+    apparentTemp: number;
+    humidity: number;
+    weatherCode: number;
+    windSpeed: number;
+    windDirection: number;
+    precipitation: number;
+    precipitationProbability: number;
+    description: string;
+    pressure?: number;
+    visibility?: number;
+    uvIndex?: number;
+    hourlyTemps: [number, number];
+    hourlyAppTemps: [number, number];
+    hourlyCodes: [number, number];
+    hourlyPrecipitationProbability: [number, number];
+    hourlyPrecipitation: [number, number];
+    hourlyHumidity: [number, number];
+    hourlyWindSpeed: [number, number];
+    dailyMin: number;
+    dailyMax: number;
+    dailyCode: number;
+    dailyPrecipitationProbability: number;
+    dailyPrecipitationSum: number;
+    dailyWindSpeedMax: number;
+    dailyUvIndexMax?: number;
+  },
+): WeatherData {
+  const current = {
+    timestamp: '2026-03-09T07:00:00.000Z',
+    temperature: values.currentTemp,
+    apparentTemperature: values.apparentTemp,
+    humidity: values.humidity,
+    description: values.description,
+    weatherCode: values.weatherCode,
+    windSpeed: values.windSpeed,
+    windDirection: values.windDirection,
+    precipitation: values.precipitation,
+    precipitationProbability: values.precipitationProbability,
+    ...(values.pressure !== undefined ? { pressure: values.pressure } : {}),
+    ...(values.visibility !== undefined ? { visibility: values.visibility } : {}),
+    ...(values.uvIndex !== undefined ? { uvIndex: values.uvIndex } : {}),
+  };
+
+  const dailyForecast = {
+    date: '2026-03-10',
+    temperatureMin: values.dailyMin,
+    temperatureMax: values.dailyMax,
+    weatherCode: values.dailyCode,
+    description: `${values.description}-day`,
+    precipitationProbability: values.dailyPrecipitationProbability,
+    precipitationSum: values.dailyPrecipitationSum,
+    sunrise: '2026-03-10T06:10:00.000Z',
+    sunset: '2026-03-10T18:05:00.000Z',
+    windSpeedMax: values.dailyWindSpeedMax,
+    ...(values.dailyUvIndexMax !== undefined ? { uvIndexMax: values.dailyUvIndexMax } : {}),
+  };
+
+  return {
+    location: {
+      latitude: 25.033,
+      longitude: 121.5654,
+      name: '台北市信義區',
+      city: '台北市',
+      township: '信義區',
+    },
+    source,
+    fetchedAt: '2026-03-09T07:30:00.000Z',
+    current,
+    hourlyForecast: [
+      {
+        timestamp: '2026-03-09T09:00:00.000Z',
+        temperature: values.hourlyTemps[0],
+        apparentTemperature: values.hourlyAppTemps[0],
+        weatherCode: values.hourlyCodes[0],
+        description: `${values.description}-09`,
+        precipitationProbability: values.hourlyPrecipitationProbability[0],
+        precipitation: values.hourlyPrecipitation[0],
+        humidity: values.hourlyHumidity[0],
+        windSpeed: values.hourlyWindSpeed[0],
+        windDirection: values.windDirection,
+      },
+      {
+        timestamp: '2026-03-09T10:00:00.000Z',
+        temperature: values.hourlyTemps[1],
+        apparentTemperature: values.hourlyAppTemps[1],
+        weatherCode: values.hourlyCodes[1],
+        description: `${values.description}-10`,
+        precipitationProbability: values.hourlyPrecipitationProbability[1],
+        precipitation: values.hourlyPrecipitation[1],
+        humidity: values.hourlyHumidity[1],
+        windSpeed: values.hourlyWindSpeed[1],
+        windDirection: values.windDirection,
+      },
+    ],
+    dailyForecast: [dailyForecast],
+    history: [
+      {
+        date: '2026-03-08',
+        temperatureMax: 28,
+        temperatureMin: 19,
+        temperatureAvg: 23,
+        weatherCode: 1,
+        description: '昨日晴朗',
+        precipitationSum: 0,
+        windSpeedAvg: 10,
+        humidityAvg: 60,
+        source,
+      },
+    ],
+  };
+}
+
 describe('AggregationEngine', () => {
-  describe('aggregate() 聚合邏輯', () => {
-    it('應聚合溫度', () => {
-      const datasources = [{ temperature: 25 }, { temperature: 26 }, { temperature: 24 }];
-
-      const avgTemp = datasources.reduce((sum, ds) => sum + ds.temperature, 0) / datasources.length;
-      expect(avgTemp).toBe(25);
-    });
-
-    it('應聚合濕度', () => {
-      const datasources = [{ humidity: 60 }, { humidity: 65 }, { humidity: 70 }];
-
-      const avgHumidity =
-        datasources.reduce((sum, ds) => sum + ds.humidity, 0) / datasources.length;
-      expect(avgHumidity).toBe(65);
-    });
-
-    it('應計算溫度範圍', () => {
-      const datasources = [{ temperature: 20 }, { temperature: 28 }, { temperature: 25 }];
-
-      const temperatures = datasources.map((ds) => ds.temperature);
-      const max = Math.max(...temperatures);
-      const min = Math.min(...temperatures);
-
-      expect(max).toBe(28);
-      expect(min).toBe(20);
-    });
-
-    it('應聚合風速', () => {
-      const datasources = [{ windSpeed: 8 }, { windSpeed: 10 }, { windSpeed: 12 }];
-
-      const avgWind = datasources.reduce((sum, ds) => sum + ds.windSpeed, 0) / datasources.length;
-      expect(avgWind).toBe(10);
-    });
-
-    it('應聚合降水概率', () => {
-      const datasources = [
-        { precipitationProbability: 10 },
-        { precipitationProbability: 20 },
-        { precipitationProbability: 30 },
-      ];
-
-      const avgPrecip =
-        datasources.reduce((sum, ds) => sum + ds.precipitationProbability, 0) / datasources.length;
-      expect(avgPrecip).toBe(20);
-    });
-
-    it('應選擇多數天氣描述', () => {
-      const descriptions = ['晴天', '晴天', '多雲'];
-      const counts = descriptions.reduce((acc: any, desc) => {
-        acc[desc] = (acc[desc] || 0) + 1;
-        return acc;
-      }, {});
-
-      const mostCommon = Object.keys(counts).reduce((a, b) => (counts[a] > counts[b] ? a : b));
-      expect(mostCommon).toBe('晴天');
-    });
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(FIXED_NOW));
   });
 
-  describe('partial failure 情境', () => {
-    it('應在一個資料源失敗時仍能聚合', () => {
-      const datasources = [
-        { temperature: 25, success: true },
-        { temperature: null, success: false },
-        { temperature: 26, success: true },
-      ];
-
-      const validSources = datasources.filter((ds) => ds.success && ds.temperature !== null);
-      const avgTemp =
-        validSources.reduce((sum, ds) => sum + (ds.temperature || 0), 0) / validSources.length;
-
-      expect(validSources.length).toBe(2);
-      expect(avgTemp).toBeCloseTo(25.5, 1);
-    });
-
-    it('應在所有資料源都失敗時返回 null', () => {
-      const datasources = [
-        { temperature: null, success: false },
-        { temperature: null, success: false },
-      ];
-
-      const validSources = datasources.filter((ds) => ds.success);
-      const result = validSources.length > 0 ? validSources[0]?.temperature : null;
-
-      expect(result).toBeNull();
-    });
-
-    it('應記錄失敗的資料源', () => {
-      const datasources = [
-        { source: 'CWA', success: true },
-        { source: 'Open-Meteo', success: false },
-        { source: 'WeatherAPI', success: true },
-      ];
-
-      const failed = datasources.filter((ds) => !ds.success);
-      expect(failed.length).toBe(1);
-      expect(failed[0]?.source).toBe('Open-Meteo');
-    });
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
-  describe('聚合驗證', () => {
-    it('應驗證聚合結果有效性', () => {
-      const aggregated = {
-        temperature: 25,
-        humidity: 65,
+  it('在沒有資料來源時應拋出錯誤', () => {
+    const engine = new AggregationEngine();
+
+    expect(() => engine.aggregate([], DEFAULT_AGGREGATION_CONFIG)).toThrow(
+      'No weather data to aggregate',
+    );
+  });
+
+  it('應以真實來源資料聚合 current、hourly、daily 與 history', () => {
+    const engine = new AggregationEngine();
+    const results = [
+      createWeatherData('cwa', {
+        currentTemp: 24,
+        apparentTemp: 25,
+        humidity: 60,
+        weatherCode: 1,
+        windSpeed: 12,
+        windDirection: 45,
+        precipitation: 0.4,
+        precipitationProbability: 40,
+        description: '晴時多雲',
+        pressure: 1008,
+        visibility: 10,
+        hourlyTemps: [24, 25],
+        hourlyAppTemps: [25, 26],
+        hourlyCodes: [1, 2],
+        hourlyPrecipitationProbability: [30, 45],
+        hourlyPrecipitation: [0.2, 0.5],
+        hourlyHumidity: [60, 62],
+        hourlyWindSpeed: [10, 12],
+        dailyMin: 20,
+        dailyMax: 28,
+        dailyCode: 2,
+        dailyPrecipitationProbability: 30,
+        dailyPrecipitationSum: 1.2,
+        dailyWindSpeedMax: 18,
+      }),
+      createWeatherData('open-meteo', {
+        currentTemp: 26,
+        apparentTemp: 27,
+        humidity: 66,
+        weatherCode: 1,
+        windSpeed: 18,
+        windDirection: 90,
+        precipitation: 2.8,
+        precipitationProbability: 60,
+        description: '局部短暫雨',
+        pressure: 1012,
+        visibility: 8,
+        uvIndex: 7,
+        hourlyTemps: [26, 27],
+        hourlyAppTemps: [27, 28],
+        hourlyCodes: [1, 3],
+        hourlyPrecipitationProbability: [60, 55],
+        hourlyPrecipitation: [1.1, 1.3],
+        hourlyHumidity: [66, 68],
+        hourlyWindSpeed: [18, 20],
+        dailyMin: 21,
+        dailyMax: 30,
+        dailyCode: 1,
+        dailyPrecipitationProbability: 70,
+        dailyPrecipitationSum: 5.4,
+        dailyWindSpeedMax: 22,
+        dailyUvIndexMax: 8,
+      }),
+      createWeatherData('weatherapi', {
+        currentTemp: 30,
+        apparentTemp: 31,
+        humidity: 72,
+        weatherCode: 3,
+        windSpeed: 24,
+        windDirection: 135,
+        precipitation: 5.1,
+        precipitationProbability: 80,
+        description: '午後雷陣雨',
+        visibility: 6,
+        hourlyTemps: [30, 29],
+        hourlyAppTemps: [31, 30],
+        hourlyCodes: [3, 3],
+        hourlyPrecipitationProbability: [80, 75],
+        hourlyPrecipitation: [2.5, 2.1],
+        hourlyHumidity: [72, 70],
+        hourlyWindSpeed: [24, 22],
+        dailyMin: 23,
+        dailyMax: 32,
+        dailyCode: 3,
+        dailyPrecipitationProbability: 80,
+        dailyPrecipitationSum: 8.6,
+        dailyWindSpeedMax: 26,
+        dailyUvIndexMax: 10,
+      }),
+    ];
+
+    const aggregated = engine.aggregate(results, DEFAULT_AGGREGATION_CONFIG);
+
+    expect(aggregated.location).toEqual(results[0]?.location);
+    expect(aggregated.source).toBe('aggregate');
+    expect(aggregated.fetchedAt).toBe(FIXED_NOW);
+    expect(aggregated.history).toEqual(results[0]?.history);
+
+    expect(aggregated.current).toMatchObject({
+      timestamp: FIXED_NOW,
+      temperature: 27,
+      apparentTemperature: 27.666666666666668,
+      humidity: 66,
+      description: '晴時多雲',
+      weatherCode: 1,
+      windSpeed: 18,
+      windDirection: 45,
+      precipitation: 5.1,
+      precipitationProbability: 80,
+      pressure: 1010,
+      visibility: 8,
+      uvIndex: 7,
+    });
+
+    expect(aggregated.hourlyForecast).toHaveLength(2);
+    expect(aggregated.hourlyForecast[0]).toEqual({
+      timestamp: '2026-03-09T09:00:00.000Z',
+      temperature: 27,
+      apparentTemperature: 27.666666666666668,
+      weatherCode: 1,
+      description: '晴時多雲-09',
+      precipitationProbability: 80,
+      precipitation: 2.5,
+      humidity: 66,
+      windSpeed: 17.333333333333332,
+      windDirection: 45,
+    });
+    expect(aggregated.hourlyForecast[1]).toEqual({
+      timestamp: '2026-03-09T10:00:00.000Z',
+      temperature: 27,
+      apparentTemperature: 28,
+      weatherCode: 3,
+      description: '晴時多雲-10',
+      precipitationProbability: 75,
+      precipitation: 2.1,
+      humidity: 66.66666666666667,
+      windSpeed: 18,
+      windDirection: 45,
+    });
+
+    expect(aggregated.dailyForecast).toEqual([
+      {
+        date: '2026-03-10',
+        temperatureMax: 32,
+        temperatureMin: 20,
+        weatherCode: 2,
+        description: '晴時多雲-day',
+        precipitationProbability: 80,
+        precipitationSum: 8.6,
+        sunrise: '2026-03-10T06:10:00.000Z',
+        sunset: '2026-03-10T18:05:00.000Z',
+        windSpeedMax: 26,
+        uvIndexMax: 10,
+      },
+    ]);
+  });
+
+  it('應支援 average 與 all 規則，且在缺少可選欄位時不輸出該欄位', () => {
+    const engine = new AggregationEngine();
+    const results = [
+      createWeatherData('cwa', {
+        currentTemp: 20,
+        apparentTemp: 21,
+        humidity: 55,
+        weatherCode: 2,
         windSpeed: 10,
-      };
+        windDirection: 180,
+        precipitation: 0,
+        precipitationProbability: 70,
+        description: '陰天',
+        hourlyTemps: [20, 22],
+        hourlyAppTemps: [21, 23],
+        hourlyCodes: [2, 2],
+        hourlyPrecipitationProbability: [70, 30],
+        hourlyPrecipitation: [0, 0.2],
+        hourlyHumidity: [55, 57],
+        hourlyWindSpeed: [10, 12],
+        dailyMin: 18,
+        dailyMax: 24,
+        dailyCode: 2,
+        dailyPrecipitationProbability: 70,
+        dailyPrecipitationSum: 0.2,
+        dailyWindSpeedMax: 14,
+      }),
+      createWeatherData('open-meteo', {
+        currentTemp: 26,
+        apparentTemp: 27,
+        humidity: 65,
+        weatherCode: 4,
+        windSpeed: 14,
+        windDirection: 200,
+        precipitation: 1.2,
+        precipitationProbability: 40,
+        description: '多雲',
+        hourlyTemps: [26, 24],
+        hourlyAppTemps: [27, 25],
+        hourlyCodes: [4, 4],
+        hourlyPrecipitationProbability: [40, 20],
+        hourlyPrecipitation: [1.2, 0.6],
+        hourlyHumidity: [65, 63],
+        hourlyWindSpeed: [14, 16],
+        dailyMin: 20,
+        dailyMax: 28,
+        dailyCode: 4,
+        dailyPrecipitationProbability: 40,
+        dailyPrecipitationSum: 1.8,
+        dailyWindSpeedMax: 16,
+      }),
+    ];
 
-      const isValid =
-        aggregated.temperature >= -50 &&
-        aggregated.temperature <= 60 &&
-        aggregated.humidity >= 0 &&
-        aggregated.humidity <= 100 &&
-        aggregated.windSpeed >= 0;
-
-      expect(isValid).toBe(true);
+    const aggregated = engine.aggregate(results, {
+      ...DEFAULT_AGGREGATION_CONFIG,
+      temperature: 'average',
+      precipitation: 'all',
     });
 
-    it('應計算聚合置信度', () => {
-      const sourcesCount = 3;
-      const successCount = 3;
-      const confidence = (successCount / sourcesCount) * 100;
+    expect(aggregated.current.temperature).toBe(23);
+    expect(aggregated.current.apparentTemperature).toBe(24);
+    expect(aggregated.current.precipitationProbability).toBe(55);
+    expect(aggregated.current.pressure).toBeUndefined();
+    expect(aggregated.current.visibility).toBeUndefined();
+    expect(aggregated.current.uvIndex).toBeUndefined();
 
-      expect(confidence).toBe(100);
-    });
-  });
-
-  describe('時序資料聚合', () => {
-    it('應聚合逐小時預報', () => {
-      const hourly = [
-        [
-          { time: '10:00', temp: 20 },
-          { time: '11:00', temp: 21 },
-        ],
-        [
-          { time: '10:00', temp: 21 },
-          { time: '11:00', temp: 22 },
-        ],
-      ];
-
-      // 聚合同一時間點的溫度
-      const aggByTime: any = {};
-      hourly.forEach((source) => {
-        source.forEach((item) => {
-          if (!aggByTime[item.time]) {
-            aggByTime[item.time] = [];
-          }
-          aggByTime[item.time].push(item.temp);
-        });
-      });
-
-      const result = Object.entries(aggByTime).map(([time, temps]: any) => ({
-        time,
-        avgTemp: temps.reduce((a: number, b: number) => a + b, 0) / temps.length,
-      }));
-
-      expect(result[0]?.avgTemp).toBe(20.5);
-      expect(result[1]?.avgTemp).toBe(21.5);
+    expect(aggregated.hourlyForecast[0]?.temperature).toBe(23);
+    expect(aggregated.hourlyForecast[0]?.precipitationProbability).toBe(55);
+    expect(aggregated.dailyForecast[0]).toEqual({
+      date: '2026-03-10',
+      temperatureMax: 26,
+      temperatureMin: 19,
+      weatherCode: 2,
+      description: '陰天-day',
+      precipitationProbability: 55,
+      precipitationSum: 1.8,
+      sunrise: '2026-03-10T06:10:00.000Z',
+      sunset: '2026-03-10T18:05:00.000Z',
+      windSpeedMax: 16,
     });
   });
 });

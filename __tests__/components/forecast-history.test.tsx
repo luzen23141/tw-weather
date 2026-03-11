@@ -1,11 +1,13 @@
 import { createMockDailyForecast, createMockHourlyForecast } from '../factories/weather.factory';
 
+const FIXED_BASE_DATE = new Date('2026-03-07T00:00:00.000Z').getTime();
+
 describe('預報和歷史頁面', () => {
   describe('7日預報', () => {
     it('應顯示 7 天的預報', () => {
       const forecast = Array.from({ length: 7 }, (_, i) =>
         createMockDailyForecast({
-          date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '',
+          date: new Date(FIXED_BASE_DATE + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '',
         }),
       );
 
@@ -41,7 +43,7 @@ describe('預報和歷史頁面', () => {
     it('應顯示 24 小時預報', () => {
       const hourlyForecasts = Array.from({ length: 24 }, (_, i) =>
         createMockHourlyForecast({
-          timestamp: new Date(Date.now() + i * 60 * 60 * 1000).toISOString(),
+          timestamp: new Date(FIXED_BASE_DATE + i * 60 * 60 * 1000).toISOString(),
         }),
       );
 
@@ -62,8 +64,8 @@ describe('預報和歷史頁面', () => {
   describe('歷史天氣', () => {
     it('應顯示歷史天氣記錄', () => {
       const history = Array.from({ length: 30 }, (_, i) => ({
-        date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        temperature: 20 + Math.random() * 10,
+        date: new Date(FIXED_BASE_DATE - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        temperature: 20 + (i % 10),
       }));
 
       expect(history.length).toBe(30);

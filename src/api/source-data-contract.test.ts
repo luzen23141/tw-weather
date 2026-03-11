@@ -89,10 +89,7 @@ describe('資料源資料契約（頁面使用欄位）', () => {
     jest.resetModules();
     jest.clearAllMocks();
 
-    process.env.EXPO_PUBLIC_CWA_API_KEY = 'test-cwa-key';
-    process.env.EXPO_PUBLIC_WEATHERAPI_KEY = 'test-weatherapi-key';
-    process.env.EXPO_PUBLIC_OPENWEATHERMAP_KEY = 'test-owm-key';
-    delete process.env.EXPO_PUBLIC_PROXY_URL;
+    process.env.EXPO_PUBLIC_PROXY_URL = 'https://proxy.test';
 
     global.fetch = jest.fn();
   });
@@ -684,8 +681,9 @@ describe('資料源資料契約（頁面使用欄位）', () => {
 
     (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
       const urlString = url.toString();
+      const decodedUrl = decodeURIComponent(urlString);
 
-      if (urlString.includes('data/2.5/weather')) {
+      if (decodedUrl.includes('endpoint=data/2.5/weather')) {
         return Promise.resolve(
           createJsonResponse({
             dt: 1709800000,
@@ -704,7 +702,7 @@ describe('資料源資料契約（頁面使用欄位）', () => {
         );
       }
 
-      if (urlString.includes('data/2.5/forecast')) {
+      if (decodedUrl.includes('endpoint=data/2.5/forecast')) {
         return Promise.resolve(
           createJsonResponse({
             list: [
@@ -760,8 +758,12 @@ describe('資料源資料契約（頁面使用欄位）', () => {
 
     (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
       const urlString = url.toString();
+      const decodedUrl = decodeURIComponent(urlString);
 
-      if (urlString.includes('weatherapi.com') && urlString.includes('/forecast.json')) {
+      if (
+        decodedUrl.includes('service=weatherapi') &&
+        decodedUrl.includes('endpoint=forecast.json')
+      ) {
         return Promise.resolve(
           createJsonResponse({
             current: {
@@ -817,7 +819,10 @@ describe('資料源資料契約（頁面使用欄位）', () => {
         );
       }
 
-      if (urlString.includes('weatherapi.com') && urlString.includes('/history.json')) {
+      if (
+        decodedUrl.includes('service=weatherapi') &&
+        decodedUrl.includes('endpoint=history.json')
+      ) {
         return Promise.reject(new Error('history gateway timeout'));
       }
 
@@ -836,12 +841,16 @@ describe('資料源資料契約（頁面使用欄位）', () => {
 
     (global.fetch as jest.Mock).mockImplementation((url: string | URL) => {
       const urlString = url.toString();
+      const decodedUrl = decodeURIComponent(urlString);
 
       if (urlString.includes('archive-api.open-meteo.com')) {
         return Promise.resolve(createJsonResponse({ error: 'failed' }, false, 500));
       }
 
-      if (urlString.includes('weatherapi.com') && urlString.includes('/history.json')) {
+      if (
+        decodedUrl.includes('service=weatherapi') &&
+        decodedUrl.includes('endpoint=history.json')
+      ) {
         return Promise.resolve(
           createJsonResponse({
             current: {

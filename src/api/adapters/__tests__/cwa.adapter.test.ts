@@ -14,7 +14,7 @@ describe('CwaAdapter', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    process.env.EXPO_PUBLIC_CWA_API_KEY = 'test-key';
+    process.env.EXPO_PUBLIC_PROXY_URL = 'https://proxy.test';
   });
 
   it('should choose the nearest station instead of the first station', () => {
