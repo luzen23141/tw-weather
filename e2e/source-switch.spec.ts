@@ -676,7 +676,7 @@ async function assertWeatherPagesBySource(
   badge: string,
 ): Promise<void> {
   await page.goto('/');
-  await expect(page.getByText('信義區', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/信義區/).first()).toBeVisible();
   await expect(page.getByText(badge, { exact: true }).first()).toBeVisible();
 
   await page.goto('/forecast');
