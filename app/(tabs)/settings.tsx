@@ -24,11 +24,7 @@ type SectionCardProps = {
   className?: string;
 };
 
-type SettingsSectionKey =
-  | 'sources'
-  | 'display-mode'
-  | 'location-display'
-  | 'refresh-interval';
+type SettingsSectionKey = 'sources' | 'display-mode' | 'location-display' | 'refresh-interval';
 
 type SettingsSectionConfig = {
   key: SettingsSectionKey;
@@ -230,7 +226,6 @@ const refreshIntervalOptions = [
   { label: '15 分鐘', value: 15 },
   { label: '30 分鐘', value: 30 },
 ] as const;
-
 
 const SettingsSection = ({
   section,

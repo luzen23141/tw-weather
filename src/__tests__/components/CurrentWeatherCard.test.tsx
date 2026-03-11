@@ -91,5 +91,4 @@ describe('CurrentWeatherCard', () => {
     expect(getByText('最後更新：formatted:2026-03-09T06:30:00.000Z')).toBeTruthy();
     expect(queryByText('原始描述不應直接顯示')).toBeNull();
   });
-
 });
