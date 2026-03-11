@@ -39,7 +39,8 @@ jest.mock('@/components/ui/SourceBadge', () => {
   const { Text } = require('react-native');
 
   return {
-    SourceBadge: ({ source }: { source: string }) => React.createElement(Text, null, `badge:${source}`),
+    SourceBadge: ({ source }: { source: string }) =>
+      React.createElement(Text, null, `badge:${source}`),
   };
 });
 

@@ -7,7 +7,8 @@ describe('預報和歷史頁面', () => {
     it('應顯示 7 天的預報', () => {
       const forecast = Array.from({ length: 7 }, (_, i) =>
         createMockDailyForecast({
-          date: new Date(FIXED_BASE_DATE + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '',
+          date:
+            new Date(FIXED_BASE_DATE + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '',
         }),
       );
 

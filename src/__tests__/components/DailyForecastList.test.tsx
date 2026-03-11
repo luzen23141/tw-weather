@@ -14,7 +14,13 @@ jest.mock('react-native', () => {
       flatten: jest.fn((style) => style),
     },
     useColorScheme: jest.fn(() => 'light'),
-    FlatList: ({ data, renderItem }: { data: unknown[]; renderItem: (arg: any) => React.ReactNode }) =>
+    FlatList: ({
+      data,
+      renderItem,
+    }: {
+      data: unknown[];
+      renderItem: (arg: any) => React.ReactNode;
+    }) =>
       React.createElement(
         React.Fragment,
         null,
@@ -83,7 +89,9 @@ describe('DailyForecastList', () => {
   });
 
   it('應渲染每日項目與四捨五入溫度', () => {
-    const { getByText, getAllByText } = render(<DailyForecastList forecasts={mockDailyForecasts} />);
+    const { getByText, getAllByText } = render(
+      <DailyForecastList forecasts={mockDailyForecasts} />,
+    );
 
     expect(getByText('day:2026-03-09')).toBeTruthy();
     expect(getByText('day:2026-03-10')).toBeTruthy();

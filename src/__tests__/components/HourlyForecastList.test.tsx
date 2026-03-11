@@ -14,7 +14,13 @@ jest.mock('react-native', () => {
       flatten: jest.fn((style) => style),
     },
     useColorScheme: jest.fn(() => 'light'),
-    FlatList: ({ data, renderItem }: { data: unknown[]; renderItem: (arg: any) => React.ReactNode }) =>
+    FlatList: ({
+      data,
+      renderItem,
+    }: {
+      data: unknown[];
+      renderItem: (arg: any) => React.ReactNode;
+    }) =>
       React.createElement(
         React.Fragment,
         null,

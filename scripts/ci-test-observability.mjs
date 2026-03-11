@@ -27,7 +27,10 @@ const readJson = (filePath, label) => {
     const content = fs.readFileSync(filePath, 'utf8');
     return { data: JSON.parse(content), error: null };
   } catch (error) {
-    return { data: null, error: `${label} JSON 解析失敗：${error instanceof Error ? error.message : String(error)}` };
+    return {
+      data: null,
+      error: `${label} JSON 解析失敗：${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 };
 
@@ -57,7 +60,9 @@ if (scope === 'all' || scope === 'jest') {
       const fileRuntime =
         typeof suite?.perfStats?.runtime === 'number' && suite.perfStats.runtime >= 0
           ? suite.perfStats.runtime
-          : typeof suite?.startTime === 'number' && typeof suite?.endTime === 'number' && suite.endTime >= suite.startTime
+          : typeof suite?.startTime === 'number' &&
+              typeof suite?.endTime === 'number' &&
+              suite.endTime >= suite.startTime
             ? suite.endTime - suite.startTime
             : null;
       const assertions = Array.isArray(suite.assertionResults) ? suite.assertionResults : [];
@@ -108,12 +113,14 @@ if (scope === 'all' || scope === 'jest') {
     const jestPassed = Number.isFinite(jestData.numPassedTests) ? jestData.numPassedTests : 0;
     const jestFailed = Number.isFinite(jestData.numFailedTests) ? jestData.numFailedTests : 0;
 
-    console.log(`Jest KPI: total=${jestTotal}, passed=${jestPassed}, failed=${jestFailed}, duration=${formatDuration(jestTotalDurationMs)}`);
+    console.log(
+      `Jest KPI: total=${jestTotal}, passed=${jestPassed}, failed=${jestFailed}, duration=${formatDuration(jestTotalDurationMs)}`,
+    );
 
     const jestMaxSeconds = maybeNumberFromEnv('CI_JEST_MAX_SECONDS');
     if (jestMaxSeconds !== null && jestTotalDurationMs / 1000 > jestMaxSeconds) {
       console.error(
-        `❌ Jest duration gate failed: ${formatDuration(jestTotalDurationMs)} > ${jestMaxSeconds.toFixed(2)}s`
+        `❌ Jest duration gate failed: ${formatDuration(jestTotalDurationMs)} > ${jestMaxSeconds.toFixed(2)}s`,
       );
       hasViolation = true;
     }
@@ -121,7 +128,8 @@ if (scope === 'all' || scope === 'jest') {
 }
 
 const collectPlaywrightRows = (suite, parents = []) => {
-  const nextParents = typeof suite.title === 'string' && suite.title.length > 0 ? [...parents, suite.title] : parents;
+  const nextParents =
+    typeof suite.title === 'string' && suite.title.length > 0 ? [...parents, suite.title] : parents;
 
   if (Array.isArray(suite.specs)) {
     for (const spec of suite.specs) {
@@ -172,7 +180,7 @@ if (scope === 'all' || scope === 'e2e') {
     const passRate = total > 0 ? (expected / total) * 100 : 0;
 
     console.log(
-      `Playwright KPI: total=${total}, executed=${executed}, expected=${expected}, unexpected=${unexpected}, flaky=${flaky}, skipped=${skipped}, passRate=${passRate.toFixed(2)}%, duration=${formatDuration(durationMs)}`
+      `Playwright KPI: total=${total}, executed=${executed}, expected=${expected}, unexpected=${unexpected}, flaky=${flaky}, skipped=${skipped}, passRate=${passRate.toFixed(2)}%, duration=${formatDuration(durationMs)}`,
     );
 
     const e2eMinTests = maybeNumberFromEnv('CI_E2E_MIN_TESTS') ?? 1;
@@ -184,7 +192,7 @@ if (scope === 'all' || scope === 'e2e') {
     const e2eMaxSeconds = maybeNumberFromEnv('CI_E2E_MAX_SECONDS');
     if (e2eMaxSeconds !== null && durationMs / 1000 > e2eMaxSeconds) {
       console.error(
-        `❌ E2E duration gate failed: ${formatDuration(durationMs)} > ${e2eMaxSeconds.toFixed(2)}s`
+        `❌ E2E duration gate failed: ${formatDuration(durationMs)} > ${e2eMaxSeconds.toFixed(2)}s`,
       );
       hasViolation = true;
     }
