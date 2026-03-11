@@ -24,6 +24,7 @@ const config: KnipConfig = {
   ignoreWorkspaces: [],
   rules: {},
   ignoreDependencies: [
+    '@tailwindcss/postcss',
     'expo-updates',
     '@testing-library/jest-dom',
     'lint-staged',
