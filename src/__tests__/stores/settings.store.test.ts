@@ -45,24 +45,6 @@ describe('Settings Store', () => {
     });
   });
 
-  describe('主題設定', () => {
-    it('應有初始主題', () => {
-      const theme = 'light';
-      expect(['light', 'dark', 'auto']).toContain(theme);
-    });
-
-    it('應能切換主題', () => {
-      let theme = 'light';
-      theme = 'dark';
-      expect(theme).toBe('dark');
-    });
-
-    it('應持久化主題', () => {
-      const saved = 'dark';
-      expect(saved).toBeDefined();
-    });
-  });
-
   describe('聚合模式', () => {
     it('應有聚合模式狀態', () => {
       const aggregateMode = false;

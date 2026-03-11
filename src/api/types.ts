@@ -1,11 +1,5 @@
 // ===== 基礎型別 =====
 
-/** 溫度單位 */
-export type TemperatureUnit = 'celsius' | 'fahrenheit';
-
-/** 風速單位 */
-export type WindSpeedUnit = 'kmh' | 'ms' | 'mph';
-
 /** 天氣資料來源 */
 export type WeatherSource = 'cwa' | 'open-meteo' | 'weatherapi' | 'openweathermap' | 'aggregate';
 
@@ -215,18 +209,12 @@ export interface AggregationConfig {
 
 /** 應用程式完整設定 */
 export interface AppSettings {
-  /** 溫度單位 */
-  temperatureUnit: TemperatureUnit;
-  /** 風速單位 */
-  windSpeedUnit: WindSpeedUnit;
   /** 資料源顯示模式 */
   displayMode: WeatherDisplayMode;
   /** 資料源選擇設定 */
   sourceSelection: SourceSelectionConfig;
   /** 聚合模式設定（僅 displayMode === 'aggregate' 時生效） */
   aggregation: AggregationConfig;
-  /** 主題 */
-  theme: 'light' | 'dark' | 'system';
 }
 
 /** 預設聚合設定 */

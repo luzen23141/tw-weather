@@ -92,27 +92,4 @@ describe('CurrentWeatherCard', () => {
     expect(queryByText('原始描述不應直接顯示')).toBeNull();
   });
 
-  it('應依 windSpeedUnit 顯示格式化風速', () => {
-    const { getByText, rerender } = render(
-      <CurrentWeatherCard
-        data={mockCurrentWeather}
-        location={mockLocation}
-        source="cwa"
-        windSpeedUnit="mph"
-      />,
-    );
-
-    expect(getByText('18-mph')).toBeTruthy();
-
-    rerender(
-      <CurrentWeatherCard
-        data={mockCurrentWeather}
-        location={mockLocation}
-        source="cwa"
-        windSpeedUnit="ms"
-      />,
-    );
-
-    expect(getByText('18-ms')).toBeTruthy();
-  });
 });

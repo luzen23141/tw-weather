@@ -27,11 +27,8 @@ type SectionCardProps = {
 type SettingsSectionKey =
   | 'sources'
   | 'display-mode'
-  | 'temperature'
-  | 'wind-speed'
   | 'location-display'
-  | 'refresh-interval'
-  | 'theme';
+  | 'refresh-interval';
 
 type SettingsSectionConfig = {
   key: SettingsSectionKey;
@@ -43,16 +40,13 @@ type SettingsSectionConfig = {
 const settingsSectionConfigs: SettingsSectionConfig[] = [
   { key: 'sources', title: '資料來源', icon: 'cloud-outline' },
   { key: 'display-mode', title: '顯示模式', icon: 'layers-outline' },
-  { key: 'temperature', title: '溫度單位', icon: 'thermometer-outline' },
-  { key: 'wind-speed', title: '風速單位', icon: 'speedometer-outline' },
   { key: 'location-display', title: '地點顯示', icon: 'location-outline' },
-  { key: 'refresh-interval', title: '重抓間隔', icon: 'refresh-outline' },
-  { key: 'theme', title: '主題外觀', icon: 'contrast-outline', className: 'mb-4' },
+  { key: 'refresh-interval', title: '重抓間隔', icon: 'refresh-outline', className: 'mb-4' },
 ];
 
 const webSectionColumns: SettingsSectionKey[][] = [
-  ['sources', 'display-mode', 'temperature'],
-  ['theme', 'wind-speed', 'location-display', 'refresh-interval'],
+  ['sources', 'display-mode'],
+  ['location-display', 'refresh-interval'],
 ];
 
 const SectionIntro = () => (
@@ -207,17 +201,6 @@ const displayModeOptions = [
   },
 ] as const;
 
-const temperatureOptions = [
-  { label: '攝氏 (°C)', value: 'celsius' },
-  { label: '華氏 (°F)', value: 'fahrenheit' },
-] as const;
-
-const windSpeedOptions = [
-  { label: '公里/小時 (km/h)', value: 'kmh' },
-  { label: '公尺/秒 (m/s)', value: 'ms' },
-  { label: '英里/小時 (mph)', value: 'mph' },
-] as const;
-
 const locationDisplayOptions: Array<{
   label: string;
   description: string;
@@ -248,11 +231,6 @@ const refreshIntervalOptions = [
   { label: '30 分鐘', value: 30 },
 ] as const;
 
-const themeOptions = [
-  { label: '亮色模式', value: 'light' },
-  { label: '暗色模式', value: 'dark' },
-  { label: '跟隨系統', value: 'system' },
-] as const;
 
 const SettingsSection = ({
   section,
@@ -269,18 +247,12 @@ const SettingsSection = ({
 
 export default function SettingsScreen() {
   const {
-    theme,
     displayMode,
-    temperatureUnit,
-    windSpeedUnit,
     locationDisplayFormat,
     enabledSources,
     refreshIntervalMinutes,
     setRefreshIntervalMinutes,
-    setTheme,
     setDisplayMode,
-    setTemperatureUnit,
-    setWindSpeedUnit,
     setLocationDisplayFormat,
     toggleSource,
   } = useSettingsStore();
@@ -311,28 +283,6 @@ export default function SettingsScreen() {
             isLast={index === displayModeOptions.length - 1}
           />
         ));
-      case 'temperature':
-        return temperatureOptions.map((option, index) => (
-          <RadioOption
-            key={option.value}
-            label={option.label}
-            value={option.value}
-            selectedValue={temperatureUnit}
-            onPress={() => setTemperatureUnit(option.value)}
-            isLast={index === temperatureOptions.length - 1}
-          />
-        ));
-      case 'wind-speed':
-        return windSpeedOptions.map((option, index) => (
-          <RadioOption
-            key={option.value}
-            label={option.label}
-            value={option.value}
-            selectedValue={windSpeedUnit}
-            onPress={() => setWindSpeedUnit(option.value)}
-            isLast={index === windSpeedOptions.length - 1}
-          />
-        ));
       case 'location-display':
         return locationDisplayOptions.map((option, index) => (
           <RadioOption
@@ -355,17 +305,6 @@ export default function SettingsScreen() {
             selectedValue={String(refreshIntervalMinutes)}
             onPress={() => setRefreshIntervalMinutes(option.value)}
             isLast={index === refreshIntervalOptions.length - 1}
-          />
-        ));
-      case 'theme':
-        return themeOptions.map((option, index) => (
-          <RadioOption
-            key={option.value}
-            label={option.label}
-            value={option.value}
-            selectedValue={theme}
-            onPress={() => setTheme(option.value)}
-            isLast={index === themeOptions.length - 1}
           />
         ));
     }

@@ -17,7 +17,6 @@ export interface CurrentWeatherCardProps {
   data: CurrentWeather;
   location: Location;
   source: WeatherSource;
-  windSpeedUnit?: 'kmh' | 'ms' | 'mph';
 }
 
 const StatCard = ({
@@ -47,7 +46,6 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
   data,
   location,
   source,
-  windSpeedUnit = 'kmh',
 }: CurrentWeatherCardProps): React.ReactElement {
   const colors = useMDColors();
   const weatherInfo = getWeatherCodeInfo(data.weatherCode);
@@ -109,7 +107,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
         <StatCard
           icon="speedometer-outline"
           label="風速"
-          value={formatWindSpeed(data.windSpeed ?? 0, windSpeedUnit)}
+          value={formatWindSpeed(data.windSpeed ?? 0, 'kmh')}
           iconColor={colors.outline}
         />
         <StatCard

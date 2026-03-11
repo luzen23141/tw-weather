@@ -47,49 +47,6 @@
     --color-glass-border-strong: rgba(255, 255, 255, 0.72);
   }
 
-  .dark {
-    /* ===== Liquid Glass Design — Dark Mode ===== */
-
-    /* Primary: 亮青色 */
-    --color-md-primary: #22d3ee;
-    --color-md-on-primary: #083b44;
-    --color-md-primary-container: rgba(34, 211, 238, 0.18);
-    --color-md-on-primary-container: #cffafe;
-
-    --color-md-secondary: #7dd3e8;
-    --color-md-secondary-container: rgba(125, 211, 232, 0.14);
-    --color-md-on-secondary-container: #e0f7ff;
-
-    --color-md-tertiary: #c4b5fd;
-    --color-md-on-tertiary: #2e2260;
-    --color-md-tertiary-container: rgba(196, 181, 253, 0.18);
-    --color-md-on-tertiary-container: #f5f3ff;
-
-    /* Background: 深海藍 */
-    --color-md-background: #0f172a;
-    --color-md-on-background: #e5edf5;
-
-    /* Surface: 極淡白半透明 */
-    --color-md-surface: rgba(255, 255, 255, 0.12);
-    --color-md-on-surface: #e5edf5;
-    --color-md-surface-variant: rgba(255, 255, 255, 0.16);
-    --color-md-on-surface-variant: #cbd5e1;
-
-    --color-md-surface-container-low: rgba(255, 255, 255, 0.1);
-    --color-md-surface-container: rgba(255, 255, 255, 0.14);
-    --color-md-outline: #9aa9bb;
-
-    /* Error */
-    --color-md-error: #fca5a5;
-    --color-md-on-error: #450a0a;
-    --color-md-error-container: rgba(252, 165, 165, 0.18);
-    --color-md-on-error-container: #fee2e2;
-
-    /* Glass Token */
-    --color-glass-border: rgba(255, 255, 255, 0.14);
-    --color-glass-border-strong: rgba(255, 255, 255, 0.24);
-  }
-
   body {
     background-color: var(--color-md-background);
     color: var(--color-md-on-background);

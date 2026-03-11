@@ -1,22 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-import type {
-  LocationDisplayFormat,
-  TemperatureUnit,
-  WeatherSource,
-  WindSpeedUnit,
-} from '@/api/types';
+import type { LocationDisplayFormat, WeatherSource } from '@/api/types';
 import { storage } from '@/cache/storage';
 
 export interface SettingsState {
-  // 主題設定
-  theme: 'light' | 'dark' | 'system';
-
   // 單位設定
-  temperatureUnit: TemperatureUnit;
-  windSpeedUnit: WindSpeedUnit;
-
   // 地點顯示格式
   locationDisplayFormat: LocationDisplayFormat;
 
@@ -30,9 +19,6 @@ export interface SettingsState {
 
   // Action
   setRefreshIntervalMinutes: (minutes: number) => void;
-  setTheme: (theme: SettingsState['theme']) => void;
-  setTemperatureUnit: (unit: TemperatureUnit) => void;
-  setWindSpeedUnit: (unit: WindSpeedUnit) => void;
   setLocationDisplayFormat: (format: LocationDisplayFormat) => void;
   setDisplayMode: (mode: SettingsState['displayMode']) => void;
   setActiveSource: (source: WeatherSource) => void;
@@ -44,9 +30,6 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       // 初始值
       refreshIntervalMinutes: 5,
-      theme: 'system',
-      temperatureUnit: 'celsius',
-      windSpeedUnit: 'kmh',
       locationDisplayFormat: 'township',
       displayMode: 'single',
       activeSource: 'cwa',
@@ -55,9 +38,6 @@ export const useSettingsStore = create<SettingsState>()(
       // Actions
       setRefreshIntervalMinutes: (minutes) =>
         set({ refreshIntervalMinutes: Math.max(1, Math.floor(minutes)) }),
-      setTheme: (theme) => set({ theme }),
-      setTemperatureUnit: (unit) => set({ temperatureUnit: unit }),
-      setWindSpeedUnit: (unit) => set({ windSpeedUnit: unit }),
       setLocationDisplayFormat: (format) => set({ locationDisplayFormat: format }),
       setDisplayMode: (mode) => set({ displayMode: mode }),
       setActiveSource: (source) => set({ activeSource: source }),
@@ -89,18 +69,12 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => storage),
       partialize: ({
         refreshIntervalMinutes,
-        theme,
-        temperatureUnit,
-        windSpeedUnit,
         locationDisplayFormat,
         displayMode,
         activeSource,
         enabledSources,
       }) => ({
         refreshIntervalMinutes,
-        theme,
-        temperatureUnit,
-        windSpeedUnit,
         locationDisplayFormat,
         displayMode,
         activeSource,

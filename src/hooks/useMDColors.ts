@@ -1,5 +1,3 @@
-import { useColorScheme } from 'react-native';
-
 export interface MDColors {
   primary: string;
   onPrimary: string;
@@ -68,45 +66,6 @@ export const LIGHT: MDColors = {
   glassHeader: 'rgba(255, 255, 255, 0.90)',
 };
 
-export const DARK: MDColors = {
-  primary: '#22D3EE',
-  onPrimary: '#083B44',
-  primaryContainer: 'rgba(34, 211, 238, 0.18)',
-  onPrimaryContainer: '#CFFAFE',
-  secondary: '#7DD3E8',
-  secondaryContainer: 'rgba(125, 211, 232, 0.14)',
-  onSecondaryContainer: '#E0F7FF',
-  tertiary: '#C4B5FD',
-  onTertiary: '#2E2260',
-  tertiaryContainer: 'rgba(196, 181, 253, 0.18)',
-  onTertiaryContainer: '#F5F3FF',
-  background: '#0F172A',
-  onBackground: '#E5EDF5',
-  surface: 'rgba(255, 255, 255, 0.12)',
-  onSurface: '#E5EDF5',
-  surfaceVariant: 'rgba(255, 255, 255, 0.16)',
-  onSurfaceVariant: '#CBD5E1',
-  surfaceContainerLow: 'rgba(255, 255, 255, 0.10)',
-  surfaceContainer: 'rgba(255, 255, 255, 0.14)',
-  outline: '#9AA9BB',
-  error: '#FCA5A5',
-  onError: '#450A0A',
-  errorContainer: 'rgba(252, 165, 165, 0.18)',
-  onErrorContainer: '#FEE2E2',
-  // Glass token
-  glassBorder: 'rgba(255, 255, 255, 0.14)',
-  glassBorderStrong: 'rgba(255, 255, 255, 0.24)',
-  glassCard: 'rgba(255, 255, 255, 0.10)',
-  glassElevated: 'rgba(255, 255, 255, 0.14)',
-  glassTab: 'rgba(15, 23, 42, 0.92)',
-  glassHeader: 'rgba(15, 23, 42, 0.92)',
-};
-
-export function getMDColors(theme: 'light' | 'dark'): MDColors {
-  return theme === 'dark' ? DARK : LIGHT;
-}
-
 export function useMDColors(): MDColors {
-  const colorScheme = useColorScheme();
-  return getMDColors(colorScheme === 'dark' ? 'dark' : 'light');
+  return LIGHT;
 }

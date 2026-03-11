@@ -21,12 +21,11 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { VariableContextProvider } from 'nativewind';
 import { useEffect, useState } from 'react';
-import { Appearance, LogBox, Platform, View, useColorScheme } from 'react-native';
+import { LogBox, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { historyCache } from '@/cache/history-cache';
-import { getMDColors } from '@/hooks/useMDColors';
-import { useSettingsStore } from '@/store/settings.store';
+import { LIGHT } from '@/hooks/useMDColors';
 
 // Suppress all LogBox warnings during tests so they don't block Maestro UI interactions
 LogBox.ignoreAllLogs(true);
@@ -49,53 +48,36 @@ const asyncStoragePersister = isBrowser
   ? createAsyncStoragePersister({ storage: AsyncStorage })
   : null;
 
+const themeVariables = {
+  '--color-md-primary': LIGHT.primary,
+  '--color-md-on-primary': LIGHT.onPrimary,
+  '--color-md-primary-container': LIGHT.primaryContainer,
+  '--color-md-on-primary-container': LIGHT.onPrimaryContainer,
+  '--color-md-secondary': LIGHT.secondary,
+  '--color-md-secondary-container': LIGHT.secondaryContainer,
+  '--color-md-on-secondary-container': LIGHT.onSecondaryContainer,
+  '--color-md-tertiary': LIGHT.tertiary,
+  '--color-md-on-tertiary': LIGHT.onTertiary,
+  '--color-md-tertiary-container': LIGHT.tertiaryContainer,
+  '--color-md-on-tertiary-container': LIGHT.onTertiaryContainer,
+  '--color-md-background': LIGHT.background,
+  '--color-md-on-background': LIGHT.onBackground,
+  '--color-md-surface': LIGHT.surface,
+  '--color-md-on-surface': LIGHT.onSurface,
+  '--color-md-surface-variant': LIGHT.surfaceVariant,
+  '--color-md-on-surface-variant': LIGHT.onSurfaceVariant,
+  '--color-md-surface-container-low': LIGHT.surfaceContainerLow,
+  '--color-md-surface-container': LIGHT.surfaceContainer,
+  '--color-md-outline': LIGHT.outline,
+  '--color-md-error': LIGHT.error,
+  '--color-md-on-error': LIGHT.onError,
+  '--color-md-error-container': LIGHT.errorContainer,
+  '--color-md-on-error-container': LIGHT.onErrorContainer,
+  '--color-glass-border': LIGHT.glassBorder,
+  '--color-glass-border-strong': LIGHT.glassBorderStrong,
+} as const;
+
 function AppContent() {
-  const theme = useSettingsStore((state) => state.theme);
-  const systemColorScheme = useColorScheme();
-  const resolvedTheme =
-    (theme === 'system' ? systemColorScheme : theme) === 'dark' ? 'dark' : 'light';
-  const colors = getMDColors(resolvedTheme);
-
-  const themeVariables = {
-    '--color-md-primary': colors.primary,
-    '--color-md-on-primary': colors.onPrimary,
-    '--color-md-primary-container': colors.primaryContainer,
-    '--color-md-on-primary-container': colors.onPrimaryContainer,
-    '--color-md-secondary': colors.secondary,
-    '--color-md-secondary-container': colors.secondaryContainer,
-    '--color-md-on-secondary-container': colors.onSecondaryContainer,
-    '--color-md-tertiary': colors.tertiary,
-    '--color-md-on-tertiary': colors.onTertiary,
-    '--color-md-tertiary-container': colors.tertiaryContainer,
-    '--color-md-on-tertiary-container': colors.onTertiaryContainer,
-    '--color-md-background': colors.background,
-    '--color-md-on-background': colors.onBackground,
-    '--color-md-surface': colors.surface,
-    '--color-md-on-surface': colors.onSurface,
-    '--color-md-surface-variant': colors.surfaceVariant,
-    '--color-md-on-surface-variant': colors.onSurfaceVariant,
-    '--color-md-surface-container-low': colors.surfaceContainerLow,
-    '--color-md-surface-container': colors.surfaceContainer,
-    '--color-md-outline': colors.outline,
-    '--color-md-error': colors.error,
-    '--color-md-on-error': colors.onError,
-    '--color-md-error-container': colors.errorContainer,
-    '--color-md-on-error-container': colors.onErrorContainer,
-    '--color-glass-border': colors.glassBorder,
-    '--color-glass-border-strong': colors.glassBorderStrong,
-  } as const;
-
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      if (typeof document !== 'undefined') {
-        document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
-      }
-      return;
-    }
-
-    Appearance.setColorScheme(theme === 'system' ? 'unspecified' : theme);
-  }, [resolvedTheme, theme]);
-
   useEffect(() => {
     // App 啟動時清理過期的快取
     void historyCache.cleanup(30);
@@ -109,7 +91,7 @@ function AppContent() {
             headerShown: false,
           }}
         />
-        <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
+        <StatusBar style="dark" />
       </View>
     </VariableContextProvider>
   );
