@@ -82,8 +82,6 @@ function mockStoreState(overrides?: {
     displayMode: overrides?.displayMode ?? 'single',
     activeSource: overrides?.activeSource ?? 'cwa',
     enabledSources: overrides?.enabledSources ?? ['cwa', 'open-meteo'],
-    refreshIntervalMinutes: 5,
-    setRefreshIntervalMinutes: jest.fn(),
     setLocationDisplayFormat: jest.fn(),
     setDisplayMode: jest.fn(),
     setActiveSource: jest.fn(),
@@ -151,15 +149,6 @@ describe('useWeather', () => {
     );
     expect(mockFetchWeather).not.toHaveBeenCalled();
     expect(data?.source).toBe('aggregate');
-  });
-
-  it('應依設定 refreshIntervalMinutes 設定 staleTime', () => {
-    mockStoreState({ displayMode: 'single', activeSource: 'cwa' });
-
-    useWeather(mockLocation);
-    const queryOptions = capturedQueryOptions;
-
-    expect(queryOptions?.staleTime).toBe(5 * 60 * 1000);
   });
 
   it('傳入 source 時應強制走 single 模式', async () => {

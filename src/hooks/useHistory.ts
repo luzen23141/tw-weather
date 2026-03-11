@@ -4,7 +4,6 @@ import { HistoricalDayWeather, Location } from '@/api/types';
 import { weatherService, MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
 import { historyCache } from '@/cache/history-cache';
 import { CacheKeys } from '@/cache/keys';
-import { useSettingsStore } from '@/store/settings.store';
 
 /**
  * useHistory Hook
@@ -23,8 +22,6 @@ export function useHistory(
   days = MAX_HISTORY_FETCH_DAYS,
 ): UseQueryResult<HistoricalDayWeather[], Error> {
   const normalizedDays = Math.min(days, MAX_HISTORY_FETCH_DAYS);
-  const refreshIntervalMinutes = useSettingsStore((s) => s.refreshIntervalMinutes);
-
   return useQuery({
     queryKey: [
       CacheKeys.historyDay(location?.latitude ?? 0, location?.longitude ?? 0, 'range'),
@@ -83,7 +80,7 @@ export function useHistory(
       return uniqueData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     },
     enabled: !!location,
-    staleTime: Math.max(1, refreshIntervalMinutes) * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     gcTime: 3 * 60 * 60 * 1000, // 3 小時
     retry: 1,
     refetchOnWindowFocus: false,

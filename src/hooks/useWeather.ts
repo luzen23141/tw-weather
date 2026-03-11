@@ -21,8 +21,6 @@ export function useWeather(location: Location | null, source?: WeatherSource) {
   const displayMode = useSettingsStore((s) => s.displayMode);
   const activeSource = useSettingsStore((s) => s.activeSource);
   const enabledSources = useSettingsStore((s) => s.enabledSources);
-  const refreshIntervalMinutes = useSettingsStore((s) => s.refreshIntervalMinutes);
-
   const effectiveSource = source || activeSource;
   const effectiveDisplayMode: WeatherDisplayMode = source ? 'single' : displayMode;
   const effectiveEnabledSources =
@@ -52,7 +50,7 @@ export function useWeather(location: Location | null, source?: WeatherSource) {
       return await weatherService.fetchWeather(location, effectiveSource);
     },
     enabled: !!location,
-    staleTime: Math.max(1, refreshIntervalMinutes) * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     gcTime: 30 * 60 * 1000, // 30 分鐘
     retry: 2,
     refetchOnWindowFocus: false,

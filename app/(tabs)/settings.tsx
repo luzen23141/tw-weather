@@ -24,7 +24,7 @@ type SectionCardProps = {
   className?: string;
 };
 
-type SettingsSectionKey = 'sources' | 'display-mode' | 'location-display' | 'refresh-interval';
+type SettingsSectionKey = 'sources' | 'display-mode' | 'location-display';
 
 type SettingsSectionConfig = {
   key: SettingsSectionKey;
@@ -36,13 +36,12 @@ type SettingsSectionConfig = {
 const settingsSectionConfigs: SettingsSectionConfig[] = [
   { key: 'sources', title: '資料來源', icon: 'cloud-outline' },
   { key: 'display-mode', title: '顯示模式', icon: 'layers-outline' },
-  { key: 'location-display', title: '地點顯示', icon: 'location-outline' },
-  { key: 'refresh-interval', title: '重抓間隔', icon: 'refresh-outline', className: 'mb-4' },
+  { key: 'location-display', title: '地點顯示', icon: 'location-outline', className: 'mb-4' },
 ];
 
 const webSectionColumns: SettingsSectionKey[][] = [
   ['sources', 'display-mode'],
-  ['location-display', 'refresh-interval'],
+  ['location-display'],
 ];
 
 const SectionIntro = () => (
@@ -219,14 +218,6 @@ const locationDisplayOptions: Array<{
   },
 ];
 
-const refreshIntervalOptions = [
-  { label: '1 分鐘', value: 1 },
-  { label: '5 分鐘（預設）', value: 5 },
-  { label: '10 分鐘', value: 10 },
-  { label: '15 分鐘', value: 15 },
-  { label: '30 分鐘', value: 30 },
-] as const;
-
 const SettingsSection = ({
   section,
   children,
@@ -245,8 +236,6 @@ export default function SettingsScreen() {
     displayMode,
     locationDisplayFormat,
     enabledSources,
-    refreshIntervalMinutes,
-    setRefreshIntervalMinutes,
     setDisplayMode,
     setLocationDisplayFormat,
     toggleSource,
@@ -288,18 +277,6 @@ export default function SettingsScreen() {
             selectedValue={locationDisplayFormat}
             onPress={() => setLocationDisplayFormat(option.value)}
             isLast={index === locationDisplayOptions.length - 1}
-          />
-        ));
-      case 'refresh-interval':
-        return refreshIntervalOptions.map((option, index) => (
-          <RadioOption
-            key={option.value}
-            label={option.label}
-            description="天氣與歷史資料多久視為 stale 並重新抓取"
-            value={String(option.value)}
-            selectedValue={String(refreshIntervalMinutes)}
-            onPress={() => setRefreshIntervalMinutes(option.value)}
-            isLast={index === refreshIntervalOptions.length - 1}
           />
         ));
     }

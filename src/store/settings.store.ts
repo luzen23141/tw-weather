@@ -5,7 +5,6 @@ import type { LocationDisplayFormat, WeatherSource } from '@/api/types';
 import { storage } from '@/cache/storage';
 
 export interface SettingsState {
-  // 單位設定
   // 地點顯示格式
   locationDisplayFormat: LocationDisplayFormat;
 
@@ -14,11 +13,7 @@ export interface SettingsState {
   activeSource: WeatherSource;
   enabledSources: WeatherSource[];
 
-  // 前端重抓間隔（分鐘）
-  refreshIntervalMinutes: number;
-
   // Action
-  setRefreshIntervalMinutes: (minutes: number) => void;
   setLocationDisplayFormat: (format: LocationDisplayFormat) => void;
   setDisplayMode: (mode: SettingsState['displayMode']) => void;
   setActiveSource: (source: WeatherSource) => void;
@@ -29,15 +24,12 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // 初始值
-      refreshIntervalMinutes: 5,
       locationDisplayFormat: 'township',
       displayMode: 'single',
       activeSource: 'cwa',
       enabledSources: ['cwa', 'open-meteo'],
 
       // Actions
-      setRefreshIntervalMinutes: (minutes) =>
-        set({ refreshIntervalMinutes: Math.max(1, Math.floor(minutes)) }),
       setLocationDisplayFormat: (format) => set({ locationDisplayFormat: format }),
       setDisplayMode: (mode) => set({ displayMode: mode }),
       setActiveSource: (source) => set({ activeSource: source }),
@@ -67,14 +59,7 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'weather-settings',
       storage: createJSONStorage(() => storage),
-      partialize: ({
-        refreshIntervalMinutes,
-        locationDisplayFormat,
-        displayMode,
-        activeSource,
-        enabledSources,
-      }) => ({
-        refreshIntervalMinutes,
+      partialize: ({ locationDisplayFormat, displayMode, activeSource, enabledSources }) => ({
         locationDisplayFormat,
         displayMode,
         activeSource,
