@@ -116,7 +116,7 @@ const MOCK_CURRENT = {
   windSpeed: 2,
   windDirection: 180,
   pressure: 1012,
-  weatherCode: 4,
+  weatherCode: 3,
   description: '陰天',
   precipitation: 0,
 };
@@ -131,7 +131,7 @@ const MOCK_HOURLY = [
     windDirection: 150,
     precipitation: 0,
     precipProb: 40,
-    weatherCode: 4,
+    weatherCode: 3,
     description: '陰天',
   },
 ];
@@ -145,7 +145,7 @@ const MOCK_DAILY = [
     windSpeed: 3,
     precipitation: 0,
     precipProb: 30,
-    weatherCode: 4,
+    weatherCode: 3,
     description: '陰天',
   },
 ];

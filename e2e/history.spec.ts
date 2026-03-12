@@ -51,7 +51,8 @@ async function seedState(page: import('@playwright/test').Page) {
 
 test.describe('歷史天氣', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock history endpoint
+    // Mock history endpoint — 回傳「今天」的日期，讓 selectedDate 預設值能匹配
+    const todayISO = new Date().toISOString().split('T')[0] ?? '2026-03-12';
     await page.route('**/api/weather/history**', async (route) => {
       await route.fulfill({
         status: 200,
@@ -60,17 +61,17 @@ test.describe('歷史天氣', () => {
           provider: 'open-meteo',
           type: 'history',
           location: { name: '台北站', lat: 25.033, lon: 121.5654 },
-          updatedAt: '2026-03-07T10:00:00+08:00',
-          history: [
+          updatedAt: new Date().toISOString(),
+          daily: [
             {
-              date: '2026-03-06T00:00:00+08:00',
+              date: `${todayISO}T00:00:00+08:00`,
               tempMax: 24,
               tempMin: 18,
               humidity: 75,
               windSpeed: 3,
               precipitation: 0,
               precipProb: 30,
-              weatherCode: 4,
+              weatherCode: 3,
               description: '陰天',
             },
           ],
@@ -91,7 +92,7 @@ test.describe('歷史天氣', () => {
           windSpeed: 2,
           windDirection: 180,
           pressure: 1012,
-          weatherCode: 4,
+          weatherCode: 3,
           description: '陰天',
           precipitation: 0,
         };
@@ -104,7 +105,7 @@ test.describe('歷史天氣', () => {
             windDirection: 150,
             precipitation: 0,
             precipProb: 40,
-            weatherCode: 4,
+            weatherCode: 3,
             description: '陰天',
           },
         ];
@@ -117,7 +118,7 @@ test.describe('歷史天氣', () => {
             windSpeed: 3,
             precipitation: 0,
             precipProb: 30,
-            weatherCode: 4,
+            weatherCode: 3,
             description: '陰天',
           },
         ];
