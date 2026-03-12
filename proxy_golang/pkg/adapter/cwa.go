@@ -52,8 +52,8 @@ func (CWA) Fetch(ctx context.Context, query *model.WeatherQuery, weatherType mod
 
 // cwaCoordinate CWA 測站座標
 type cwaCoordinate struct {
-	Lat float64 `json:"StationLatitude"`
-	Lon float64 `json:"StationLongitude"`
+	Lat float64 `json:"StationLatitude,string"`
+	Lon float64 `json:"StationLongitude,string"`
 }
 
 // cwaGeoInfo CWA 測站地理資訊

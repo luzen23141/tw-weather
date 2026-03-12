@@ -12,13 +12,13 @@
           "Coordinates": [
             {
               "CoordinateName": "TWD67",
-              "StationLatitude": 24.167948,
-              "StationLongitude": 121.649251
+              "StationLatitude": "24.167948",
+              "StationLongitude": "121.649251"
             },
             {
               "CoordinateName": "WGS84",
-              "StationLatitude": 24.166144,
-              "StationLongitude": 121.657414
+              "StationLatitude": "24.166144",
+              "StationLongitude": "121.657414"
             }
           ]
         },
