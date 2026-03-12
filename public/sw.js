@@ -46,10 +46,7 @@ self.addEventListener('fetch', (event) => {
 
   // 靜態資源（帶 hash 的 JS/CSS/圖片）— Stale-While-Revalidate
   // 這些檔案名稱含 content hash，內容不變，可長期快取
-  if (
-    url.pathname.startsWith('/_expo/static/') ||
-    url.pathname.startsWith('/assets/')
-  ) {
+  if (url.pathname.startsWith('/_expo/static/') || url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(request).then(
         (cached) =>
