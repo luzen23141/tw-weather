@@ -34,8 +34,9 @@ jest.mock('react-native', () => {
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
 import type { HourlyForecast } from '@/api/types';
 
-jest.mock('@expo/vector-icons', () => ({
-  Ionicons: ({ name }: { name: string }) => name,
+jest.mock('@expo/vector-icons/Ionicons', () => ({
+  __esModule: true,
+  default: ({ name }: { name: string }) => name,
 }));
 
 jest.mock('@/utils/date', () => ({

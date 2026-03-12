@@ -4,8 +4,9 @@ import { render } from '@testing-library/react-native';
 import { CurrentWeatherCard } from '@/components/weather/CurrentWeatherCard';
 import type { CurrentWeather, Location } from '@/api/types';
 
-jest.mock('@expo/vector-icons', () => ({
-  Ionicons: ({ name }: { name: string }) => name,
+jest.mock('@expo/vector-icons/Ionicons', () => ({
+  __esModule: true,
+  default: ({ name }: { name: string }) => name,
 }));
 
 jest.mock('@/hooks/useMDColors', () => ({

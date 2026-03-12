@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ExpoLocation from 'expo-location';
 import { useMemo, useState } from 'react';
 import { Alert, FlatList, Platform, Pressable, Text, TouchableOpacity, View } from 'react-native';

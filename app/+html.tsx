@@ -100,6 +100,13 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
 
+        {/* Service Worker 離線快取 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')})}`,
+          }}
+        />
+
         {/* Disable body scrolling on web */}
         <ScrollViewStyleReset />
 
