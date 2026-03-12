@@ -15,8 +15,8 @@ type mockableUpstreamClient struct {
 }
 
 // NewMockableUpstreamClient 建立可 mock 的 upstream client
-func NewMockableUpstreamClient(real model.UpstreamClient) model.UpstreamClient {
-	return &mockableUpstreamClient{real: real}
+func NewMockableUpstreamClient(actual model.UpstreamClient) model.UpstreamClient {
+	return &mockableUpstreamClient{real: actual}
 }
 
 func (c *mockableUpstreamClient) Do(ctx context.Context, req *model.UpstreamRequest) (*model.UpstreamResponse, error) {

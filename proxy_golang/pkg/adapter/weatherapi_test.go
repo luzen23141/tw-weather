@@ -26,7 +26,6 @@ func TestWeatherAPI_FetchCurrent_RealFixture(t *testing.T) {
 	// 使用真實 WeatherAPI forecast.json 回傳結構的 fixture
 	client := fixtureClient("weatherapi_forecast.json")
 	q := *weatherAPIQuery
-	
 
 	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "test-key", client)
 
@@ -69,7 +68,6 @@ func TestWeatherAPI_FetchCurrent_RequestURL(t *testing.T) {
 	}
 
 	q := *weatherAPIQuery
-	
 
 	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "my-key", client)
 	require.NoError(t, err)
@@ -82,7 +80,6 @@ func TestWeatherAPI_FetchCurrent_RequestURL(t *testing.T) {
 
 func TestWeatherAPI_FetchCurrent_NetworkError(t *testing.T) {
 	q := *weatherAPIQuery
-	
 
 	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "key", errorClient(assert.AnError))
 	require.Error(t, err)
@@ -91,7 +88,6 @@ func TestWeatherAPI_FetchCurrent_NetworkError(t *testing.T) {
 
 func TestWeatherAPI_FetchCurrent_BadJSON(t *testing.T) {
 	q := *weatherAPIQuery
-	
 
 	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "key", badJSONClient())
 	require.Error(t, err)
@@ -103,7 +99,6 @@ func TestWeatherAPI_FetchCurrent_BadJSON(t *testing.T) {
 func TestWeatherAPI_FetchHourly_RealFixture(t *testing.T) {
 	client := fixtureClient("weatherapi_forecast.json")
 	q := *weatherAPIQuery
-	
 
 	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "test-key", client)
 
@@ -143,7 +138,7 @@ func TestWeatherAPI_FetchHourly_DefaultDays(t *testing.T) {
 	}
 
 	q := *weatherAPIQuery
-	
+
 	q.Days = 0
 
 	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", client)
@@ -156,7 +151,6 @@ func TestWeatherAPI_FetchHourly_DefaultDays(t *testing.T) {
 func TestWeatherAPI_FetchDaily_RealFixture(t *testing.T) {
 	client := fixtureClient("weatherapi_forecast.json")
 	q := *weatherAPIQuery
-	
 
 	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "test-key", client)
 
@@ -193,7 +187,7 @@ func TestWeatherAPI_FetchHistory_RealFixture(t *testing.T) {
 	// 使用真實 WeatherAPI history.json 回傳結構的 fixture
 	client := fixtureClient("weatherapi_history.json")
 	q := *weatherAPIQuery
-	
+
 	q.Date = "2026-03-10"
 
 	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "test-key", client)
@@ -225,7 +219,7 @@ func TestWeatherAPI_FetchHistory_RequestURL(t *testing.T) {
 	}
 
 	q := *weatherAPIQuery
-	
+
 	q.Date = "2026-03-10"
 
 	_, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "key", client)

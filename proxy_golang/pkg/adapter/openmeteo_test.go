@@ -26,7 +26,6 @@ func TestOpenMeteo_FetchCurrent_RealFixture(t *testing.T) {
 	// 使用真實 Open-Meteo API 回傳結構的 fixture
 	client := fixtureClient("openmeteo_forecast.json")
 	q := *openMeteoQuery
-	
 
 	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "", client)
 
@@ -69,7 +68,6 @@ func TestOpenMeteo_FetchCurrent_RequestURL(t *testing.T) {
 	}
 
 	q := *openMeteoQuery
-	
 
 	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "", client)
 	require.NoError(t, err)
@@ -81,7 +79,6 @@ func TestOpenMeteo_FetchCurrent_RequestURL(t *testing.T) {
 
 func TestOpenMeteo_FetchCurrent_NetworkError(t *testing.T) {
 	q := *openMeteoQuery
-	
 
 	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "", errorClient(assert.AnError))
 	require.Error(t, err)
@@ -90,7 +87,6 @@ func TestOpenMeteo_FetchCurrent_NetworkError(t *testing.T) {
 
 func TestOpenMeteo_FetchCurrent_BadJSON(t *testing.T) {
 	q := *openMeteoQuery
-	
 
 	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeCurrent, "", badJSONClient())
 	require.Error(t, err)
@@ -102,7 +98,7 @@ func TestOpenMeteo_FetchCurrent_BadJSON(t *testing.T) {
 func TestOpenMeteo_FetchHourly_RealFixture(t *testing.T) {
 	client := fixtureClient("openmeteo_forecast.json")
 	q := *openMeteoQuery
-	
+
 	q.Days = 3
 
 	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "", client)
@@ -138,7 +134,7 @@ func TestOpenMeteo_FetchHourly_DefaultDays(t *testing.T) {
 	}
 
 	q := *openMeteoQuery
-	
+
 	q.Days = 0
 
 	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "", client)
@@ -151,7 +147,6 @@ func TestOpenMeteo_FetchHourly_DefaultDays(t *testing.T) {
 func TestOpenMeteo_FetchDaily_RealFixture(t *testing.T) {
 	client := fixtureClient("openmeteo_forecast.json")
 	q := *openMeteoQuery
-	
 
 	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "", client)
 
@@ -183,7 +178,7 @@ func TestOpenMeteo_FetchHistory_RealFixture(t *testing.T) {
 	// 使用真實 Open-Meteo archive API 回傳結構
 	client := fixtureClient("openmeteo_archive.json")
 	q := *openMeteoQuery
-	
+
 	q.Date = "2026-03-06"
 
 	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", client)
@@ -215,7 +210,7 @@ func TestOpenMeteo_FetchHistory_RequestURL(t *testing.T) {
 	}
 
 	q := *openMeteoQuery
-	
+
 	q.Date = "2026-03-06"
 
 	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", client)
@@ -228,7 +223,6 @@ func TestOpenMeteo_FetchHistory_RequestURL(t *testing.T) {
 
 func TestOpenMeteo_FetchHistory_NetworkError(t *testing.T) {
 	q := *openMeteoQuery
-	
 
 	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", errorClient(assert.AnError))
 	require.Error(t, err)
@@ -237,7 +231,6 @@ func TestOpenMeteo_FetchHistory_NetworkError(t *testing.T) {
 
 func TestOpenMeteo_FetchHistory_BadJSON(t *testing.T) {
 	q := *openMeteoQuery
-	
 
 	_, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", badJSONClient())
 	require.Error(t, err)

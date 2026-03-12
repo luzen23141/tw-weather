@@ -68,11 +68,15 @@ type owmCurrentResponse struct {
 		Speed float64 `json:"speed"`
 		Deg   int     `json:"deg"`
 	} `json:"wind"`
-	Weather    []owmWeatherCondition `json:"weather"`
-	Clouds     *struct{ All int }    `json:"clouds,omitempty"`
-	Rain       *struct{ OneH float64 `json:"1h"` } `json:"rain,omitempty"`
-	Snow       *struct{ OneH float64 `json:"1h"` } `json:"snow,omitempty"`
-	Visibility *int `json:"visibility,omitempty"`
+	Weather []owmWeatherCondition `json:"weather"`
+	Clouds  *struct{ All int }    `json:"clouds,omitempty"`
+	Rain    *struct {
+		OneH float64 `json:"1h"`
+	} `json:"rain,omitempty"`
+	Snow *struct {
+		OneH float64 `json:"1h"`
+	} `json:"snow,omitempty"`
+	Visibility *int   `json:"visibility,omitempty"`
 	Name       string `json:"name"`
 	Coord      struct {
 		Lat float64 `json:"lat"`
@@ -97,9 +101,13 @@ type owmForecastItem struct {
 	} `json:"wind"`
 	Visibility *int    `json:"visibility,omitempty"`
 	Pop        float64 `json:"pop"`
-	Rain       *struct{ ThreeH float64 `json:"3h"` } `json:"rain,omitempty"`
-	Snow       *struct{ ThreeH float64 `json:"3h"` } `json:"snow,omitempty"`
-	DtTxt      string `json:"dt_txt"`
+	Rain       *struct {
+		ThreeH float64 `json:"3h"`
+	} `json:"rain,omitempty"`
+	Snow *struct {
+		ThreeH float64 `json:"3h"`
+	} `json:"snow,omitempty"`
+	DtTxt string `json:"dt_txt"`
 }
 
 type owmForecastResponse struct {
