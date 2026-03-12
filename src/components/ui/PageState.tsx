@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -42,6 +43,8 @@ export interface PageStateProps {
   actionLabel?: string;
   onActionPress?: () => void;
   className?: string;
+  /** loading 狀態可傳入自訂骨架屏取代預設 icon */
+  skeleton?: ReactNode;
 }
 
 export function PageState({
@@ -51,8 +54,14 @@ export function PageState({
   actionLabel,
   onActionPress,
   className = '',
+  skeleton,
 }: PageStateProps) {
   const config = stateConfig[type];
+
+  // loading 且有自訂骨架屏時直接回傳
+  if (type === 'loading' && skeleton) {
+    return <>{skeleton}</>;
+  }
 
   return (
     <View className={`px-4 py-20 ${className}`.trim()}>

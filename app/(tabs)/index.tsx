@@ -1,6 +1,7 @@
 import { useRouter, Stack } from 'expo-router';
 import { View } from 'react-native';
 
+import { AnimatedEntry } from '@/components/ui/AnimatedEntry';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -10,6 +11,7 @@ import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
 import { SourceBadge } from '@/components/ui/SourceBadge';
+import { WeatherPageSkeleton } from '@/components/ui/SkeletonLoader';
 import { CurrentWeatherCard } from '@/components/weather/CurrentWeatherCard';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
@@ -51,15 +53,20 @@ export default function HomeScreen() {
         </GlassBackground>
       }
     >
-      <GlassBackground>
+      <GlassBackground weatherCode={weatherData?.current.weatherCode}>
         <BlurDecorative color="accent" size="xl" position="top-right" opacity={0.15} />
         <BlurDecorative color="tertiary" size="lg" position="bottom-left" opacity={0.1} />
 
-        <PageScrollView>
+        <PageScrollView
+          onRefresh={() => {
+            void refetch();
+          }}
+          refreshing={isRefetching}
+        >
           <Stack.Screen options={{ headerTitle: townshipDisplayName }} />
 
           {isLoadingCombined ? (
-            <PageState type="loading" title="載入天氣資料" description="正在取得即時與預報資訊。" />
+            <PageState type="loading" skeleton={<WeatherPageSkeleton />} />
           ) : errorCombined ? (
             <PageState
               type="error"
@@ -70,32 +77,41 @@ export default function HomeScreen() {
             />
           ) : weatherData && weatherCardLocation ? (
             <View className="gap-6">
-              <PageHeaderCard
-                icon="partly-sunny-outline"
-                title={weatherCardLocation.name}
-                eyebrow="即時天氣與預報"
-                rightSlot={<SourceBadge source={weatherData.source} />}
-                bottomSlot={
-                  <Button
-                    variant="tonal"
-                    size="sm"
-                    label="手動刷新"
-                    loading={isRefetching}
-                    onPress={() => {
-                      void refetch();
-                    }}
-                  />
-                }
-              />
+              <AnimatedEntry delay={0} duration={350}>
+                <PageHeaderCard
+                  icon="partly-sunny-outline"
+                  title={weatherCardLocation.name}
+                  eyebrow="即時天氣與預報"
+                  rightSlot={<SourceBadge source={weatherData.source} />}
+                  bottomSlot={
+                    <Button
+                      variant="tonal"
+                      size="sm"
+                      label="手動刷新"
+                      loading={isRefetching}
+                      onPress={() => {
+                        void refetch();
+                      }}
+                    />
+                  }
+                />
+              </AnimatedEntry>
 
-              <CurrentWeatherCard
-                data={weatherData.current}
-                location={weatherCardLocation}
-                source={weatherData.source}
-              />
+              <AnimatedEntry delay={80} duration={400}>
+                <CurrentWeatherCard
+                  data={weatherData.current}
+                  location={weatherCardLocation}
+                  source={weatherData.source}
+                />
+              </AnimatedEntry>
 
-              <HourlyForecastList forecasts={weatherData.hourlyForecast} />
-              <DailyForecastList forecasts={weatherData.dailyForecast} />
+              <AnimatedEntry delay={160} duration={400}>
+                <HourlyForecastList forecasts={weatherData.hourlyForecast} />
+              </AnimatedEntry>
+
+              <AnimatedEntry delay={240} duration={400}>
+                <DailyForecastList forecasts={weatherData.dailyForecast} />
+              </AnimatedEntry>
             </View>
           ) : (
             <PageState

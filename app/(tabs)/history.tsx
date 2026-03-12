@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
+import { SkeletonBox, SkeletonProvider } from '@/components/ui/SkeletonLoader';
 import { SourceBadge } from '@/components/ui/SourceBadge';
 import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useHistory } from '@/hooks/useHistory';
@@ -19,6 +20,69 @@ import { useSettingsStore } from '@/store/settings.store';
 import { formatDate } from '@/utils/date';
 import { getGlassStyle } from '@/utils/glass';
 import { formatLocationSecondaryName } from '@/utils/location-display';
+
+function HistorySkeleton() {
+  return (
+    <SkeletonProvider>
+      <View className="gap-6">
+        {/* PageHeaderCard 骨架 */}
+        <View
+          className="mx-4 rounded-3xl border border-glass-border bg-md-surface-container px-5 py-4 gap-3"
+          style={getGlassStyle(20)}
+        >
+          <View className="flex-row items-center gap-3">
+            <SkeletonBox height={40} width={40} borderRadius={20} />
+            <View className="flex-1 gap-2">
+              <SkeletonBox height={10} width="30%" borderRadius={4} />
+              <SkeletonBox height={18} width="55%" borderRadius={5} />
+            </View>
+          </View>
+          <SkeletonBox height={32} width={100} borderRadius={8} />
+        </View>
+
+        {/* 日期選擇器骨架 */}
+        <View className="gap-2">
+          <SkeletonBox height={12} width={60} borderRadius={4} className="mx-4" />
+          <View className="flex-row gap-2" style={{ paddingHorizontal: 16 }}>
+            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+              <SkeletonBox key={i} height={44} width={52} borderRadius={16} />
+            ))}
+          </View>
+        </View>
+
+        {/* 資料卡骨架 */}
+        <View className="gap-4 px-4">
+          <SkeletonBox height={14} width={100} borderRadius={4} />
+          <View className="flex-row gap-3">
+            <View
+              className="flex-1 rounded-3xl border border-glass-border bg-md-surface-container px-4 py-4 gap-2"
+              style={getGlassStyle(16)}
+            >
+              <SkeletonBox height={12} width="60%" borderRadius={4} />
+              <SkeletonBox height={32} width="45%" borderRadius={6} />
+            </View>
+            <View
+              className="flex-1 rounded-3xl border border-glass-border bg-md-surface-container px-4 py-4 gap-2"
+              style={getGlassStyle(16)}
+            >
+              <SkeletonBox height={12} width="60%" borderRadius={4} />
+              <SkeletonBox height={32} width="45%" borderRadius={6} />
+            </View>
+          </View>
+          <View
+            className="rounded-3xl border border-glass-border bg-md-surface-container px-4 py-4"
+            style={getGlassStyle(16)}
+          >
+            <View className="flex-row items-center justify-between">
+              <SkeletonBox height={12} width="40%" borderRadius={4} />
+              <SkeletonBox height={16} width="25%" borderRadius={4} />
+            </View>
+          </View>
+        </View>
+      </View>
+    </SkeletonProvider>
+  );
+}
 
 export default function HistoryScreen() {
   const colors = useMDColors();
@@ -58,12 +122,17 @@ export default function HistoryScreen() {
       }
     >
       <GlassBackground>
-        <PageScrollView>
+        <PageScrollView
+          onRefresh={() => {
+            void refetch();
+          }}
+          refreshing={isRefetching}
+        >
           <BlurDecorative color="accent" size="xl" position="top-right" />
           <BlurDecorative color="secondary" size="md" position="bottom-left" />
 
           {isLoadingCombined ? (
-            <PageState type="loading" title="載入歷史資料" description="正在取得歷史天氣紀錄。" />
+            <PageState type="loading" skeleton={<HistorySkeleton />} />
           ) : errorCombined ? (
             <PageState type="error" title="無法取得歷史資料" description={errorCombined.message} />
           ) : effectiveLocation && historyData && historyData.length > 0 ? (
