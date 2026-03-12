@@ -177,7 +177,8 @@ jobs:
           kill -9 $EXPO_PID 2>/dev/null || true
           exit 1
         env:
-          EXPO_PUBLIC_PROXY_URL: https://proxy-placeholder.vercel.app
+          EXPO_PUBLIC_PROXY_URL: https://weatherb.agubear.black
+          EXPO_PUBLIC_PROXY_SECRET: ${{ secrets.PROXY_SECRET }}
           BASE_URL: /
           CI: true
 
@@ -243,6 +244,7 @@ jobs:
         run: pnpm test:e2e:web
         env:
           EXPO_PUBLIC_PROXY_URL: ${{ vars.PROXY_URL }}
+          EXPO_PUBLIC_PROXY_SECRET: ${{ secrets.PROXY_SECRET }}
 
       - name: Show slow Playwright tests + KPI gates
         if: always()

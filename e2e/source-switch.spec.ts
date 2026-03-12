@@ -48,45 +48,6 @@ const LOCATION_STORE: PersistedStore<{
   version: 0,
 };
 
-const CWA_TOWNSHIP_ONLY_LOCATION_STORE: PersistedStore<{
-  savedLocations: Array<{
-    name: string;
-    city: string;
-    district?: string;
-    township?: string;
-    latitude: number;
-    longitude: number;
-  }>;
-  selectedLocation: {
-    name: string;
-    city: string;
-    district?: string;
-    township?: string;
-    latitude: number;
-    longitude: number;
-  };
-}> = {
-  state: {
-    savedLocations: [
-      {
-        name: '新北市板橋區',
-        city: '新北市',
-        township: '板橋區',
-        latitude: 25.0142,
-        longitude: 121.4592,
-      },
-    ],
-    selectedLocation: {
-      name: '新北市板橋區',
-      city: '新北市',
-      township: '板橋區',
-      latitude: 25.0142,
-      longitude: 121.4592,
-    },
-  },
-  version: 0,
-};
-
 function buildSingleSettings(source: WeatherSource): PersistedStore<{
   theme: 'light';
   temperatureUnit: 'celsius';
@@ -301,50 +262,33 @@ async function mockAllWeatherApis(page: import('@playwright/test').Page): Promis
   });
 }
 
-async function mockCwaTownshipFallbackApis(page: import('@playwright/test').Page): Promise<void> {
-  // 板橋區第一候選失敗，proxy 回傳 404 或空資料
-  // 改用 lat/lon 判斷：板橋區 lat≈25.0142，lon≈121.4592
-  await page.route('**/api/weather/hourly**', async (route) => {
-    const url = new URL(route.request().url());
-    const lat = parseFloat(url.searchParams.get('lat') ?? '0');
-    // 板橋區座標的第一次請求回傳 404（模擬失敗），其他回傳正常資料
-    if (Math.abs(lat - 25.0142) < 0.01) {
-      await route.fulfill({ status: 404, body: 'Not found' });
-    } else {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          makeProxyResponse('cwa', 'hourly', lat, parseFloat(url.searchParams.get('lon') ?? '0')),
-        ),
-      });
-    }
-  });
-
-  await page.route('**/api/weather/daily**', async (route) => {
-    const url = new URL(route.request().url());
-    const lat = parseFloat(url.searchParams.get('lat') ?? '0');
-    if (Math.abs(lat - 25.0142) < 0.01) {
-      await route.fulfill({ status: 404, body: 'Not found' });
-    } else {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          makeProxyResponse('cwa', 'daily', lat, parseFloat(url.searchParams.get('lon') ?? '0')),
-        ),
-      });
-    }
-  });
-
+async function mockCwaPartialFailure(page: import('@playwright/test').Page): Promise<void> {
+  // current 成功，hourly 和 daily 回傳 502（模擬上游錯誤）
   await page.route('**/api/weather/current**', async (route) => {
     const url = new URL(route.request().url());
-    const lat = parseFloat(url.searchParams.get('lat') ?? '0');
-    const lon = parseFloat(url.searchParams.get('lon') ?? '0');
+    const provider = url.searchParams.get('provider') ?? 'cwa';
+    const lat = parseFloat(url.searchParams.get('lat') ?? '25.033');
+    const lon = parseFloat(url.searchParams.get('lon') ?? '121.5654');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(makeProxyResponse('cwa', 'current', lat, lon)),
+      body: JSON.stringify(makeProxyResponse(provider, 'current', lat, lon)),
+    });
+  });
+
+  await page.route('**/api/weather/hourly**', async (route) => {
+    await route.fulfill({
+      status: 502,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'upstream error' }),
+    });
+  });
+
+  await page.route('**/api/weather/daily**', async (route) => {
+    await route.fulfill({
+      status: 502,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'upstream error' }),
     });
   });
 }
@@ -383,19 +327,17 @@ test.describe('資料源 E2E', () => {
     }
   });
 
-  // TODO: 此測試持續失敗。CWA fallback 機制在 proxy server（Go 後端）層面實作，
-  // 前端 adapter 使用相同 lat/lon 發出請求，mock 以 lat 判斷 fallback 的邏輯
-  // 與實際行為不符。需要重新設計 mock 以正確反映 proxy-level fallback。
-  test.skip('CWA township 優先地點在第一候選失敗時可 fallback 並顯示有效預報', async ({ page }) => {
-    await mockCwaTownshipFallbackApis(page);
-    await seedState(page, buildSingleSettings('cwa'), CWA_TOWNSHIP_ONLY_LOCATION_STORE);
+  test('CWA 資料源部分端點失敗時應顯示錯誤狀態', async ({ page }) => {
+    await mockCwaPartialFailure(page);
+    await seedState(page, buildSingleSettings('cwa'));
 
-    await page.goto('/forecast');
-    await expect(page.getByText('逐時與每日預報', { exact: true })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText('逐時預報', { exact: true })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText('7 日預報', { exact: true })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText('無逐時預報資料', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('無每日預報資料', { exact: true })).toHaveCount(0);
+    await page.goto('/');
+
+    // 由於 fetchWeather 使用 Promise.all 並行呼叫三個端點，
+    // 任一失敗都會導致整體失敗，應顯示錯誤狀態
+    await expect(page.getByText('無法取得天氣資料').first()).toBeVisible({ timeout: 15000 });
+    // 應有重試按鈕
+    await expect(page.getByText('重試').first()).toBeVisible();
   });
 
   test('聚合模式應在首頁、預報、歷史頁顯示聚合來源', async ({ page }) => {

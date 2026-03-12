@@ -42,6 +42,9 @@ export interface PageStateProps {
   description?: string;
   actionLabel?: string;
   onActionPress?: () => void;
+  /** 第二個動作按鈕（如「重試」） */
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
   className?: string;
   /** loading 狀態可傳入自訂骨架屏取代預設 icon */
   skeleton?: ReactNode;
@@ -53,6 +56,8 @@ export function PageState({
   description,
   actionLabel,
   onActionPress,
+  secondaryActionLabel,
+  onSecondaryAction,
   className = '',
   skeleton,
 }: PageStateProps) {
@@ -75,14 +80,20 @@ export function PageState({
         <Text className="text-sm leading-5 text-md-on-surface-variant text-center">
           {description ?? config.defaultDescription}
         </Text>
-        {actionLabel && onActionPress ? (
-          <Button
-            variant="tonal"
-            size="sm"
-            label={actionLabel}
-            onPress={onActionPress}
-            className="mt-2"
-          />
+        {actionLabel || secondaryActionLabel ? (
+          <View className="flex-row gap-3 mt-2">
+            {secondaryActionLabel && onSecondaryAction ? (
+              <Button
+                variant="outlined"
+                size="sm"
+                label={secondaryActionLabel}
+                onPress={onSecondaryAction}
+              />
+            ) : null}
+            {actionLabel && onActionPress ? (
+              <Button variant="tonal" size="sm" label={actionLabel} onPress={onActionPress} />
+            ) : null}
+          </View>
         ) : null}
       </Card>
     </View>

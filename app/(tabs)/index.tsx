@@ -71,8 +71,22 @@ export default function HomeScreen() {
             <PageState
               type="error"
               title="無法取得天氣資料"
-              description={errorCombined.message}
-              actionLabel="前往選擇地點"
+              description={
+                errorCombined.message.includes('PROXY_URL')
+                  ? '應用程式設定錯誤，請聯繫開發者。'
+                  : errorCombined.message.includes('401') || errorCombined.message.includes('403')
+                    ? '認證失敗，請稍後再試。'
+                    : errorCombined.message.includes('502') || errorCombined.message.includes('504')
+                      ? '天氣資料來源暫時無法連線，請稍後再試或切換資料來源。'
+                      : errorCombined.message.includes('地點未定義')
+                        ? '尚未選擇地點，請先選擇你想查看的城市。'
+                        : '暫時無法取得資料，請稍後再試。'
+              }
+              secondaryActionLabel="重試"
+              onSecondaryAction={() => {
+                void refetch();
+              }}
+              actionLabel="選擇地點"
               onActionPress={() => router.push('/locations')}
             />
           ) : weatherData && weatherCardLocation ? (

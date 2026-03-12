@@ -24,8 +24,9 @@ func Setup(
 
 	api := r.Group("/api")
 	{
+		api.GET("/health", debugCtrl.HandleHealth)
 		api.GET("/proxy", middleware.HMACAuth(proxySecret), proxyCtrl.Handle)
-		api.GET("/debug", debugCtrl.Handle)
+		api.GET("/debug", middleware.HMACAuth(proxySecret), debugCtrl.Handle)
 
 		weather := api.Group("/weather", middleware.HMACAuth(proxySecret))
 		{

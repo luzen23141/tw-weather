@@ -17,7 +17,16 @@ func NewDebugController() *DebugController {
 	return &DebugController{}
 }
 
-// Handle 處理 /api/debug 請求
+// HandleHealth 處理 /api/health 健康檢查請求（公開，不受 HMAC 保護）
+func (ctrl *DebugController) HandleHealth(c *gin.Context) {
+	c.JSON(http.StatusOK, model.HealthResponse{
+		Status:  "ok",
+		Service: "tw-weather-proxy-go",
+		Version: "1.0.0",
+	})
+}
+
+// Handle 處理 /api/debug 請求（受 HMAC 保護）
 func (ctrl *DebugController) Handle(c *gin.Context) {
 	c.JSON(http.StatusOK, model.DebugResponse{
 		Status:  "ok",
