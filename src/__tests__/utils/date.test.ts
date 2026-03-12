@@ -53,7 +53,7 @@ describe('Date Utils', () => {
       expect(result).toBe('3月15日（五）');
     });
 
-    it('應包含月份、日期和星期資訊', () => {
+    it('應包含月份、日期和週資訊', () => {
       const result = formatDate('2024-01-01T00:00:00Z');
       expect(result).toContain('1月');
       expect(result).toContain('1日');
@@ -89,7 +89,7 @@ describe('Date Utils', () => {
       expect(getDayOfWeek(tomorrow.toISOString())).toBe('明天');
     });
 
-    it('應返回昨天的星期', () => {
+    it('應返回昨天的週', () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const result = getDayOfWeek(yesterday.toISOString());
@@ -97,19 +97,11 @@ describe('Date Utils', () => {
       expect(result.length).toBeGreaterThan(0);
     });
 
-    it('應返回星期字符串', () => {
+    it('應返回週字符串', () => {
       const result = getDayOfWeek('2024-03-18T00:00:00Z');
-      expect([
-        '今天',
-        '明天',
-        '星期一',
-        '星期二',
-        '星期三',
-        '星期四',
-        '星期五',
-        '星期六',
-        '星期日',
-      ]).toContain(result);
+      expect(['今天', '明天', '週一', '週二', '週三', '週四', '週五', '週六', '週日']).toContain(
+        result,
+      );
     });
   });
 

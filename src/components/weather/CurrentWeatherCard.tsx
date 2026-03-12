@@ -1,13 +1,13 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
 import { Text, View } from 'react-native';
 
 import { CurrentWeather, Location, WeatherSource } from '../../api/types';
-import { useMDColors } from '../../hooks/useMDColors';
 import { formatTime } from '../../utils/date';
 import { getGlassStyle } from '../../utils/glass';
 import { formatWindSpeed } from '../../utils/unit-conversion';
 import { getWeatherCodeInfo } from '../../utils/weather-code';
+import { StatIcon, StatIconType } from '../icons/StatIcon';
+import { WeatherIcon } from '../icons/WeatherIcon';
 import { SourceBadge } from '../ui/SourceBadge';
 
 import { formatLocationSecondaryName } from '@/utils/location-display';
@@ -19,12 +19,12 @@ export interface CurrentWeatherCardProps {
 }
 
 const StatCard = ({
-  icon,
+  iconType,
   label,
   value,
   iconColor,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  iconType: StatIconType;
   label: string;
   value: string;
   iconColor: string;
@@ -34,7 +34,7 @@ const StatCard = ({
     className="rounded-3xl border border-glass-border-strong bg-md-surface-container px-4 py-4 gap-2"
   >
     <View className="flex-row items-center gap-1.5">
-      <Ionicons name={icon} size={14} color={iconColor} />
+      <StatIcon type={iconType} size={16} color={iconColor} />
       <Text className="text-xs font-medium text-md-on-surface-variant">{label}</Text>
     </View>
     <Text className="text-lg font-bold text-md-on-surface">{value}</Text>
@@ -46,7 +46,6 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
   location,
   source,
 }: CurrentWeatherCardProps): React.ReactElement {
-  const colors = useMDColors();
   const weatherInfo = getWeatherCodeInfo(data.weatherCode);
   const isRangeTemp = typeof data.temperature === 'string';
   const tempDisplay = isRangeTemp ? data.temperature : `${Math.round(data.temperature)}°`;
@@ -81,7 +80,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
           {tempDisplay}
         </Text>
         <View className="h-16 w-16 items-center justify-center rounded-full bg-md-primary/12">
-          <Ionicons name={weatherInfo.icon} size={30} color={colors.primary} />
+          <WeatherIcon weatherCode={data.weatherCode} size={38} />
         </View>
         <Text className="text-base text-md-on-surface font-semibold tracking-tight opacity-90">
           {weatherInfo.description}
@@ -91,28 +90,28 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
       {/* 統計 Bento Grid - 2x2 */}
       <View className="flex-row flex-wrap gap-3">
         <StatCard
-          icon="thermometer-outline"
+          iconType="thermometer"
           label="體感溫度"
           value={`${Math.round(data.apparentTemperature ?? data.temperature)}°`}
-          iconColor={colors.outline}
+          iconColor="var(--color-md-outline)"
         />
         <StatCard
-          icon="water-outline"
+          iconType="humidity"
           label="濕度"
           value={`${Math.round(data.humidity ?? 0)}%`}
-          iconColor={colors.outline}
+          iconColor="var(--color-md-outline)"
         />
         <StatCard
-          icon="speedometer-outline"
+          iconType="wind"
           label="風速"
           value={formatWindSpeed(data.windSpeed ?? 0, 'kmh')}
-          iconColor={colors.outline}
+          iconColor="var(--color-md-outline)"
         />
         <StatCard
-          icon="rainy-outline"
+          iconType="precipitation"
           label="降水量"
           value={`${(data.precipitation ?? 0).toFixed(1)} mm`}
-          iconColor={colors.outline}
+          iconColor="var(--color-md-outline)"
         />
       </View>
 

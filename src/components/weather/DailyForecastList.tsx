@@ -5,7 +5,7 @@ import { FlatList, ListRenderItem, Text, View } from 'react-native';
 import { DailyForecast } from '../../api/types';
 import { getDayOfWeek } from '../../utils/date';
 import { getGlassStyle } from '../../utils/glass';
-import { getWeatherCodeInfo } from '../../utils/weather-code';
+import { WeatherIcon } from '../icons/WeatherIcon';
 
 export interface DailyForecastListProps {
   forecasts: DailyForecast[];
@@ -27,7 +27,6 @@ const DailyItem = React.memo(
     globalMin: number;
     globalMax: number;
   }) => {
-    const weatherInfo = getWeatherCodeInfo(item.weatherCode);
     const range = globalMax - globalMin;
     const barStart = range > 0 ? (item.temperatureMin - globalMin) / range : 0;
     const barWidth = range > 0 ? (item.temperatureMax - item.temperatureMin) / range : 1;
@@ -45,7 +44,7 @@ const DailyItem = React.memo(
 
         {/* 天氣圖示 */}
         <View className="h-10 w-10 items-center justify-center rounded-full bg-md-primary/10">
-          <Ionicons name={weatherInfo.icon} size={18} color="var(--color-md-primary)" />
+          <WeatherIcon weatherCode={item.weatherCode} size={28} />
         </View>
 
         {/* 溫度範圍 bar */}

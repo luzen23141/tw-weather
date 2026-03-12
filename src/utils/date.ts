@@ -2,7 +2,7 @@
  * 日期格式化工具函式
  */
 
-const DAYS_OF_WEEK = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+const DAYS_OF_WEEK = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
 /**
  * 將 ISO 時間字串格式化為「下午 3:00」格式
@@ -26,7 +26,7 @@ export function formatDate(isoString: string): string {
   const date = new Date(isoString);
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  const dayOfWeek = DAYS_OF_WEEK[date.getDay()] ?? '星期日';
+  const dayOfWeek = DAYS_OF_WEEK[date.getDay()] ?? '週日';
   const shortDayOfWeek = dayOfWeek.slice(-1);
 
   return `${month}月${day}日（${shortDayOfWeek}）`;
@@ -64,7 +64,7 @@ export function getDayOfWeek(isoString: string): string {
     return '明天';
   }
 
-  return DAYS_OF_WEEK[date.getDay()] ?? '星期日';
+  return DAYS_OF_WEEK[date.getDay()] ?? '週日';
 }
 
 /**

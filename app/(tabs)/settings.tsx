@@ -15,7 +15,7 @@ const glassCardClassName =
 const glassCardStyle = getGlassStyle(20);
 const isWeb = Platform.OS === 'web';
 
-const settingsSectionsClassName = 'gap-6';
+const settingsSectionsClassName = 'gap-7';
 const webColumnsClassName = 'flex-row items-start gap-6';
 const webColumnClassName = 'flex-1 gap-6';
 
@@ -63,7 +63,7 @@ const SectionHeader = ({
   title: string;
   icon: keyof typeof Ionicons.glyphMap;
 }) => (
-  <View className="flex-row items-center gap-2.5 px-4 pb-2 pt-1">
+  <View className="flex-row items-center gap-2.5 px-5 pb-3 pt-0.5">
     <View className="h-6 w-6 items-center justify-center rounded-full bg-md-primary/12">
       <Ionicons name={icon} size={13} color="var(--color-md-primary)" />
     </View>
@@ -80,10 +80,10 @@ const OptionContent = ({
   label: string;
   description?: string | undefined;
 }) => (
-  <View className="flex-1 gap-1 pr-4">
+  <View className="flex-1 gap-1.5 pr-4">
     <Text className="text-[15px] font-semibold leading-5 text-md-on-surface">{label}</Text>
     {description && (
-      <Text className="text-[13px] leading-5 text-md-on-surface-variant">{description}</Text>
+      <Text className="text-[13px] leading-[18px] text-md-on-surface-variant">{description}</Text>
     )}
   </View>
 );
@@ -109,7 +109,7 @@ const RadioOption = ({
     accessibilityHint={description}
     accessibilityState={{ checked: value === selectedValue }}
     onPress={onPress}
-    className={`min-h-14 flex-row items-center justify-between bg-md-surface-container px-4 py-4 active:opacity-90 ${
+    className={`min-h-[56px] flex-row items-center justify-between bg-md-surface-container px-5 py-3.5 active:opacity-90 ${
       !isLast ? 'border-b border-glass-border' : ''
     }`}
     style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}
@@ -137,7 +137,7 @@ const SourceToggleComponent = ({
   const isEnabled = enabledSources.includes(source);
   return (
     <View
-      className={`min-h-14 bg-md-surface-container px-4 py-4 flex-row items-center justify-between ${
+      className={`min-h-[56px] bg-md-surface-container px-5 py-3.5 flex-row items-center justify-between ${
         !isLast ? 'border-b border-glass-border' : ''
       }`}
     >

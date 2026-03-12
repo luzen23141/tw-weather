@@ -5,7 +5,7 @@ import { FlatList, ListRenderItem, Text, View } from 'react-native';
 import { HourlyForecast } from '../../api/types';
 import { formatTime } from '../../utils/date';
 import { getGlassStyle } from '../../utils/glass';
-import { getWeatherCodeInfo } from '../../utils/weather-code';
+import { WeatherIcon } from '../icons/WeatherIcon';
 
 export interface HourlyForecastListProps {
   forecasts: HourlyForecast[];
@@ -16,8 +16,6 @@ const ITEM_WIDTH = 104;
 
 const HourlyItem = React.memo(
   ({ item, isCurrent }: { item: HourlyForecast; isCurrent: boolean }) => {
-    const weatherInfo = getWeatherCodeInfo(item.weatherCode);
-
     return (
       <View
         className={`rounded-3xl px-3 py-3 gap-2 items-center transition-all ${
@@ -37,11 +35,7 @@ const HourlyItem = React.memo(
             isCurrent ? 'bg-md-on-primary-container/10' : 'bg-md-primary/10'
           }`}
         >
-          <Ionicons
-            name={weatherInfo.icon}
-            size={18}
-            color={isCurrent ? 'var(--color-md-on-primary-container)' : 'var(--color-md-primary)'}
-          />
+          <WeatherIcon weatherCode={item.weatherCode} size={28} />
         </View>
         <Text
           className={`text-sm font-bold ${isCurrent ? 'text-md-on-primary-container' : 'text-md-on-surface'}`}
