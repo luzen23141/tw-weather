@@ -7,6 +7,7 @@ import { GlassBackground } from '@/components/ui/GlassBackground';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { RadioButton } from '@/components/ui/RadioButton';
+import { useProviders } from '@/hooks/useProviders';
 import { useSettingsStore } from '@/store/settings.store';
 import { getGlassStyle } from '@/utils/glass';
 
@@ -153,32 +154,13 @@ const SourceToggleComponent = ({
   );
 };
 
-const sourceOptions: Array<{
-  label: string;
-  description: string;
-  source: WeatherSource;
-}> = [
-  {
-    label: '中央氣象署（CWA）',
-    description: '台灣最精準，含即時觀測',
-    source: 'cwa',
-  },
-  {
-    label: 'Open-Meteo',
-    description: '免費無限制，歷史資料豐富',
-    source: 'open-meteo',
-  },
-  {
-    label: 'WeatherAPI',
-    description: '備用來源，7 天歷史',
-    source: 'weatherapi',
-  },
-  {
-    label: 'OpenWeatherMap',
-    description: '全球覆蓋，備用資料源',
-    source: 'openweathermap',
-  },
-];
+/** 後端 provider.id 對應前端 WeatherSource 的映射 */
+const providerIdToSource: Record<string, WeatherSource> = {
+  cwa: 'cwa',
+  openmeteo: 'open-meteo',
+  weatherapi: 'weatherapi',
+  openweathermap: 'openweathermap',
+};
 
 const displayModeOptions = [
   {
@@ -222,6 +204,7 @@ const themeOptions = [
 export default function SettingsScreen() {
   const { theme, displayMode, enabledSources, setTheme, setDisplayMode, toggleSource } =
     useSettingsStore();
+  const { data: providers } = useProviders();
 
   const renderSection = (key: SettingsSectionKey) => {
     switch (key) {
@@ -238,17 +221,23 @@ export default function SettingsScreen() {
           />
         ));
       case 'sources':
-        return sourceOptions.map((option, index) => (
-          <SourceToggleComponent
-            key={option.source}
-            label={option.label}
-            description={option.description}
-            source={option.source}
-            enabledSources={enabledSources}
-            toggleSource={toggleSource}
-            isLast={index === sourceOptions.length - 1}
-          />
-        ));
+        if (!providers) return null;
+        return providers
+          .filter((p) => p.id in providerIdToSource)
+          .map((p, index, arr) => {
+            const source = providerIdToSource[p.id] as WeatherSource;
+            return (
+              <SourceToggleComponent
+                key={p.id}
+                label={p.name}
+                description={p.description}
+                source={source}
+                enabledSources={enabledSources}
+                toggleSource={toggleSource}
+                isLast={index === arr.length - 1}
+              />
+            );
+          });
       case 'display-mode':
         return displayModeOptions.map((option, index) => (
           <RadioOption

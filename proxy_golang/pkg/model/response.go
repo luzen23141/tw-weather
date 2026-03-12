@@ -5,10 +5,11 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-// DebugResponse 調試回應
-type DebugResponse struct {
-	Status  string `json:"status"`
-	Service string `json:"service"`
+// ProviderInfo 資料源資訊
+type ProviderInfo struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 // HealthResponse 健康檢查回應

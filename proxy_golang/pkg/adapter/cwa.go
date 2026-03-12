@@ -22,6 +22,12 @@ type CWA struct{}
 // ProviderID returns the unique identifier for the CWA provider.
 func (CWA) ProviderID() string { return "cwa" }
 
+// Name returns the display name for the CWA provider.
+func (CWA) Name() string { return "中央氣象署（CWA）" }
+
+// Description returns a brief description of the CWA provider.
+func (CWA) Description() string { return "台灣最精準，含即時觀測與預報" }
+
 // APIKeyEnvVar returns the environment variable name for the CWA API key.
 func (CWA) APIKeyEnvVar() string { return "CWA_API_KEY" }
 

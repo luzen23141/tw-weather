@@ -10,9 +10,9 @@ import (
 
 // Setup 設定路由
 func Setup(
-	proxyCtrl *controller.ProxyController,
 	debugCtrl *controller.DebugController,
 	weatherCtrl *controller.WeatherController,
+	providerCtrl *controller.ProviderController,
 	proxySecret string,
 ) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
@@ -21,12 +21,16 @@ func Setup(
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORS())
 	r.Use(middleware.RequestLogger())
+	r.Use(middleware.MockMode())
 
 	api := r.Group("/api")
 	{
 		api.GET("/health", debugCtrl.HandleHealth)
-		api.GET("/proxy", middleware.HMACAuth(proxySecret), proxyCtrl.Handle)
-		api.GET("/debug", middleware.HMACAuth(proxySecret), debugCtrl.Handle)
+
+		provider := api.Group("/provider")
+		{
+			provider.GET("/list", providerCtrl.HandleListProviders)
+		}
 
 		weather := api.Group("/weather", middleware.HMACAuth(proxySecret))
 		{

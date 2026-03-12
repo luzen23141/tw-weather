@@ -25,11 +25,3 @@ func (ctrl *DebugController) HandleHealth(c *gin.Context) {
 		Version: "1.0.0",
 	})
 }
-
-// Handle 處理 /api/debug 請求（受 HMAC 保護）
-func (ctrl *DebugController) Handle(c *gin.Context) {
-	c.JSON(http.StatusOK, model.DebugResponse{
-		Status:  "ok",
-		Service: "tw-weather-proxy-go",
-	})
-}

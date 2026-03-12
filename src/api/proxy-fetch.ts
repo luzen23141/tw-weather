@@ -1,22 +1,6 @@
 const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL;
 const PROXY_SECRET = process.env.EXPO_PUBLIC_PROXY_SECRET;
 
-export function buildProxyUrl(
-  service: string,
-  endpoint: string,
-  params: Record<string, string>,
-): string {
-  if (!PROXY_URL) {
-    throw new Error('EXPO_PUBLIC_PROXY_URL not found');
-  }
-
-  const url = new URL(`${PROXY_URL}/api/proxy`);
-  url.searchParams.set('service', service);
-  url.searchParams.set('endpoint', endpoint);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  return url.toString();
-}
-
 export type WeatherEndpoint = 'current' | 'hourly' | 'daily' | 'history';
 
 export function buildWeatherUrl(endpoint: WeatherEndpoint, params: Record<string, string>): string {

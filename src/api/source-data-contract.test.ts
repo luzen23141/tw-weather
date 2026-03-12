@@ -13,21 +13,8 @@ import type {
   Location,
 } from '@/api/types';
 
-// Mock proxyFetch（新版 adapter 統一使用 proxyFetch）
+// Mock proxyFetch（所有 adapter 統一使用 proxyFetch + buildWeatherUrl）
 jest.mock('@/api/proxy-fetch', () => ({
-  buildWeatherUrl: jest.fn(
-    (endpoint: string, params: Record<string, string>) =>
-      `https://proxy.test/api/weather/${endpoint}?${new URLSearchParams(params).toString()}`,
-  ),
-  proxyFetch: jest.fn(),
-}));
-
-// Mock 舊版 proxy 函式（openweathermap adapter 仍使用舊版）
-jest.mock('@/api/proxy-fetch', () => ({
-  buildProxyUrl: jest.fn(
-    (service: string, endpoint: string, params: Record<string, string>) =>
-      `https://proxy.test/api/proxy?service=${service}&endpoint=${endpoint}&${new URLSearchParams(params).toString()}`,
-  ),
   buildWeatherUrl: jest.fn(
     (endpoint: string, params: Record<string, string>) =>
       `https://proxy.test/api/weather/${endpoint}?${new URLSearchParams(params).toString()}`,
@@ -308,66 +295,15 @@ describe('資料源資料契約（頁面使用欄位）', () => {
     const { default: openWeatherMapAdapter } =
       await import('@/api/adapters/openweathermap.adapter');
 
-    const owmCurrentData = {
-      dt: 1709800000,
-      main: { temp: 23, feels_like: 24, temp_min: 21, temp_max: 25, pressure: 1011, humidity: 74 },
-      wind: { speed: 5, deg: 160 },
-      weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
-      visibility: 10000,
-    };
+    const owmCurrentResp = { ...MOCK_CURRENT_RESPONSE, provider: 'openweathermap' };
+    const owmHourlyResp = { ...MOCK_HOURLY_RESPONSE, provider: 'openweathermap' };
+    const owmDailyResp = { ...MOCK_DAILY_RESPONSE, provider: 'openweathermap' };
 
-    const owmForecastData = {
-      list: [
-        {
-          dt: 1709800000,
-          main: {
-            temp: 23,
-            feels_like: 24,
-            temp_min: 22,
-            temp_max: 24,
-            pressure: 1011,
-            humidity: 74,
-          },
-          weather: [{ id: 803, main: 'Clouds', description: 'broken clouds' }],
-          wind: { speed: 5, deg: 160 },
-          pop: 0.3,
-          rain: { '3h': 0.2 },
-          dt_txt: '2026-03-07 12:00:00',
-        },
-        {
-          dt: 1709886400,
-          main: {
-            temp: 22,
-            feels_like: 23,
-            temp_min: 20,
-            temp_max: 23,
-            pressure: 1010,
-            humidity: 76,
-          },
-          weather: [{ id: 500, main: 'Rain', description: 'light rain' }],
-          wind: { speed: 6, deg: 180 },
-          pop: 0.5,
-          rain: { '3h': 1.1 },
-          dt_txt: '2026-03-08 12:00:00',
-        },
-      ],
-      city: { sunrise: 1709772000, sunset: 1709815200 },
-    };
-
-    // OpenWeatherMap 仍使用舊版 /api/proxy 路由（proxyFetch 已被 mock）
+    // OpenWeatherMap 現在與其他 adapter 一樣使用 /api/weather/* 端點
     mockProxyFetch.mockImplementation((url: string) => {
-      if (
-        url.includes('endpoint=data%2F2.5%2Fweather') ||
-        url.includes('endpoint=data/2.5/weather')
-      ) {
-        return Promise.resolve(makeOkResponse(owmCurrentData));
-      }
-      if (
-        url.includes('endpoint=data%2F2.5%2Fforecast') ||
-        url.includes('endpoint=data/2.5/forecast')
-      ) {
-        return Promise.resolve(makeOkResponse(owmForecastData));
-      }
+      if (url.includes('/current')) return Promise.resolve(makeOkResponse(owmCurrentResp));
+      if (url.includes('/hourly')) return Promise.resolve(makeOkResponse(owmHourlyResp));
+      if (url.includes('/daily')) return Promise.resolve(makeOkResponse(owmDailyResp));
       return Promise.reject(new Error(`Unexpected URL: ${url}`));
     });
 

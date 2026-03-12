@@ -11,7 +11,6 @@ import (
 	"proxy_golang/pkg/adapter"
 	"proxy_golang/pkg/config"
 	"proxy_golang/pkg/controller"
-	"proxy_golang/pkg/repository"
 	"proxy_golang/pkg/router"
 	"proxy_golang/pkg/service"
 )
@@ -31,32 +30,27 @@ func New() *App {
 	// 初始化日誌
 	initLogger(cfg)
 
-	// Repository 層
-	cacheRepo := repository.NewCacheRepository()
-
-	// 共用 upstream client
-	upstreamClient := service.NewUpstreamClient()
-
-	// Service 層 - Proxy
-	proxySvc := service.NewProxyService(cfg, cacheRepo, upstreamClient)
+	// 共用 upstream client（包裝 mock 層，header 觸發時回傳寫死的三方原始回應）
+	upstreamClient := service.NewMockableUpstreamClient(service.NewUpstreamClient())
 
 	// Adapter Registry
 	adapterRegistry := adapter.NewRegistry(
 		adapter.CWA{},
 		adapter.WeatherAPI{},
 		adapter.OpenMeteo{},
+		adapter.OpenWeatherMap{},
 	)
 
 	// Service 層 - Weather
 	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient)
 
 	// Controller 層
-	proxyCtrl := controller.NewProxyController(proxySvc)
 	debugCtrl := controller.NewDebugController()
 	weatherCtrl := controller.NewWeatherController(weatherSvc)
+	providerCtrl := controller.NewProviderController(adapterRegistry)
 
 	// 路由設定
-	r := router.Setup(proxyCtrl, debugCtrl, weatherCtrl, cfg.ProxySecret)
+	r := router.Setup(debugCtrl, weatherCtrl, providerCtrl, cfg.ProxySecret)
 
 	return &App{
 		Config:  cfg,

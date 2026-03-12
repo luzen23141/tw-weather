@@ -22,7 +22,9 @@ type mockAdapter struct {
 	fetchFn    func(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error)
 }
 
-func (m *mockAdapter) ProviderID() string { return m.providerID }
+func (m *mockAdapter) ProviderID() string  { return m.providerID }
+func (m *mockAdapter) Name() string        { return m.providerID }
+func (m *mockAdapter) Description() string { return "mock" }
 func (m *mockAdapter) APIKeyEnvVar() string {
 	switch m.providerID {
 	case "cwa":

@@ -18,6 +18,12 @@ type WeatherAPI struct{}
 // ProviderID returns the unique identifier for the WeatherAPI provider.
 func (WeatherAPI) ProviderID() string { return "weatherapi" }
 
+// Name returns the display name for the WeatherAPI provider.
+func (WeatherAPI) Name() string { return "WeatherAPI" }
+
+// Description returns a brief description of the WeatherAPI provider.
+func (WeatherAPI) Description() string { return "備用來源，支援預報與 7 天歷史" }
+
 // APIKeyEnvVar returns the environment variable name for the WeatherAPI key.
 func (WeatherAPI) APIKeyEnvVar() string { return "WEATHERAPI_KEY" }
 

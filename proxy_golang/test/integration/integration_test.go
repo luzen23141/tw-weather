@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,7 +19,6 @@ import (
 	"proxy_golang/pkg/config"
 	"proxy_golang/pkg/controller"
 	"proxy_golang/pkg/model"
-	"proxy_golang/pkg/repository"
 	"proxy_golang/pkg/router"
 	"proxy_golang/pkg/service"
 )
@@ -57,31 +57,8 @@ type serverOptions struct {
 	upstreamClient model.UpstreamClient
 }
 
-func setupServer(t *testing.T, upstreamURL string, opts serverOptions) *httptest.Server {
+func setupServer(t *testing.T, opts serverOptions) *httptest.Server {
 	t.Helper()
-
-	// 替換 ProxyService 的路由 BaseURL 指向 mock upstream
-	originalRoutes := make(map[string]model.ServiceRoute)
-	for k, v := range model.ServiceRoutes {
-		originalRoutes[k] = v
-	}
-	model.ServiceRoutes["cwa"] = model.ServiceRoute{
-		BaseURL:          upstreamURL,
-		AllowedEndpoints: []string{"O-A0001-001", "F-D0047-089", "F-D0047-091"},
-		APIKeyEnvVar:     "CWA_API_KEY",
-		APIKeyParam:      "Authorization",
-	}
-	model.ServiceRoutes["weatherapi"] = model.ServiceRoute{
-		BaseURL:          upstreamURL,
-		AllowedEndpoints: []string{"current.json", "forecast.json", "history.json"},
-		APIKeyEnvVar:     "WEATHERAPI_KEY",
-		APIKeyParam:      "key",
-	}
-	t.Cleanup(func() {
-		for k, v := range originalRoutes {
-			model.ServiceRoutes[k] = v
-		}
-	})
 
 	cfg := &config.Config{
 		Port:        "0",
@@ -99,167 +76,59 @@ func setupServer(t *testing.T, upstreamURL string, opts serverOptions) *httptest
 		upstreamClient = service.NewUpstreamClient()
 	}
 
-	// 組裝 DI
-	cacheRepo := repository.NewCacheRepository()
-	validatorSvc := service.NewValidatorService()
-	proxySvc := service.NewProxyService(cfg, validatorSvc, cacheRepo, upstreamClient)
-	proxyCtrl := controller.NewProxyController(proxySvc)
-	debugCtrl := controller.NewDebugController()
-
+	// Adapter Registry
 	adapterRegistry := adapter.NewRegistry(
 		adapter.CWA{},
 		adapter.WeatherAPI{},
 		adapter.OpenMeteo{},
 	)
-	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient)
-	weatherCtrl := controller.NewWeatherController(weatherSvc)
 
-	r := router.Setup(proxyCtrl, debugCtrl, weatherCtrl, opts.proxySecret)
+	// Service 層
+	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient)
+
+	// Controller 層
+	debugCtrl := controller.NewDebugController()
+	weatherCtrl := controller.NewWeatherController(weatherSvc)
+	providerCtrl := controller.NewProviderController(adapterRegistry)
+
+	r := router.Setup(debugCtrl, weatherCtrl, providerCtrl, opts.proxySecret)
 	return httptest.NewServer(r)
 }
 
-// ─── /api/debug ──────────────────────────────────────────────────────────────
+// ─── /api/health ─────────────────────────────────────────────────────────────
 
-func TestIntegration_DebugEndpoint(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
+func TestIntegration_HealthEndpoint(t *testing.T) {
+	srv := setupServer(t, serverOptions{})
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/api/debug")
+	resp, err := http.Get(srv.URL + "/api/health")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
-// ─── /api/proxy ──────────────────────────────────────────────────────────────
+// ─── /api/provider/list ──────────────────────────────────────────────────────
 
-func TestIntegration_ProxySuccess(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "test-cwa-key", r.URL.Query().Get("Authorization"))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"records":{"Station":[]}}`))
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
+func TestIntegration_ProviderList(t *testing.T) {
+	srv := setupServer(t, serverOptions{})
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/api/proxy?service=cwa&endpoint=O-A0001-001")
+	resp, err := http.Get(srv.URL + "/api/provider/list")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	assert.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, "MISS", resp.Header.Get("X-Cache"))
+	assert.Contains(t, resp.Header.Get("Content-Type"), "application/json")
 }
 
-func TestIntegration_ProxyCacheHit(t *testing.T) {
-	callCount := 0
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		callCount++
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data": "cached"}`))
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
-	defer srv.Close()
-
-	target := srv.URL + "/api/proxy?service=cwa&endpoint=O-A0001-001"
-
-	resp1, err := http.Get(target)
-	require.NoError(t, err)
-	resp1.Body.Close()
-	assert.Equal(t, "MISS", resp1.Header.Get("X-Cache"))
-
-	resp2, err := http.Get(target)
-	require.NoError(t, err)
-	resp2.Body.Close()
-	assert.Equal(t, "HIT", resp2.Header.Get("X-Cache"))
-
-	assert.Equal(t, 1, callCount)
-}
-
-func TestIntegration_InvalidService(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
-	defer srv.Close()
-
-	resp, err := http.Get(srv.URL + "/api/proxy?service=invalid&endpoint=test")
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	assert.Equal(t, 400, resp.StatusCode)
-}
-
-func TestIntegration_InvalidEndpoint(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
-	defer srv.Close()
-
-	resp, err := http.Get(srv.URL + "/api/proxy?service=cwa&endpoint=not-allowed")
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	assert.Equal(t, 400, resp.StatusCode)
-}
-
-func TestIntegration_MissingParams(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
-	defer srv.Close()
-
-	resp, err := http.Get(srv.URL + "/api/proxy")
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	assert.Equal(t, 400, resp.StatusCode)
-}
-
-func TestIntegration_PathTraversal(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
-	defer srv.Close()
-
-	resp, err := http.Get(srv.URL + "/api/proxy?service=cwa&endpoint=../etc/passwd")
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	assert.Equal(t, 400, resp.StatusCode)
-}
+// ─── CORS ────────────────────────────────────────────────────────────────────
 
 func TestIntegration_CORS_Options(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
+	srv := setupServer(t, serverOptions{})
 	defer srv.Close()
 
-	req, _ := http.NewRequest(http.MethodOptions, srv.URL+"/api/proxy", nil)
+	req, _ := http.NewRequest(http.MethodOptions, srv.URL+"/api/health", nil)
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
@@ -268,15 +137,10 @@ func TestIntegration_CORS_Options(t *testing.T) {
 }
 
 func TestIntegration_CORS_AllowedOrigin(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
+	srv := setupServer(t, serverOptions{})
 	defer srv.Close()
 
-	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/api/debug", nil)
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/api/health", nil)
 	req.Header.Set("Origin", "http://localhost:8081")
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -286,15 +150,10 @@ func TestIntegration_CORS_AllowedOrigin(t *testing.T) {
 }
 
 func TestIntegration_CORS_UnknownOrigin(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer upstream.Close()
-
-	srv := setupServer(t, upstream.URL, serverOptions{})
+	srv := setupServer(t, serverOptions{})
 	defer srv.Close()
 
-	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/api/debug", nil)
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/api/health", nil)
 	req.Header.Set("Origin", "https://evil.example.com")
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -302,6 +161,294 @@ func TestIntegration_CORS_UnknownOrigin(t *testing.T) {
 
 	// 不在允許清單：不應回傳 ACAO header
 	assert.Empty(t, resp.Header.Get("Access-Control-Allow-Origin"))
+}
+
+// ─── X-Mock-Data header 整合測試 ─────────────────────────────────────────────
+// 驗證帶 X-Mock-Data header 時，不呼叫三方 API，回傳寫死的原始三方資料經 adapter 解析後的結果
+
+// failingUpstreamClient 若被呼叫代表 mock 沒生效
+type failingUpstreamClient struct{}
+
+func (failingUpstreamClient) Do(_ context.Context, req *model.UpstreamRequest) (*model.UpstreamResponse, error) {
+	return nil, assert.AnError // mock 應攔截，不應走到這裡
+}
+
+func setupMockServer(t *testing.T) *httptest.Server {
+	t.Helper()
+
+	cfg := &config.Config{
+		Port:        "0",
+		GinMode:     "test",
+		ProxySecret: "",
+		APIKeys: config.APIKeysConfig{
+			CWA:            "test-cwa-key",
+			WeatherAPI:     "test-weather-key",
+			OpenWeatherMap: "test-owm-key",
+		},
+	}
+
+	// 用 MockableUpstreamClient 包裝一個會失敗的 client
+	// 若 mock 沒攔截到，會直接報錯
+	upstreamClient := service.NewMockableUpstreamClient(&failingUpstreamClient{})
+
+	adapterRegistry := adapter.NewRegistry(
+		adapter.CWA{},
+		adapter.WeatherAPI{},
+		adapter.OpenMeteo{},
+		adapter.OpenWeatherMap{},
+	)
+
+	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient)
+
+	debugCtrl := controller.NewDebugController()
+	weatherCtrl := controller.NewWeatherController(weatherSvc)
+	providerCtrl := controller.NewProviderController(adapterRegistry)
+
+	r := router.Setup(debugCtrl, weatherCtrl, providerCtrl, "")
+	return httptest.NewServer(r)
+}
+
+// mockGet 發送帶 X-Mock-Data header 的 GET 請求
+func mockGet(t *testing.T, url string) *http.Response {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	require.NoError(t, err)
+	req.Header.Set("X-Mock-Data", "true")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	return resp
+}
+
+// --- CWA ---
+
+func TestMock_CWA_Current(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/current?provider=cwa&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Content-Type"), "application/json")
+}
+
+func TestMock_CWA_Hourly(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/hourly?provider=cwa&locationId=F-D0047-061")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_CWA_Daily(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/daily?provider=cwa&locationId=F-D0047-061")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+// --- Open-Meteo ---
+
+func TestMock_OpenMeteo_Current(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/current?provider=openmeteo&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_OpenMeteo_Hourly(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/hourly?provider=openmeteo&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_OpenMeteo_Daily(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/daily?provider=openmeteo&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_OpenMeteo_History(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/history?provider=openmeteo&lat=25.03&lon=121.56&date=2024-06-01")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+// --- WeatherAPI ---
+
+func TestMock_WeatherAPI_Current(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/current?provider=weatherapi&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_WeatherAPI_Hourly(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/hourly?provider=weatherapi&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_WeatherAPI_Daily(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/daily?provider=weatherapi&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_WeatherAPI_History(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/history?provider=weatherapi&lat=25.03&lon=121.56&date=2024-06-01")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+// --- OpenWeatherMap ---
+
+func TestMock_OWM_Current(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/current?provider=openweathermap&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_OWM_Hourly(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/hourly?provider=openweathermap&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestMock_OWM_Daily(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/daily?provider=openweathermap&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+// --- 驗證無 header 時 mock 不生效 ---
+
+func TestMock_WithoutHeader_ShouldNotMock(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	// 不帶 X-Mock-Data header → failingUpstreamClient 會被呼叫 → 應回 502
+	resp, err := http.Get(srv.URL + "/api/weather/current?provider=openmeteo&lat=25.03&lon=121.56")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, 502, resp.StatusCode)
+}
+
+// --- 驗證回應內容結構 ---
+
+func TestMock_ResponseBody_OpenMeteo_Current(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/current?provider=openmeteo&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	var result model.WeatherResponse
+	require.Equal(t, 200, resp.StatusCode)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+
+	assert.Equal(t, "openmeteo", result.Provider)
+	assert.Equal(t, model.WeatherTypeCurrent, result.Type)
+	assert.NotNil(t, result.Current)
+	assert.InDelta(t, 29.5, result.Current.Temperature, 0.1)
+	assert.Equal(t, 70, result.Current.Humidity)
+}
+
+func TestMock_ResponseBody_CWA_Current(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/current?provider=cwa&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	var result model.WeatherResponse
+	require.Equal(t, 200, resp.StatusCode)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+
+	assert.Equal(t, "cwa", result.Provider)
+	assert.NotNil(t, result.Current)
+	assert.InDelta(t, 28.5, result.Current.Temperature, 0.1)
+	assert.Equal(t, "臺北", result.Location.Name)
+}
+
+func TestMock_ResponseBody_WeatherAPI_Daily(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/daily?provider=weatherapi&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	var result model.WeatherResponse
+	require.Equal(t, 200, resp.StatusCode)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+
+	assert.Equal(t, "weatherapi", result.Provider)
+	assert.GreaterOrEqual(t, len(result.Daily), 1)
+	assert.InDelta(t, 33.0, result.Daily[0].TempMax, 0.1)
+}
+
+func TestMock_ResponseBody_OWM_Hourly(t *testing.T) {
+	srv := setupMockServer(t)
+	defer srv.Close()
+
+	resp := mockGet(t, srv.URL+"/api/weather/hourly?provider=openweathermap&lat=25.03&lon=121.56")
+	defer resp.Body.Close()
+
+	var result model.WeatherResponse
+	require.Equal(t, 200, resp.StatusCode)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+
+	assert.Equal(t, "openweathermap", result.Provider)
+	assert.GreaterOrEqual(t, len(result.Hourly), 1)
+	assert.Equal(t, "Taipei", result.Location.Name)
 }
 
 // ─── /api/weather/* (使用 mock upstream client) ───────────────────────────────
@@ -314,7 +461,7 @@ func TestIntegration_WeatherCurrent_OpenMeteo(t *testing.T) {
 		},
 	}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/current?provider=openmeteo&lat=25.04&lon=121.51")
@@ -333,7 +480,7 @@ func TestIntegration_WeatherCurrent_WeatherAPI(t *testing.T) {
 		},
 	}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/current?provider=weatherapi&lat=25.04&lon=121.51")
@@ -351,7 +498,7 @@ func TestIntegration_WeatherCurrent_CWA(t *testing.T) {
 		},
 	}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/current?provider=cwa&lat=25.04&lon=121.51")
@@ -369,7 +516,7 @@ func TestIntegration_WeatherHourly_OpenMeteo(t *testing.T) {
 		},
 	}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/hourly?provider=openmeteo&lat=25.04&lon=121.51")
@@ -387,7 +534,7 @@ func TestIntegration_WeatherDaily_OpenMeteo(t *testing.T) {
 		},
 	}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/daily?provider=openmeteo&lat=25.04&lon=121.51")
@@ -405,7 +552,7 @@ func TestIntegration_WeatherHistory_OpenMeteo(t *testing.T) {
 		},
 	}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/history?provider=openmeteo&lat=25.04&lon=121.51&date=2024-01-15")
@@ -418,7 +565,7 @@ func TestIntegration_WeatherHistory_OpenMeteo(t *testing.T) {
 func TestIntegration_WeatherHistory_MissingDate(t *testing.T) {
 	mock := &mockUpstreamClient{}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/history?provider=openmeteo&lat=25.04&lon=121.51")
@@ -432,7 +579,7 @@ func TestIntegration_WeatherHistory_MissingDate(t *testing.T) {
 func TestIntegration_Weather_MissingProvider(t *testing.T) {
 	mock := &mockUpstreamClient{}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/current?lat=25.04&lon=121.51")
@@ -445,7 +592,7 @@ func TestIntegration_Weather_MissingProvider(t *testing.T) {
 func TestIntegration_Weather_InvalidProvider(t *testing.T) {
 	mock := &mockUpstreamClient{}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/current?provider=invalid&lat=25.04&lon=121.51")
@@ -458,7 +605,7 @@ func TestIntegration_Weather_InvalidProvider(t *testing.T) {
 func TestIntegration_Weather_MissingLocation(t *testing.T) {
 	mock := &mockUpstreamClient{}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/current?provider=openmeteo")
@@ -476,7 +623,7 @@ func TestIntegration_Weather_WithLocationID(t *testing.T) {
 		},
 	}
 
-	srv := setupServer(t, "http://unused", serverOptions{upstreamClient: mock})
+	srv := setupServer(t, serverOptions{upstreamClient: mock})
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/api/weather/current?provider=cwa&locationId=C0TB40")
