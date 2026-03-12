@@ -1,22 +1,9 @@
-import {
-  CurrentWeather,
-  HistoricalDayWeather,
-  Location,
-  WeatherApiAdapter,
-  WeatherApiError,
-  WeatherData,
-  WeatherSource,
-} from '../types';
+import { HistoricalDayWeather, Location, WeatherSource } from '../types';
 
 import { buildWeatherUrl, proxyFetch } from '@/api/proxy-fetch';
-import {
-  ProxyWeatherResponse,
-  toCurrentWeather,
-  toDailyForecast,
-  toHistoricalWeather,
-  toHourlyForecast,
-  toLocation,
-} from '@/api/proxy-weather-response';
+import { type ProxyWeatherResponse, toHistoricalWeather } from '@/api/proxy-weather-response';
+
+import { BaseProxyAdapter } from './base-proxy.adapter';
 
 /**
  * WeatherAPI.com Adapter
@@ -27,36 +14,11 @@ import {
  * - /api/weather/daily    → 每日預報
  * - /api/weather/history  → 歷史天氣（逐日，最多 7 天）
  */
-class WeatherApiComAdapter implements WeatherApiAdapter {
+class WeatherApiComAdapter extends BaseProxyAdapter {
   readonly source: WeatherSource = 'weatherapi';
 
-  async fetchWeather(location: Location): Promise<Omit<WeatherData, 'history'>> {
-    try {
-      const params = this.buildLocationParams(location);
-
-      const [currentResp, hourlyResp, dailyResp] = await Promise.all([
-        this.fetchEndpoint('current', params),
-        this.fetchEndpoint('hourly', params),
-        this.fetchEndpoint('daily', params),
-      ]);
-
-      return {
-        location: toLocation(currentResp.location),
-        source: this.source,
-        fetchedAt: new Date().toISOString(),
-        current: this.parseCurrentWeather(currentResp),
-        hourlyForecast: toHourlyForecast(hourlyResp.hourly ?? []),
-        dailyForecast: toDailyForecast(dailyResp.daily ?? []),
-      };
-    } catch (error) {
-      if (error instanceof WeatherApiError) throw error;
-      throw new WeatherApiError(
-        `WeatherAPI 預報取得失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
-        this.source,
-        undefined,
-        error instanceof Error ? error : undefined,
-      );
-    }
+  protected override get displayName(): string {
+    return 'WeatherAPI';
   }
 
   async fetchHistory(location: Location, days: number): Promise<HistoricalDayWeather[]> {
@@ -87,45 +49,8 @@ class WeatherApiComAdapter implements WeatherApiAdapter {
 
       return history.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     } catch (error) {
-      if (error instanceof WeatherApiError) throw error;
-      throw new WeatherApiError(
-        `WeatherAPI 歷史資料取得失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
-        this.source,
-        undefined,
-        error instanceof Error ? error : undefined,
-      );
+      throw this.wrapError(error, '歷史資料取得失敗');
     }
-  }
-
-  private buildLocationParams(location: Location): Record<string, string> {
-    return {
-      provider: 'weatherapi',
-      lat: String(location.latitude),
-      lon: String(location.longitude),
-    };
-  }
-
-  private async fetchEndpoint(
-    endpoint: 'current' | 'hourly' | 'daily',
-    params: Record<string, string>,
-  ): Promise<ProxyWeatherResponse> {
-    const url = buildWeatherUrl(endpoint, params);
-    const response = await proxyFetch(url);
-    if (!response.ok) {
-      throw new WeatherApiError(
-        `WeatherAPI ${endpoint} API 失敗: ${response.statusText}`,
-        this.source,
-        response.status,
-      );
-    }
-    return response.json() as Promise<ProxyWeatherResponse>;
-  }
-
-  private parseCurrentWeather(resp: ProxyWeatherResponse): CurrentWeather {
-    if (!resp.current) {
-      throw new WeatherApiError('WeatherAPI current 回應缺少資料', this.source);
-    }
-    return toCurrentWeather(resp.current, resp.updatedAt);
   }
 }
 

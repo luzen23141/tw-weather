@@ -34,7 +34,7 @@ export const CacheExpiry = {
   fullWeather: 30 * 60 * 1000,
 
   /** 歷史天氣：永不過期（過去天氣不會改變） */
-  history: Number.MAX_SAFE_INTEGER,
+  history: Infinity,
 } as const;
 
 /**

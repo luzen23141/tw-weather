@@ -6,8 +6,8 @@ set -e
 
 echo "🔍 執行 pre-commit 檢查..."
 
-# 1. 檢查 .env 文件是否被暫存
-if git diff --cached --name-only | grep -E "^\.env($|\.)" > /dev/null 2>&1; then
+# 1. 檢查 .env 文件是否被暫存（排除 .env.example）
+if git diff --cached --name-only | grep -E "^\.env$" > /dev/null 2>&1 || git diff --cached --name-only | grep -E "^\.env\.(local|production|development|test)$" > /dev/null 2>&1; then
   echo "❌ 錯誤：不能提交 .env 文件！"
   echo ""
   echo "   .env 文件包含敏感信息（API 金鑰、密碼等）"

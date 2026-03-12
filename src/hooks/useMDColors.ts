@@ -1,3 +1,5 @@
+import { useSettingsStore } from '@/store/settings.store';
+
 export interface MDColors {
   primary: string;
   onPrimary: string;
@@ -66,6 +68,41 @@ export const LIGHT: MDColors = {
   glassHeader: 'rgba(255, 255, 255, 0.90)',
 };
 
+export const DARK: MDColors = {
+  primary: '#22D3EE',
+  onPrimary: '#003545',
+  primaryContainer: 'rgba(34, 211, 238, 0.16)',
+  onPrimaryContainer: '#A5F3FC',
+  secondary: '#7EB8CC',
+  secondaryContainer: 'rgba(126, 184, 204, 0.16)',
+  onSecondaryContainer: '#C4E4F0',
+  tertiary: '#B8ACE8',
+  onTertiary: '#2D2360',
+  tertiaryContainer: 'rgba(184, 172, 232, 0.16)',
+  onTertiaryContainer: '#DDD4F8',
+  background: '#0B1520',
+  onBackground: '#E1E8EF',
+  surface: 'rgba(20, 32, 48, 0.82)',
+  onSurface: '#E1E8EF',
+  surfaceVariant: 'rgba(30, 45, 60, 0.72)',
+  onSurfaceVariant: '#94A8BE',
+  surfaceContainerLow: 'rgba(18, 28, 42, 0.78)',
+  surfaceContainer: 'rgba(22, 34, 50, 0.82)',
+  outline: '#7A8FA5',
+  error: '#F87171',
+  onError: '#450A0A',
+  errorContainer: 'rgba(248, 113, 113, 0.16)',
+  onErrorContainer: '#FCA5A5',
+  // Glass token
+  glassBorder: 'rgba(255, 255, 255, 0.12)',
+  glassBorderStrong: 'rgba(255, 255, 255, 0.22)',
+  glassCard: 'rgba(20, 32, 48, 0.72)',
+  glassElevated: 'rgba(24, 38, 56, 0.85)',
+  glassTab: 'rgba(14, 22, 34, 0.92)',
+  glassHeader: 'rgba(14, 22, 34, 0.92)',
+};
+
 export function useMDColors(): MDColors {
-  return LIGHT;
+  const theme = useSettingsStore((s) => s.theme);
+  return theme === 'dark' ? DARK : LIGHT;
 }

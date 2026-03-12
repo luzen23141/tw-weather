@@ -50,6 +50,14 @@
   body {
     background-color: var(--color-md-background);
     color: var(--color-md-on-background);
-    font-family: 'Roboto', system-ui, sans-serif;
+    font-family:
+      'Inter',
+      'Roboto',
+      system-ui,
+      -apple-system,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }

@@ -33,6 +33,6 @@
       "keywords": "天氣, 預報, 台灣天氣, 即時天氣, 歷史天氣, 阿古熊, 氣象",
       "lang": "zh-Hant"
     },
-    "plugins": ["expo-router", "expo-web-browser"]
+    "plugins": ["expo-router"]
   }
 }

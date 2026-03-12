@@ -72,14 +72,17 @@ const mockWeatherData: WeatherData = {
 };
 
 function mockStoreState(overrides?: {
+  theme?: 'light' | 'dark';
   displayMode?: 'single' | 'aggregate';
   activeSource?: WeatherSource;
   enabledSources?: WeatherSource[];
 }) {
   const state = {
+    theme: overrides?.theme ?? 'light',
     displayMode: overrides?.displayMode ?? 'single',
     activeSource: overrides?.activeSource ?? 'cwa',
     enabledSources: overrides?.enabledSources ?? ['cwa', 'open-meteo'],
+    setTheme: jest.fn(),
     setDisplayMode: jest.fn(),
     setActiveSource: jest.fn(),
     toggleSource: jest.fn(),

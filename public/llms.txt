@@ -1,0 +1,37 @@
+# 阿古熊天氣 (tw-weather)
+
+> 台灣即時天氣預報與歷史查詢應用
+
+## 概述
+
+阿古熊天氣是一個跨平台天氣應用程式（Web / iOS / Android），提供台灣 368 鄉鎮市區的精準天氣資訊。整合多個氣象資料來源，支援聚合模式比較。
+
+## 主要功能
+
+- 即時天氣：當前溫度、體感溫度、濕度、風速、降水量
+- 逐時預報：未來 24 小時天氣趨勢
+- 7 日預報：一週天氣與溫度範圍圖
+- 歷史天氣：過去天氣資料查詢（最多 92 天）
+- 多資料源：CWA 中央氣象署、Open-Meteo、WeatherAPI.com、OpenWeatherMap
+- 聚合模式：自動比較多來源數據，提供綜合判斷
+- 地點管理：GPS 定位 + 收藏地點
+
+## 技術架構
+
+- 前端：Expo SDK 55 + React Native + TypeScript
+- 狀態管理：Zustand + TanStack Query
+- 樣式：NativeWind (Tailwind CSS for React Native)
+- API：透過 Go Proxy 統一轉發各天氣 API
+
+## 網站結構
+
+- `/` — 首頁（即時天氣 + 逐時/每日預報）
+- `/forecast` — 預報頁（逐時與每日預報）
+- `/history` — 歷史天氣查詢
+- `/locations` — 地點管理
+- `/settings` — 設定（資料來源、顯示模式）
+
+## 聯繫
+
+- 網站：https://weather.agubear.com
+- GitHub：https://github.com/luzen23141/tw-weather

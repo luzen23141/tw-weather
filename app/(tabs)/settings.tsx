@@ -24,7 +24,7 @@ type SectionCardProps = {
   className?: string;
 };
 
-type SettingsSectionKey = 'sources' | 'display-mode';
+type SettingsSectionKey = 'appearance' | 'sources' | 'display-mode';
 
 type SettingsSectionConfig = {
   key: SettingsSectionKey;
@@ -34,11 +34,12 @@ type SettingsSectionConfig = {
 };
 
 const settingsSectionConfigs: SettingsSectionConfig[] = [
+  { key: 'appearance', title: '外觀', icon: 'color-palette-outline' },
   { key: 'sources', title: '資料來源', icon: 'cloud-outline' },
   { key: 'display-mode', title: '顯示模式', icon: 'layers-outline' },
 ];
 
-const webSectionColumns: SettingsSectionKey[][] = [['sources'], ['display-mode']];
+const webSectionColumns: SettingsSectionKey[][] = [['appearance', 'sources'], ['display-mode']];
 
 const SectionIntro = () => (
   <PageHeaderCard
@@ -205,11 +206,37 @@ const SettingsSection = ({
   </View>
 );
 
+const themeOptions = [
+  {
+    label: '淺色模式',
+    description: '明亮的介面風格',
+    value: 'light',
+  },
+  {
+    label: '深色模式',
+    description: '適合夜間使用，減少眼睛疲勞',
+    value: 'dark',
+  },
+] as const;
+
 export default function SettingsScreen() {
-  const { displayMode, enabledSources, setDisplayMode, toggleSource } = useSettingsStore();
+  const { theme, displayMode, enabledSources, setTheme, setDisplayMode, toggleSource } =
+    useSettingsStore();
 
   const renderSection = (key: SettingsSectionKey) => {
     switch (key) {
+      case 'appearance':
+        return themeOptions.map((option, index) => (
+          <RadioOption
+            key={option.value}
+            label={option.label}
+            description={option.description}
+            value={option.value}
+            selectedValue={theme}
+            onPress={() => setTheme(option.value)}
+            isLast={index === themeOptions.length - 1}
+          />
+        ));
       case 'sources':
         return sourceOptions.map((option, index) => (
           <SourceToggleComponent
