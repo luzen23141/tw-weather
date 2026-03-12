@@ -12,7 +12,7 @@
 - 逐時預報：未來 24 小時天氣趨勢
 - 7 日預報：一週天氣與溫度範圍圖
 - 歷史天氣：過去天氣資料查詢（最多 92 天）
-- 多資料源：CWA 中央氣象署、Open-Meteo、WeatherAPI.com、OpenWeatherMap
+- 多資料源：CWA 中央氣象署、Open-Meteo、WeatherAPI.com
 - 聚合模式：自動比較多來源數據，提供綜合判斷
 - 地點管理：GPS 定位 + 收藏地點
 
@@ -33,5 +33,5 @@
 
 ## 聯繫
 
-- 網站：https://weather.agubear.com
+- 網站：https://weather.agubear.black
 - GitHub：https://github.com/luzen23141/tw-weather

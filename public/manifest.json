@@ -3,6 +3,7 @@
   "short_name": "天氣",
   "description": "提供全台灣精準的即時天氣預報、逐時預報、7 日預報與歷史天氣查詢。",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
   "background_color": "#EEF4F8",
   "theme_color": "#0891B2",
@@ -14,6 +15,24 @@
       "src": "/favicon.png",
       "sizes": "48x48",
       "type": "image/png"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

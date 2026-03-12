@@ -15,4 +15,4 @@ User-agent: Anthropic-AI
 Allow: /
 
 # Sitemaps
-Sitemap: https://weather.agubear.com/sitemap.xml
+Sitemap: https://weather.agubear.black/sitemap.xml

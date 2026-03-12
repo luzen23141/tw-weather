@@ -1,7 +1,7 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
-const SITE_URL = 'https://weather.agubear.com';
+const SITE_URL = 'https://weather.agubear.black';
 const SITE_TITLE = '阿古熊天氣 — 台灣即時天氣預報與歷史查詢';
 const SITE_DESCRIPTION =
   '提供全台灣 368 鄉鎮市區精準的即時天氣、逐時預報、7 日預報與歷史天氣查詢。整合 CWA 中央氣象署、Open-Meteo 等多方數據來源，支援聚合模式比較。';
@@ -22,6 +22,7 @@ export default function Root({ children }: PropsWithChildren) {
           content="台灣天氣, 天氣預報, 即時天氣, 逐時預報, 歷史天氣, 氣象, 阿古熊天氣, 中央氣象署, CWA, Open-Meteo, 鄉鎮天氣, weather Taiwan"
         />
         <meta name="author" content="阿古熊天氣" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <link rel="canonical" href={SITE_URL} />
 
         {/* GEO */}
@@ -69,7 +70,7 @@ export default function Root({ children }: PropsWithChildren) {
           rel="stylesheet"
         />
 
-        {/* Schema.org JSON-LD */}
+        {/* Schema.org JSON-LD — WebApplication */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -82,9 +83,12 @@ export default function Root({ children }: PropsWithChildren) {
               applicationCategory: 'WeatherApplication',
               operatingSystem: 'Web, iOS, Android',
               inLanguage: 'zh-Hant-TW',
+              image: `${SITE_URL}/og-image.png`,
+              screenshot: `${SITE_URL}/og-image.png`,
               author: {
                 '@type': 'Organization',
                 name: '阿古熊天氣',
+                url: SITE_URL,
               },
               offers: {
                 '@type': 'Offer',
@@ -96,6 +100,44 @@ export default function Root({ children }: PropsWithChildren) {
                 '@type': 'Country',
                 name: 'Taiwan',
               },
+              sameAs: ['https://github.com/luzen23141/tw-weather'],
+            }),
+          }}
+        />
+
+        {/* Schema.org JSON-LD — FAQPage (AEO) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: [
+                {
+                  '@type': 'Question',
+                  name: '阿古熊天氣支援哪些天氣資料來源？',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: '阿古熊天氣整合 CWA 中央氣象署、Open-Meteo 與 WeatherAPI.com 三大資料來源，使用者可自由切換或啟用聚合模式比較。',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: '阿古熊天氣涵蓋哪些地區？',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: '涵蓋全台灣 368 個鄉鎮市區，提供即時天氣、逐時預報、7 日預報與歷史天氣查詢。',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: '阿古熊天氣是免費的嗎？',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: '是的，阿古熊天氣完全免費使用，支援 Web、iOS 與 Android 平台。',
+                  },
+                },
+              ],
             }),
           }}
         />
