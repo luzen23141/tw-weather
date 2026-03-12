@@ -36,6 +36,27 @@ jest.mock('expo-location', () => ({
   ),
 }));
 
+// Mock react-native-svg
+jest.mock('react-native-svg', () => {
+  const React = require('react');
+  const mockComponent = (name: string) =>
+    React.forwardRef((props: any, ref: any) => React.createElement(name, { ...props, ref }));
+  return {
+    __esModule: true,
+    default: mockComponent('Svg'),
+    Svg: mockComponent('Svg'),
+    Circle: mockComponent('Circle'),
+    Defs: mockComponent('Defs'),
+    G: mockComponent('G'),
+    Line: mockComponent('Line'),
+    LinearGradient: mockComponent('LinearGradient'),
+    Path: mockComponent('Path'),
+    Rect: mockComponent('Rect'),
+    Stop: mockComponent('Stop'),
+    Text: mockComponent('SvgText'),
+  };
+});
+
 // Mock async storage
 jest.mock('@react-native-async-storage/async-storage', () => ({
   default: {
