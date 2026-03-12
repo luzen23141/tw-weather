@@ -30,6 +30,9 @@ func (c *httpUpstreamClient) Do(ctx context.Context, req *model.UpstreamRequest)
 		return nil, fmt.Errorf("failed to create upstream request: %w", err)
 	}
 
+	// Set a custom User-Agent to bypass WAFs (like CWA) that block default Go client
+	httpReq.Header.Set("User-Agent", "tw-weather-proxy/1.0")
+
 	resp, err := c.client.Do(httpReq)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
