@@ -8,6 +8,27 @@ import { test, expect } from '@playwright/test';
  * - 防止空白頁面上線
  */
 test.describe('Smoke Test', () => {
+  test.beforeEach(async ({ page }) => {
+    // Mock 所有後端 API，避免 network error 干擾 smoke 檢測
+    await page.route('**/api/provider/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { id: 'cwa', name: '中央氣象署（CWA）', description: '台灣最精準' },
+          { id: 'openmeteo', name: 'Open-Meteo', description: '免費無限制' },
+        ]),
+      });
+    });
+    await page.route('**/api/weather/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ provider: 'cwa', type: 'current', current: {} }),
+      });
+    });
+  });
+
   test('首頁應正常載入且無 JS 錯誤', async ({ page }) => {
     const errors: string[] = [];
 

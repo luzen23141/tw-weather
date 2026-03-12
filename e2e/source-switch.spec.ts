@@ -205,6 +205,18 @@ async function mockAllWeatherApis(page: import('@playwright/test').Page): Promis
     });
   });
 
+  await page.route('**/api/weather/history**', async (route) => {
+    const url = new URL(route.request().url());
+    const provider = url.searchParams.get('provider') ?? 'open-meteo';
+    const lat = parseFloat(url.searchParams.get('lat') ?? '25.033');
+    const lon = parseFloat(url.searchParams.get('lon') ?? '121.5654');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(makeProxyResponse(provider, 'daily', lat, lon)),
+    });
+  });
+
   // Mock proxy /api/proxy 端點（openweathermap 使用舊格式）
   await page.route('**/api/proxy**', async (route) => {
     const url = new URL(route.request().url());

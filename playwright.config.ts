@@ -23,7 +23,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'EXPO_NO_INTERACTIVE=1 pnpm web -- --port 8081',
+    command:
+      'EXPO_PUBLIC_PROXY_URL=http://localhost:9999 EXPO_NO_INTERACTIVE=1 pnpm web -- --port 8081',
     url: 'http://localhost:8081',
     reuseExistingServer: !process.env.CI,
     timeout: 180 * 1000,
