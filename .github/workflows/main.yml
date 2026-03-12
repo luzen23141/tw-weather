@@ -156,7 +156,7 @@ jobs:
           # event loop 無法退出（已知 Metro 行為）。
           # 解法：背景執行 export，每 5 秒偵測 bundle 是否產生；
           # 一旦 bundle 存在即主動 kill，避免無限等待。
-          pnpm exec expo export --platform web &
+          pnpm exec expo export -c --platform web &
           EXPO_PID=$!
           echo "expo PID: $EXPO_PID"
           for i in $(seq 1 120); do

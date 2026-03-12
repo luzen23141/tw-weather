@@ -27,7 +27,7 @@ jobs:
 
       - name: Export Expo Web (static)
         run: |
-          npx expo export --platform web &
+          npx expo export -c --platform web &
           EXPO_PID=$!
           # 等待 bundle 產生或 process 結束
           for i in $(seq 1 120); do
