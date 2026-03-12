@@ -1,0 +1,20 @@
+name: Set Vercel Env
+
+on:
+  workflow_dispatch:
+
+jobs:
+  set-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set Vercel Env
+        working-directory: proxy_golang
+        run: |
+          echo "${{ secrets.CWA_API_KEY }}" | npx vercel env add CWA_API_KEY production --token="${{ secrets.VERCEL_TOKEN }}"
+          echo "${{ secrets.WEATHERAPI_KEY }}" | npx vercel env add WEATHERAPI_KEY production --token="${{ secrets.VERCEL_TOKEN }}"
+          echo "${{ secrets.OPENWEATHERMAP_KEY }}" | npx vercel env add OPENWEATHERMAP_KEY production --token="${{ secrets.VERCEL_TOKEN }}"
+          echo "${{ secrets.PROXY_SECRET }}" | npx vercel env add PROXY_SECRET production --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
