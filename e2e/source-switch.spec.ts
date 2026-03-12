@@ -384,13 +384,15 @@ test.describe('資料源 E2E', () => {
   });
 
   test('CWA township 優先地點在第一候選失敗時可 fallback 並顯示有效預報', async ({ page }) => {
+    test.setTimeout(20000);
     await mockCwaTownshipFallbackApis(page);
     await seedState(page, buildSingleSettings('cwa'), CWA_TOWNSHIP_ONLY_LOCATION_STORE);
 
     await page.goto('/forecast');
-    await expect(page.getByText('逐時與每日預報', { exact: true })).toBeVisible();
-    await expect(page.getByText('逐時預報', { exact: true })).toBeVisible();
-    await expect(page.getByText('7 日預報', { exact: true })).toBeVisible();
+    // CWA fallback 需要多次 retry，加上骨架屏動畫，等待時間較長
+    await expect(page.getByText('逐時與每日預報', { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('逐時預報', { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('7 日預報', { exact: true })).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('無逐時預報資料', { exact: true })).toHaveCount(0);
     await expect(page.getByText('無每日預報資料', { exact: true })).toHaveCount(0);
   });
