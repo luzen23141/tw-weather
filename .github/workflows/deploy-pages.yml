@@ -60,3 +60,25 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=tw-weather --commit-message="${{ github.sha }}"
+
+  purge-cdn:
+    name: Purge Cloudflare Cache
+    needs: [build-and-deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug Check
+        run: |
+          echo "Zone ID 長度: ${#ZONE_ID}"
+          echo "Token 長度: ${#TOKEN}"
+        env:
+          ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Purge Cache
+        env:
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}'
