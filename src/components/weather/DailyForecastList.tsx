@@ -1,6 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useCallback, useMemo } from 'react';
 import { FlatList, ListRenderItem, Text, View } from 'react-native';
+
+import { AppIcon } from '@/components/icons/AppIcon';
 
 import { DailyForecast } from '../../api/types';
 import { getDayOfWeek } from '../../utils/date';
@@ -58,7 +59,7 @@ const DailyItem = React.memo(
             </Text>
           </View>
           {/* 溫度 Bar */}
-          <View className="h-1.5 bg-md-surface-variant/50 rounded-full overflow-hidden">
+          <View className="h-2 rounded-full bg-md-surface-variant/30 overflow-hidden">
             <View
               className="h-full bg-md-primary rounded-full absolute"
               style={{ left: `${barStart * 100}%`, width: `${barWidth * 100}%` }}
@@ -67,8 +68,8 @@ const DailyItem = React.memo(
         </View>
 
         {/* 降雨機率 */}
-        <View className="flex-row items-center gap-0.5 w-10 justify-end">
-          <Ionicons name="water" size={10} color="var(--color-md-primary)" />
+        <View className="flex-row items-center gap-1 w-12 justify-end">
+          <AppIcon name="water" size={10} color="var(--color-md-primary)" />
           <Text className="text-xs text-md-primary font-semibold">
             {item.precipitationProbability}%
           </Text>

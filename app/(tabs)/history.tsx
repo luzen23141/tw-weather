@@ -1,8 +1,8 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 import { MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
+import { AppIcon } from '@/components/icons/AppIcon';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -211,7 +211,7 @@ export default function HistoryScreen() {
                       style={getGlassStyle(16)}
                     >
                       <View className="mb-1 flex-row items-center gap-1.5">
-                        <Ionicons name="thermometer-outline" size={13} color={colors.primary} />
+                        <AppIcon name="thermometer-outline" size={13} color={colors.primary} />
                         <Text className="text-xs text-md-on-surface-variant">最低溫度</Text>
                       </View>
                       <Text className="text-2xl font-bold text-md-primary">
@@ -224,7 +224,7 @@ export default function HistoryScreen() {
                       style={getGlassStyle(16)}
                     >
                       <View className="mb-1 flex-row items-center gap-1.5">
-                        <Ionicons name="thermometer-outline" size={13} color={colors.error} />
+                        <AppIcon name="thermometer-outline" size={13} color={colors.error} />
                         <Text className="text-xs text-md-on-surface-variant">最高溫度</Text>
                       </View>
                       <Text className="text-2xl font-bold text-md-error">
@@ -239,7 +239,7 @@ export default function HistoryScreen() {
                   >
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center gap-1.5">
-                        <Ionicons name="rainy-outline" size={13} color={colors.primary} />
+                        <AppIcon name="rainy-outline" size={13} color={colors.primary} />
                         <Text className="text-xs text-md-on-surface-variant">總降水量</Text>
                       </View>
                       <Text className="text-base font-bold text-md-primary">

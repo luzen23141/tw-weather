@@ -1,7 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 
+import { AppIcon } from '@/components/icons/AppIcon';
 import { useMDColors } from '@/hooks/useMDColors';
 import { getGlassStyle } from '@/utils/glass';
 
@@ -24,7 +24,10 @@ export default function TabsLayout() {
           position: Platform.OS === 'web' ? 'relative' : 'absolute',
           ...(Platform.OS === 'web'
             ? {
+                alignSelf: 'center',
                 marginTop: 'auto',
+                maxWidth: 1120,
+                width: '100%',
                 ...getGlassStyle(24),
               }
             : {}),
@@ -52,7 +55,7 @@ export default function TabsLayout() {
         options={{
           title: '天氣',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="partly-sunny-outline" size={size} color={color} />
+            <AppIcon name="partly-sunny-outline" size={size} color={color} />
           ),
           headerTitle: '台灣天氣',
         }}
@@ -63,7 +66,7 @@ export default function TabsLayout() {
         options={{
           title: '預報',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+            <AppIcon name="calendar-outline" size={size} color={color} />
           ),
           headerTitle: '天氣預報',
         }}
@@ -74,7 +77,7 @@ export default function TabsLayout() {
         options={{
           title: '歷史',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time-outline" size={size} color={color} />
+            <AppIcon name="time-outline" size={size} color={color} />
           ),
           headerTitle: '歷史天氣',
         }}
@@ -85,7 +88,7 @@ export default function TabsLayout() {
         options={{
           title: '地點',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="location-outline" size={size} color={color} />
+            <AppIcon name="location-outline" size={size} color={color} />
           ),
           headerTitle: '地點管理',
         }}
@@ -96,7 +99,7 @@ export default function TabsLayout() {
         options={{
           title: '設定',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
+            <AppIcon name="settings-outline" size={size} color={color} />
           ),
           headerTitle: '設定',
         }}

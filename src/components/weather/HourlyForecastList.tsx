@@ -1,6 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useCallback } from 'react';
-import { FlatList, ListRenderItem, Text, View } from 'react-native';
+import { FlatList, ListRenderItem, Platform, Text, View } from 'react-native';
+
+import { AppIcon } from '@/components/icons/AppIcon';
 
 import { HourlyForecast } from '../../api/types';
 import { formatTime } from '../../utils/date';
@@ -42,10 +43,10 @@ const HourlyItem = React.memo(
         >
           {Math.round(item.temperature)}°
         </Text>
-        <View className="flex-row items-center gap-0.5">
-          <Ionicons
+        <View className="flex-row items-center gap-1">
+          <AppIcon
             name="water"
-            size={9}
+            size={10}
             color={isCurrent ? 'var(--color-md-on-primary-container)' : 'var(--color-md-primary)'}
           />
           <Text
@@ -105,7 +106,7 @@ export const HourlyForecastList = React.memo(function HourlyForecastList({
         keyExtractor={keyExtractor}
         getItemLayout={getItemLayout}
         horizontal
-        showsHorizontalScrollIndicator={false}
+        showsHorizontalScrollIndicator={Platform.OS === 'web'}
         scrollEventThrottle={16}
         removeClippedSubviews
         maxToRenderPerBatch={8}

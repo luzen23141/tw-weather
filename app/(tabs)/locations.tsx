@@ -1,9 +1,9 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ExpoLocation from 'expo-location';
 import { useMemo, useState } from 'react';
 import { Alert, FlatList, Platform, Pressable, Text, TouchableOpacity, View } from 'react-native';
 
 import type { Location } from '@/api/types';
+import { AppIcon } from '@/components/icons/AppIcon';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { Button } from '@/components/ui/Button';
 import { GlassBackground } from '@/components/ui/GlassBackground';
@@ -145,6 +145,9 @@ export default function LocationsScreen() {
         data={isSearching ? searchResults : savedLocations}
         keyExtractor={(item) => `${item.latitude}-${item.longitude}`}
         contentContainerStyle={{ paddingBottom: 104, gap: 12 }}
+        style={
+          Platform.OS === 'web' ? { alignSelf: 'center', width: '100%', maxWidth: 920 } : undefined
+        }
         ListHeaderComponent={
           <View className="gap-5 pb-3">
             <PageHeaderCard
@@ -170,7 +173,7 @@ export default function LocationsScreen() {
                   variant="tonal"
                   label="使用當前位置"
                   loading={isGettingLocation}
-                  icon={<Ionicons name="navigate-outline" size={16} color={colors.primary} />}
+                  icon={<AppIcon name="navigate-outline" size={16} color={colors.primary} />}
                   onPress={() => {
                     void handleGetCurrentLocation();
                   }}
@@ -209,7 +212,7 @@ export default function LocationsScreen() {
                   </Text>
                 </View>
                 {saved ? (
-                  <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                  <AppIcon name="checkmark-circle" size={22} color={colors.primary} />
                 ) : (
                   <Pressable
                     accessibilityRole="button"
@@ -218,7 +221,7 @@ export default function LocationsScreen() {
                     className="min-h-11 min-w-11 items-center justify-center rounded-full"
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                    <AppIcon name="add-circle-outline" size={24} color={colors.primary} />
                   </Pressable>
                 )}
               </View>
@@ -259,7 +262,7 @@ export default function LocationsScreen() {
               </View>
               <View className="flex-row items-center gap-3">
                 {isSelected ? (
-                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                  <AppIcon name="checkmark-circle" size={20} color={colors.primary} />
                 ) : null}
                 <Pressable
                   accessibilityRole="button"
@@ -268,7 +271,7 @@ export default function LocationsScreen() {
                   className="min-h-11 min-w-11 items-center justify-center rounded-full"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                  <AppIcon name="trash-outline" size={18} color={colors.error} />
                 </Pressable>
               </View>
             </TouchableOpacity>

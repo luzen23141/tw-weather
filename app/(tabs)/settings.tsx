@@ -1,7 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, Switch, Text, View, Platform } from 'react-native';
 
 import type { WeatherSource } from '@/api/types';
+import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
@@ -30,7 +30,7 @@ type SettingsSectionKey = 'appearance' | 'sources' | 'display-mode';
 type SettingsSectionConfig = {
   key: SettingsSectionKey;
   title: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: AppIconName;
   className?: string;
 };
 
@@ -57,16 +57,10 @@ const SectionCard = ({ children, className = '' }: SectionCardProps) => (
   </View>
 );
 
-const SectionHeader = ({
-  title,
-  icon,
-}: {
-  title: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}) => (
+const SectionHeader = ({ title, icon }: { title: string; icon: AppIconName }) => (
   <View className="flex-row items-center gap-2.5 px-5 pb-3 pt-0.5">
     <View className="h-6 w-6 items-center justify-center rounded-full bg-md-primary/12">
-      <Ionicons name={icon} size={13} color="var(--color-md-primary)" />
+      <AppIcon name={icon} size={13} color="var(--color-md-primary)" />
     </View>
     <Text className="text-[11px] font-bold tracking-[1.2px] text-md-primary uppercase">
       {title}
@@ -263,6 +257,7 @@ export default function SettingsScreen() {
           paddingTop: 8,
         }}
         bottomOffset={isWeb ? 260 : 156}
+        maxWidth={1120}
       >
         <SectionIntro />
 

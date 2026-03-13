@@ -212,7 +212,7 @@ export function isFoggy(wmoCode: number): boolean {
  */
 export interface WeatherCodeInfo {
   emoji: string;
-  icon: keyof typeof import('@expo/vector-icons').Ionicons.glyphMap;
+  icon: string;
   description: string;
   isRaining: boolean;
 }

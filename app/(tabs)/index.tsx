@@ -90,7 +90,7 @@ export default function HomeScreen() {
               onActionPress={() => router.push('/locations')}
             />
           ) : weatherData && weatherCardLocation ? (
-            <View className="gap-6">
+            <View className="gap-8">
               <AnimatedEntry delay={0} duration={350}>
                 <PageHeaderCard
                   icon="partly-sunny-outline"
