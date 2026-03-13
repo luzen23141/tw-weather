@@ -34,7 +34,7 @@ const config: KnipConfig = {
     'eslint-plugin-react',
     'eslint-plugin-react-hooks',
   ],
-  ignoreBinaries: ['maestro', 'tail'],
+  ignoreBinaries: ['maestro', 'tail', 'vercel'],
   ignoreExportsUsedInFile: true,
 };
 
