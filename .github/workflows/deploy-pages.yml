@@ -105,14 +105,17 @@ jobs:
                   zone_id = payload['result'][0]['id']
                   break
 
-          if not zone_id:
-              raise SystemExit('Unable to resolve Cloudflare zone for weather.agubear.black or agubear.black')
-
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
-              fh.write(f'zone_id={zone_id}\n')
+              fh.write(f'zone_id={zone_id or ""}\n')
+
+          if zone_id:
+              print(f'Resolved Cloudflare zone: {zone_id}')
+          else:
+              print('Unable to resolve Cloudflare zone; skipping cache purge')
           PY
 
       - name: Purge Custom Domain Cache
+        if: steps.zone.outputs.zone_id != ''
         env:
           CF_ZONE_ID: ${{ steps.zone.outputs.zone_id }}
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

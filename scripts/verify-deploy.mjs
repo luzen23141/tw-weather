@@ -39,7 +39,7 @@ function extractEntryPath(html) {
 }
 
 async function readEntryPath(baseUrl, useCacheBusting) {
-  const suffix = useCacheBusting ? `?t=${Date.now()}` : '';
+  const suffix = useCacheBusting ? `?v=${Date.now()}` : '';
   const html = await fetchText(`${baseUrl}/${suffix}`);
   return extractEntryPath(html);
 }
@@ -56,7 +56,7 @@ async function verifyDeployment() {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
     try {
-      const customEntry = await readEntryPath(DEFAULT_CUSTOM_URL, false);
+      const customEntry = await readEntryPath(DEFAULT_CUSTOM_URL, true);
 
       if (customEntry === expectedEntry) {
         console.log(`Custom bundle: ${customEntry}`);
@@ -83,7 +83,7 @@ async function verifyDeployment() {
 
 async function warmUpCache() {
   try {
-    const sitemap = await fetchText(`${DEFAULT_SITEMAP_URL}?t=${Date.now()}`);
+    const sitemap = await fetchText(`${DEFAULT_SITEMAP_URL}?v=${Date.now()}`);
     const urls = [...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)]
       .map((match) => match[1])
       .filter((url) => typeof url === 'string');
@@ -96,7 +96,8 @@ async function warmUpCache() {
 
     for (const url of urls) {
       try {
-        await fetchText(url);
+        const separator = url.includes('?') ? '&' : '?';
+        await fetchText(`${url}${separator}v=${Date.now()}`);
       } catch {
         // Ignore warm-up failures; verification already proved deployment state.
       }
