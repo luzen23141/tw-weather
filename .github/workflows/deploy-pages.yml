@@ -78,19 +78,52 @@ jobs:
     needs: [build-and-deploy]
     runs-on: ubuntu-latest
     steps:
-      - name: Debug Check
+      - name: Resolve Zone ID
+        id: zone
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          echo "Zone ID 長度: ${#ZONE_ID}"
-          echo "Token 長度: ${#TOKEN}"
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          account_id = os.environ['CF_ACCOUNT_ID']
+          token = os.environ['CF_API_TOKEN']
+          req = urllib.request.Request(
+              f'https://api.cloudflare.com/client/v4/zones?name=agubear.black&account.id={account_id}',
+              headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
+          )
+
+          with urllib.request.urlopen(req) as response:
+              payload = json.load(response)
+
+          if not payload.get('success') or not payload.get('result'):
+              raise SystemExit(f"Unable to resolve Cloudflare zone: {payload}")
+
+          zone_id = payload['result'][0]['id']
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+              fh.write(f'zone_id={zone_id}\n')
+          PY
+
+      - name: Purge Custom Domain Cache
         env:
-          ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      - name: Purge Cache
-        env:
-          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_ZONE_ID: ${{ steps.zone.outputs.zone_id }}
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
           -H "Authorization: Bearer $CF_API_TOKEN" \
           -H "Content-Type: application/json" \
           --data '{"purge_everything":true}'
+
+  verify-custom-domain:
+    name: Verify Custom Domain
+    needs: [purge-cdn]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Verify deployment propagation
+        run: node scripts/verify-deploy.mjs
