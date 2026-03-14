@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
+import { AnimatedEntry } from '@/components/ui/AnimatedEntry';
 import { MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
-import { AppIcon } from '@/components/icons/AppIcon';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -13,11 +14,11 @@ import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
 import { SkeletonBox, SkeletonProvider } from '@/components/ui/SkeletonLoader';
 import { SourceBadge } from '@/components/ui/SourceBadge';
+import { StatCard } from '@/components/ui/StatCard';
 import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useHistory } from '@/hooks/useHistory';
-import { useMDColors } from '@/hooks/useMDColors';
 import { useSettingsStore } from '@/store/settings.store';
-import { formatDate } from '@/utils/date';
+import { formatDate, daysAgo } from '@/utils/date';
 import { getGlassStyle } from '@/utils/glass';
 import { formatLocationSecondaryName } from '@/utils/location-display';
 
@@ -85,17 +86,14 @@ function HistorySkeleton() {
 }
 
 export default function HistoryScreen() {
-  const colors = useMDColors();
+  const router = useRouter();
   const { displayMode } = useSettingsStore();
   const {
     effectiveLocation,
     isLoading: locationLoading,
     error: locationError,
   } = useEffectiveLocation();
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const dateStr = new Date().toISOString().split('T')[0];
-    return dateStr ?? '';
-  });
+  const [selectedDate, setSelectedDate] = useState('');
 
   const {
     data: historyData,
@@ -105,13 +103,26 @@ export default function HistoryScreen() {
     isRefetching,
   } = useHistory(effectiveLocation ?? null, MAX_HISTORY_FETCH_DAYS);
 
-  const isLoadingCombined = locationLoading || isLoading;
-  const errorCombined = locationError || error;
+  const isLoadingCombined = locationLoading || (!!effectiveLocation && isLoading);
   const selectedDayData = historyData?.find((d) => d.date === selectedDate);
 
   const locationSecondaryText = effectiveLocation
     ? formatLocationSecondaryName(effectiveLocation)
     : null;
+
+  useEffect(() => {
+    if (!historyData || historyData.length === 0) {
+      return;
+    }
+
+    const hasSelectedDate = historyData.some((item) => item.date === selectedDate);
+    if (!selectedDate || !hasSelectedDate) {
+      const latestAvailableDate = historyData[0]?.date;
+      if (latestAvailableDate) {
+        setSelectedDate(latestAvailableDate);
+      }
+    }
+  }, [historyData, selectedDate]);
 
   return (
     <ErrorBoundary
@@ -133,10 +144,30 @@ export default function HistoryScreen() {
 
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<HistorySkeleton />} />
-          ) : errorCombined ? (
-            <PageState type="error" title="無法取得歷史資料" description={errorCombined.message} />
+          ) : !effectiveLocation ? (
+            <PageState
+              type="empty"
+              title="請先選擇地點"
+              description={
+                locationError
+                  ? '目前無法取得你的定位，請先手動選擇地點，再查看最近 7 天的歷史天氣。'
+                  : '前往地點管理選擇城市後，即可查看最近 7 天的歷史天氣。'
+              }
+              actionLabel="前往選擇地點"
+              onActionPress={() => router.push('/locations')}
+            />
+          ) : error ? (
+            <PageState
+              type="error"
+              title="無法取得歷史資料"
+              description={error.message}
+              actionLabel="重試"
+              onActionPress={() => {
+                void refetch();
+              }}
+            />
           ) : effectiveLocation && historyData && historyData.length > 0 ? (
-            <View className="gap-6">
+            <View className="gap-7">
               <PageHeaderCard
                 icon="time-outline"
                 title={effectiveLocation.name}
@@ -158,8 +189,8 @@ export default function HistoryScreen() {
                 }
               />
 
-              <View className="gap-2">
-                <Text className="px-4 text-xs font-bold uppercase tracking-[1.6px] text-md-on-surface-variant">
+              <View className="gap-3">
+                <Text className="px-4 text-xs font-bold uppercase tracking-[1.4px] text-md-on-surface-variant">
                   選擇日期
                 </Text>
                 <ScrollView
@@ -179,7 +210,7 @@ export default function HistoryScreen() {
                         accessibilityRole="button"
                         accessibilityLabel={`選擇 ${monthStr}/${dayStr}`}
                         onPress={() => setSelectedDate(item.date)}
-                        className={`min-w-14 min-h-11 items-center justify-center rounded-2xl px-3 py-2.5 ${
+                        className={`min-w-14 min-h-11 items-center justify-center rounded-2xl px-3 py-2.5 transition-colors duration-200 ${
                           isSelected
                             ? 'bg-md-primary'
                             : 'border border-glass-border-strong bg-md-surface-container'
@@ -200,54 +231,53 @@ export default function HistoryScreen() {
               </View>
 
               {selectedDayData ? (
-                <View className="gap-4 px-4">
-                  <Text className="text-sm font-bold text-md-on-surface">
-                    {formatDate(selectedDate)}
-                  </Text>
-
-                  <View className="flex-row gap-3">
+                <AnimatedEntry key={selectedDate} delay={40} duration={280}>
+                  <View className="gap-4 px-4">
                     <View
-                      className="flex-1 rounded-3xl border border-glass-border-strong bg-md-surface-container px-4 py-4"
+                      className="rounded-[26px] border border-glass-border-strong bg-md-surface px-5 py-4"
                       style={getGlassStyle(16)}
                     >
-                      <View className="mb-1 flex-row items-center gap-1.5">
-                        <AppIcon name="thermometer-outline" size={13} color={colors.primary} />
-                        <Text className="text-xs text-md-on-surface-variant">最低溫度</Text>
-                      </View>
-                      <Text className="text-2xl font-bold text-md-primary">
-                        {Math.round(selectedDayData.temperatureMin)}°
+                      <Text className="text-xs font-bold uppercase tracking-[1.4px] text-md-primary">
+                        歷史摘要
+                      </Text>
+                      <Text className="mt-2 text-lg font-bold text-md-on-surface">
+                        {formatDate(selectedDate)}
+                      </Text>
+                      <Text className="mt-1 text-sm leading-6 text-md-on-surface-variant">
+                        {daysAgo(selectedDate) === 0
+                          ? '這是今天目前可取得的歷史資料。'
+                          : `${daysAgo(selectedDate)} 天前的觀測摘要。`}
                       </Text>
                     </View>
 
-                    <View
-                      className="flex-1 rounded-3xl border border-glass-border-strong bg-md-surface-container px-4 py-4"
-                      style={getGlassStyle(16)}
-                    >
-                      <View className="mb-1 flex-row items-center gap-1.5">
-                        <AppIcon name="thermometer-outline" size={13} color={colors.error} />
-                        <Text className="text-xs text-md-on-surface-variant">最高溫度</Text>
-                      </View>
-                      <Text className="text-2xl font-bold text-md-error">
-                        {Math.round(selectedDayData.temperatureMax)}°
-                      </Text>
+                    <View className="flex-row flex-wrap gap-3">
+                      <StatCard
+                        iconType="thermometer"
+                        label="最低溫"
+                        value={`${Math.round(selectedDayData.temperatureMin)}°`}
+                        iconColor="#0ea5e9"
+                      />
+                      <StatCard
+                        iconType="thermometer"
+                        label="最高溫"
+                        value={`${Math.round(selectedDayData.temperatureMax)}°`}
+                        iconColor="#f97316"
+                      />
+                      <StatCard
+                        iconType="wind"
+                        label="日較差"
+                        value={`${Math.round(selectedDayData.temperatureMax - selectedDayData.temperatureMin)}°`}
+                        iconColor="#14b8a6"
+                      />
+                      <StatCard
+                        iconType="precipitation"
+                        label="總降水量"
+                        value={`${selectedDayData.precipitationSum.toFixed(1)} mm`}
+                        iconColor="#6366f1"
+                      />
                     </View>
                   </View>
-
-                  <View
-                    className="rounded-3xl border border-glass-border-strong bg-md-surface-container px-4 py-4"
-                    style={getGlassStyle(16)}
-                  >
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-row items-center gap-1.5">
-                        <AppIcon name="rainy-outline" size={13} color={colors.primary} />
-                        <Text className="text-xs text-md-on-surface-variant">總降水量</Text>
-                      </View>
-                      <Text className="text-base font-bold text-md-primary">
-                        {selectedDayData.precipitationSum.toFixed(1)} mm
-                      </Text>
-                    </View>
-                  </View>
-                </View>
+                </AnimatedEntry>
               ) : (
                 <PageState type="empty" title="無該日期的歷史資料" description="請改選其他日期。" />
               )}

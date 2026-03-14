@@ -1,4 +1,4 @@
-import { Pressable, Switch, Text, View, Platform } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 
 import type { WeatherSource } from '@/api/types';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
@@ -14,11 +14,8 @@ import { getGlassStyle } from '@/utils/glass';
 const glassCardClassName =
   'mx-4 overflow-hidden rounded-3xl border border-glass-border-strong bg-md-surface-container shadow-glass';
 const glassCardStyle = getGlassStyle(20);
-const isWeb = Platform.OS === 'web';
 
-const settingsSectionsClassName = 'gap-7';
-const webColumnsClassName = 'flex-row items-start gap-6';
-const webColumnClassName = 'flex-1 gap-6';
+const settingsSectionsClassName = 'gap-6';
 
 type SectionCardProps = {
   children: React.ReactNode;
@@ -39,8 +36,6 @@ const settingsSectionConfigs: SettingsSectionConfig[] = [
   { key: 'sources', title: '資料來源', icon: 'cloud-outline' },
   { key: 'display-mode', title: '顯示模式', icon: 'layers-outline' },
 ];
-
-const webSectionColumns: SettingsSectionKey[][] = [['appearance', 'sources'], ['display-mode']];
 
 const SectionIntro = () => (
   <PageHeaderCard
@@ -256,39 +251,18 @@ export default function SettingsScreen() {
         contentContainerStyle={{
           paddingTop: 8,
         }}
-        bottomOffset={isWeb ? 260 : 156}
-        maxWidth={1120}
+        bottomOffset={156}
+        maxWidth={720}
       >
         <SectionIntro />
 
-        {isWeb ? (
-          <View className={webColumnsClassName}>
-            {webSectionColumns.map((sectionKeys, columnIndex) => (
-              <View key={columnIndex} className={webColumnClassName}>
-                {sectionKeys.map((key) => {
-                  const section = settingsSectionConfigs.find((item) => item.key === key);
-                  if (!section) {
-                    return null;
-                  }
-
-                  return (
-                    <SettingsSection key={section.key} section={section}>
-                      {renderSection(section.key)}
-                    </SettingsSection>
-                  );
-                })}
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View className={settingsSectionsClassName}>
-            {settingsSectionConfigs.map((section) => (
-              <SettingsSection key={section.key} section={section}>
-                {renderSection(section.key)}
-              </SettingsSection>
-            ))}
-          </View>
-        )}
+        <View className={settingsSectionsClassName}>
+          {settingsSectionConfigs.map((section) => (
+            <SettingsSection key={section.key} section={section}>
+              {renderSection(section.key)}
+            </SettingsSection>
+          ))}
+        </View>
       </PageScrollView>
     </GlassBackground>
   );

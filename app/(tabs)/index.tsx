@@ -7,10 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
-import { SourceBadge } from '@/components/ui/SourceBadge';
 import { WeatherPageSkeleton } from '@/components/ui/SkeletonLoader';
 import { CurrentWeatherCard } from '@/components/weather/CurrentWeatherCard';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
@@ -36,8 +34,7 @@ export default function HomeScreen() {
     isRefetching,
   } = useWeather(effectiveLocation);
 
-  const isLoadingCombined = locationLoading || isLoading;
-  const errorCombined = locationError || error;
+  const isLoadingCombined = locationLoading || (!!effectiveLocation && isLoading);
   const townshipDisplayName = effectiveLocation
     ? formatLocationDisplayName(effectiveLocation)
     : displayName;
@@ -67,18 +64,30 @@ export default function HomeScreen() {
 
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<WeatherPageSkeleton />} />
-          ) : errorCombined ? (
+          ) : !weatherCardLocation ? (
+            <PageState
+              type="empty"
+              title="選擇你的地點"
+              description={
+                locationError
+                  ? '目前無法取得你的定位，請先手動選擇城市，再查看即時天氣與預報。'
+                  : '前往地點管理選擇城市，或開啟定位服務自動抓取所在位置。'
+              }
+              actionLabel="前往選擇地點"
+              onActionPress={() => router.push('/locations')}
+            />
+          ) : error ? (
             <PageState
               type="error"
               title="無法取得天氣資料"
               description={
-                errorCombined.message.includes('PROXY_URL')
+                error.message.includes('PROXY_URL')
                   ? '應用程式設定錯誤，請聯繫開發者。'
-                  : errorCombined.message.includes('401') || errorCombined.message.includes('403')
+                  : error.message.includes('401') || error.message.includes('403')
                     ? '認證失敗，請稍後再試。'
-                    : errorCombined.message.includes('502') || errorCombined.message.includes('504')
+                    : error.message.includes('502') || error.message.includes('504')
                       ? '天氣資料來源暫時無法連線，請稍後再試或切換資料來源。'
-                      : errorCombined.message.includes('地點未定義')
+                      : error.message.includes('地點未定義')
                         ? '尚未選擇地點，請先選擇你想查看的城市。'
                         : '暫時無法取得資料，請稍後再試。'
               }
@@ -90,14 +99,14 @@ export default function HomeScreen() {
               onActionPress={() => router.push('/locations')}
             />
           ) : weatherData && weatherCardLocation ? (
-            <View className="gap-8">
-              <AnimatedEntry delay={0} duration={350}>
-                <PageHeaderCard
-                  icon="partly-sunny-outline"
-                  title={weatherCardLocation.name}
+            <View className="gap-7">
+              <AnimatedEntry delay={0} duration={400}>
+                <CurrentWeatherCard
+                  data={weatherData.current}
+                  location={weatherCardLocation}
+                  source={weatherData.source}
                   eyebrow="即時天氣與預報"
-                  rightSlot={<SourceBadge source={weatherData.source} />}
-                  bottomSlot={
+                  actionSlot={
                     <Button
                       variant="tonal"
                       size="sm"
@@ -111,31 +120,15 @@ export default function HomeScreen() {
                 />
               </AnimatedEntry>
 
-              <AnimatedEntry delay={80} duration={400}>
-                <CurrentWeatherCard
-                  data={weatherData.current}
-                  location={weatherCardLocation}
-                  source={weatherData.source}
-                />
-              </AnimatedEntry>
-
-              <AnimatedEntry delay={160} duration={400}>
+              <AnimatedEntry delay={120} duration={400}>
                 <HourlyForecastList forecasts={weatherData.hourlyForecast} />
               </AnimatedEntry>
 
-              <AnimatedEntry delay={240} duration={400}>
+              <AnimatedEntry delay={200} duration={400}>
                 <DailyForecastList forecasts={weatherData.dailyForecast} />
               </AnimatedEntry>
             </View>
-          ) : (
-            <PageState
-              type="empty"
-              title="選擇你的地點"
-              description="前往地點管理選擇城市，或開啟定位服務自動抓取所在位置。"
-              actionLabel="前往選擇地點"
-              onActionPress={() => router.push('/locations')}
-            />
-          )}
+          ) : null}
         </PageScrollView>
       </GlassBackground>
     </ErrorBoundary>

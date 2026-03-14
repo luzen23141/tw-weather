@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { AnimatedEntry } from '@/components/ui/AnimatedEntry';
@@ -47,6 +48,7 @@ function ForecastSkeleton() {
 }
 
 export default function ForecastScreen() {
+  const router = useRouter();
   const {
     effectiveLocation,
     isLoading: locationLoading,
@@ -61,8 +63,7 @@ export default function ForecastScreen() {
     isRefetching,
   } = useWeather(effectiveLocation);
 
-  const isLoadingCombined = locationLoading || isLoading;
-  const errorCombined = locationError || error;
+  const isLoadingCombined = locationLoading || (!!effectiveLocation && isLoading);
 
   const locationSecondaryText = effectiveLocation
     ? formatLocationSecondaryName(effectiveLocation)
@@ -88,10 +89,30 @@ export default function ForecastScreen() {
 
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<ForecastSkeleton />} />
-          ) : errorCombined ? (
-            <PageState type="error" title="無法取得預報資料" description={errorCombined.message} />
+          ) : !effectiveLocation ? (
+            <PageState
+              type="empty"
+              title="請先選擇地點"
+              description={
+                locationError
+                  ? '目前無法取得你的定位，請先手動選擇地點，再查看逐時與每日預報。'
+                  : '前往地點管理選擇城市後，即可查看接下來的逐時與每日預報。'
+              }
+              actionLabel="前往選擇地點"
+              onActionPress={() => router.push('/locations')}
+            />
+          ) : error ? (
+            <PageState
+              type="error"
+              title="無法取得預報資料"
+              description={error.message}
+              actionLabel="重試"
+              onActionPress={() => {
+                void refetch();
+              }}
+            />
           ) : weatherData && effectiveLocation ? (
-            <View className="gap-6">
+            <View className="gap-7">
               <AnimatedEntry delay={0} duration={350}>
                 <PageHeaderCard
                   icon="partly-sunny-outline"
@@ -110,13 +131,7 @@ export default function ForecastScreen() {
                 <DailyForecastList forecasts={weatherData.dailyForecast} />
               </AnimatedEntry>
             </View>
-          ) : (
-            <PageState
-              type="empty"
-              title="目前沒有可用預報"
-              description="請先選擇地點，或稍後再試一次。"
-            />
-          )}
+          ) : null}
         </PageScrollView>
       </GlassBackground>
     </ErrorBoundary>

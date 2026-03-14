@@ -81,8 +81,8 @@ export const HourlyForecastList = React.memo(function HourlyForecastList({
 
   if (!forecasts || forecasts.length === 0) {
     return (
-      <View className="gap-3.5">
-        <Text className="text-sm font-semibold tracking-wide text-md-on-surface-variant px-4">
+      <View className="gap-4">
+        <Text className="px-4 text-xs font-bold uppercase tracking-[1.4px] text-md-on-surface-variant">
           逐時預報
         </Text>
         <View
@@ -96,8 +96,8 @@ export const HourlyForecastList = React.memo(function HourlyForecastList({
   }
 
   return (
-    <View className="gap-3.5">
-      <Text className="text-sm font-semibold tracking-wide text-md-on-surface-variant px-4">
+    <View className="gap-4">
+      <Text className="px-4 text-xs font-bold uppercase tracking-[1.4px] text-md-on-surface-variant">
         逐時預報
       </Text>
       <FlatList

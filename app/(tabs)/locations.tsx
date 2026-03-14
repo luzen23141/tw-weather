@@ -235,11 +235,8 @@ export default function LocationsScreen() {
           const isLast = index === savedLocations.length - 1;
 
           return (
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={`選擇 ${getLocationPrimaryText(item)}`}
-              onPress={() => handleSelect(item)}
-              className={`mx-4 flex-row items-center justify-between rounded-3xl border px-4 py-3.5 ${
+            <View
+              className={`mx-4 flex-row items-center gap-3 rounded-3xl border px-4 py-3.5 ${
                 isSelected
                   ? 'border-glass-border-strong bg-md-primary-container'
                   : 'border-glass-border-strong bg-md-surface-container'
@@ -248,33 +245,40 @@ export default function LocationsScreen() {
               }`}
               style={getGlassStyle(16)}
             >
-              <View className="flex-1">
-                <Text
-                  className={`text-sm font-semibold ${
-                    isSelected ? 'text-md-on-primary-container' : 'text-md-on-surface'
-                  }`}
-                >
-                  {getLocationPrimaryText(item)}
-                </Text>
-                <Text className="mt-0.5 text-xs text-md-on-surface-variant">
-                  {getLocationSecondaryText(item)}
-                </Text>
-              </View>
-              <View className="flex-row items-center gap-3">
-                {isSelected ? (
-                  <AppIcon name="checkmark-circle" size={20} color={colors.primary} />
-                ) : null}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`刪除 ${getLocationPrimaryText(item)}`}
-                  onPress={() => handleRemove(item)}
-                  className="min-h-11 min-w-11 items-center justify-center rounded-full"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <AppIcon name="trash-outline" size={18} color={colors.error} />
-                </Pressable>
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={`選擇 ${getLocationPrimaryText(item)}`}
+                onPress={() => handleSelect(item)}
+                className="flex-1"
+              >
+                <View className="flex-row items-center justify-between gap-3">
+                  <View className="flex-1">
+                    <Text
+                      className={`text-sm font-semibold ${
+                        isSelected ? 'text-md-on-primary-container' : 'text-md-on-surface'
+                      }`}
+                    >
+                      {getLocationPrimaryText(item)}
+                    </Text>
+                    <Text className="mt-0.5 text-xs text-md-on-surface-variant">
+                      {getLocationSecondaryText(item)}
+                    </Text>
+                  </View>
+                  {isSelected ? (
+                    <AppIcon name="checkmark-circle" size={20} color={colors.primary} />
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`刪除 ${getLocationPrimaryText(item)}`}
+                onPress={() => handleRemove(item)}
+                className="min-h-11 min-w-11 items-center justify-center rounded-full"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <AppIcon name="trash-outline" size={18} color={colors.error} />
+              </Pressable>
+            </View>
           );
         }}
         ItemSeparatorComponent={undefined}
