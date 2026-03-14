@@ -140,15 +140,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
-
-      # Restore Expo cache (useful for Webpack/Metro)
-      - name: Expo cache
-        uses: actions/cache@v5
         with:
-          path: .expo
-          key: ${{ runner.os }}-expo-${{ hashFiles('**/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-expo-
+          cache-expo: 'true'
 
       - name: Export Web build
         run: |

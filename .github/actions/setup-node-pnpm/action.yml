@@ -1,6 +1,12 @@
 name: Setup Node & PNPM
 description: Setup Node.js and PNPM with caching
 
+inputs:
+  cache-expo:
+    description: Enable Expo cache restore/save
+    required: false
+    default: 'false'
+
 runs:
   using: 'composite'
   steps:
@@ -9,6 +15,14 @@ runs:
       with:
         node-version: 20
         cache: pnpm
+    - name: Expo cache
+      if: ${{ inputs.cache-expo == 'true' }}
+      uses: actions/cache@v5
+      with:
+        path: .expo
+        key: ${{ runner.os }}-expo-${{ hashFiles('**/package.json') }}
+        restore-keys: |
+          ${{ runner.os }}-expo-
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile
