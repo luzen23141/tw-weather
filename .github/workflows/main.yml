@@ -20,7 +20,7 @@ jobs:
     name: Lint Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
       - name: Run ESLint
         run: pnpm lint
@@ -29,7 +29,7 @@ jobs:
     name: Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
       - name: Run Type Check
         run: pnpm type-check
@@ -38,7 +38,7 @@ jobs:
     name: Format & Unused Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
       - name: Run Prettier
         run: pnpm format:check
@@ -49,7 +49,7 @@ jobs:
     name: Dependency Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
       - name: Audit dependencies for vulnerabilities
         run: pnpm audit --production
@@ -58,7 +58,7 @@ jobs:
     name: Secrets Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Scan for hardcoded secrets using trufflehog
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, type-check, format-and-unused]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Prepare Jest results directory
@@ -99,7 +99,7 @@ jobs:
 
       - name: Archiving Jest machine-readable results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: jest-results
           path: test-results/jest/results.json
@@ -107,7 +107,7 @@ jobs:
 
       - name: Archiving unit coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-report-unit
           path: coverage/
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, type-check, format-and-unused]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Run integration tests with coverage
@@ -126,7 +126,7 @@ jobs:
 
       - name: Archiving integration coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-report-integration
           path: coverage/
@@ -138,12 +138,12 @@ jobs:
     needs: [lint, type-check, format-and-unused]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
 
       # Restore Expo cache (useful for Webpack/Metro)
       - name: Expo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .expo
           key: ${{ runner.os }}-expo-${{ hashFiles('**/package.json') }}
@@ -217,7 +217,7 @@ jobs:
     needs: [unit-tests, integration-tests, build-web]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node-pnpm
 
       # 快取 Playwright 瀏覽器
@@ -226,7 +226,7 @@ jobs:
         run: echo "version=$(pnpm list @playwright/test --depth=0 --json | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)" >> $GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
@@ -254,7 +254,7 @@ jobs:
 
       - name: Upload Playwright machine-readable results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-results
           path: test-results/playwright/results.json
@@ -262,7 +262,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report
           path: playwright-report/
