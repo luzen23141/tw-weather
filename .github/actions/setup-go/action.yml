@@ -1,0 +1,10 @@
+name: Setup Go
+description: Setup Go toolchain with dependency cache
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/setup-go@v6
+      with:
+        go-version-file: proxy_golang/go.mod
+        cache-dependency-path: proxy_golang/go.sum
