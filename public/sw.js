@@ -1,5 +1,5 @@
 // tw-weather Service Worker — 離線快取策略
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `tw-weather-static-${CACHE_VERSION}`;
 const HTML_CACHE = `tw-weather-html-${CACHE_VERSION}`;
 

@@ -27,26 +27,12 @@ jobs:
 
       - name: Export Expo Web (static)
         run: |
-          npx expo export -c --platform web &
-          EXPO_PID=$!
-          # 等待 bundle 產生或 process 結束
-          for i in $(seq 1 120); do
-            sleep 5
-            if ls dist/_expo/static/js/web/*.js >/dev/null 2>&1; then
-              echo "✅ Bundle ready"
-              kill "$EXPO_PID" 2>/dev/null || true
-              wait "$EXPO_PID" 2>/dev/null || true
-              exit 0
-            fi
-            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
-              wait "$EXPO_PID"; EC=$?
-              [ "$EC" -ne 0 ] && echo "❌ expo export failed (exit $EC)" && exit "$EC"
-              exit 0
-            fi
-          done
-          echo "❌ expo export timed out (10 min)"
-          kill -9 "$EXPO_PID" 2>/dev/null || true
-          exit 1
+          set -euo pipefail
+          npx expo export -c --platform web
+
+          test -f dist/index.html
+          ls dist/_expo/static/js/web/entry-*.js >/dev/null 2>&1
+          grep -q '/_expo/static/js/web/entry-' dist/index.html
         timeout-minutes: 12
         env:
           EXPO_PUBLIC_PROXY_URL: https://weatherb.agubear.black
