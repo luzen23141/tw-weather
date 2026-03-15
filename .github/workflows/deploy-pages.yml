@@ -20,39 +20,7 @@ jobs:
           cache-expo: 'true'
 
       - name: Export Expo Web (static)
-        run: |
-          set -euo pipefail
-          npx expo export -c --platform web > expo-export.log 2>&1 &
-          EXPO_PID=$!
-
-          for i in $(seq 1 180); do
-            if grep -q 'Exported: dist' expo-export.log; then
-              test -f dist/index.html
-              ls dist/_expo/static/js/web/entry-*.js >/dev/null 2>&1
-              grep -q '/_expo/static/js/web/entry-' dist/index.html
-              kill "$EXPO_PID" 2>/dev/null || true
-              wait "$EXPO_PID" 2>/dev/null || true
-              cat expo-export.log
-              exit 0
-            fi
-
-            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
-              wait "$EXPO_PID"
-              cat expo-export.log
-              test -f dist/index.html
-              ls dist/_expo/static/js/web/entry-*.js >/dev/null 2>&1
-              grep -q '/_expo/static/js/web/entry-' dist/index.html
-              exit 0
-            fi
-
-            sleep 5
-          done
-
-          cat expo-export.log
-          echo '❌ expo export timed out before dist was finalized'
-          kill "$EXPO_PID" 2>/dev/null || true
-          wait "$EXPO_PID" 2>/dev/null || true
-          exit 1
+        run: bash scripts/expo-export.sh expo-export.log
         timeout-minutes: 12
         env:
           EXPO_PUBLIC_PROXY_URL: https://weatherb.agubear.black
