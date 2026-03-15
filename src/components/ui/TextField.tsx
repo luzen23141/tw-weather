@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text, TextInput, TextInputProps, View } from 'react-native';
 
 import { useMDColors } from '@/hooks/useMDColors';
-import { getGlassStyle } from '@/utils/glass';
+import { getGlassStyle } from '@/components/ui/glass';
 
 export interface TextFieldProps extends TextInputProps {
   label?: string;

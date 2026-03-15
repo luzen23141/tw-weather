@@ -79,3 +79,9 @@ proxy_golang/.vercel/
 # Go build artifacts & coverage
 proxy_golang/bin/
 proxy_golang/coverage_*.out
+
+# Temporary debug/test scripts (should not be committed)
+debug_*.ts
+test_*.js
+test_*.go
+sig*.txt

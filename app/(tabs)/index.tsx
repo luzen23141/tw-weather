@@ -13,33 +13,27 @@ import { WeatherPageSkeleton } from '@/components/ui/SkeletonLoader';
 import { CurrentWeatherCard } from '@/components/weather/CurrentWeatherCard';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
-import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
-import { useWeather } from '@/hooks/useWeather';
-import { formatLocationDisplayName } from '@/utils/location-display';
+import { useWeatherPage } from '@/hooks/useWeatherPage';
+import { getWeatherErrorMessage } from '@/utils/error-message';
+import { useSettingsStore } from '@/store/settings.store';
 
 export default function HomeScreen() {
   const router = useRouter();
   const {
     effectiveLocation,
-    displayName,
-    isLoading: locationLoading,
-    error: locationError,
-  } = useEffectiveLocation();
-
-  const {
-    data: weatherData,
-    isLoading,
-    error,
-    refetch,
+    primaryDisplayName,
+    weatherData,
+    isLoading: isLoadingCombined,
+    locationError,
+    weatherError: error,
     isRefetching,
-  } = useWeather(effectiveLocation);
+    refetch,
+  } = useWeatherPage();
 
-  const isLoadingCombined = locationLoading || (!!effectiveLocation && isLoading);
-  const townshipDisplayName = effectiveLocation
-    ? formatLocationDisplayName(effectiveLocation)
-    : displayName;
+  const enabledSources = useSettingsStore((state) => state.enabledSources);
+
   const weatherCardLocation = effectiveLocation
-    ? { ...effectiveLocation, name: townshipDisplayName }
+    ? { ...effectiveLocation, name: primaryDisplayName }
     : null;
 
   return (
@@ -60,7 +54,7 @@ export default function HomeScreen() {
           }}
           refreshing={isRefetching}
         >
-          <Stack.Screen options={{ headerTitle: townshipDisplayName }} />
+          <Stack.Screen options={{ headerTitle: primaryDisplayName }} />
 
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<WeatherPageSkeleton />} />
@@ -80,17 +74,7 @@ export default function HomeScreen() {
             <PageState
               type="error"
               title="無法取得天氣資料"
-              description={
-                error.message.includes('PROXY_URL')
-                  ? '應用程式設定錯誤，請聯繫開發者。'
-                  : error.message.includes('401') || error.message.includes('403')
-                    ? '認證失敗，請稍後再試。'
-                    : error.message.includes('502') || error.message.includes('504')
-                      ? '天氣資料來源暫時無法連線，請稍後再試或切換資料來源。'
-                      : error.message.includes('地點未定義')
-                        ? '尚未選擇地點，請先選擇你想查看的城市。'
-                        : '暫時無法取得資料，請稍後再試。'
-              }
+              description={getWeatherErrorMessage(error)}
               secondaryActionLabel="重試"
               onSecondaryAction={() => {
                 void refetch();
@@ -105,6 +89,7 @@ export default function HomeScreen() {
                   data={weatherData.current}
                   location={weatherCardLocation}
                   source={weatherData.source}
+                  enabledSources={enabledSources}
                   eyebrow="即時天氣與預報"
                   actionSlot={
                     <Button

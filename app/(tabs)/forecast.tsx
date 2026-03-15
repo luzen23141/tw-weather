@@ -18,10 +18,9 @@ import {
 } from '@/components/ui/SkeletonLoader';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
-import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
-import { useWeather } from '@/hooks/useWeather';
-import { getGlassStyle } from '@/utils/glass';
-import { formatLocationSecondaryName } from '@/utils/location-display';
+import { useWeatherPage } from '@/hooks/useWeatherPage';
+import { getWeatherErrorMessage } from '@/utils/error-message';
+import { getGlassStyle } from '@/components/ui/glass';
 
 function ForecastSkeleton() {
   return (
@@ -51,23 +50,14 @@ export default function ForecastScreen() {
   const router = useRouter();
   const {
     effectiveLocation,
-    isLoading: locationLoading,
-    error: locationError,
-  } = useEffectiveLocation();
-
-  const {
-    data: weatherData,
-    isLoading,
-    error,
-    refetch,
+    secondaryDisplayName: locationSecondaryText,
+    weatherData,
+    isLoading: isLoadingCombined,
+    locationError,
+    weatherError: error,
     isRefetching,
-  } = useWeather(effectiveLocation);
-
-  const isLoadingCombined = locationLoading || (!!effectiveLocation && isLoading);
-
-  const locationSecondaryText = effectiveLocation
-    ? formatLocationSecondaryName(effectiveLocation)
-    : null;
+    refetch,
+  } = useWeatherPage();
 
   return (
     <ErrorBoundary
@@ -105,7 +95,7 @@ export default function ForecastScreen() {
             <PageState
               type="error"
               title="無法取得預報資料"
-              description={error.message}
+              description={getWeatherErrorMessage(error)}
               actionLabel="重試"
               onActionPress={() => {
                 void refetch();

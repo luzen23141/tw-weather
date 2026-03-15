@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
-import { getGlassStyle } from '@/utils/glass';
+import { getGlassStyle } from '@/components/ui/glass';
 
 export interface PageHeaderCardProps {
   icon: AppIconName;

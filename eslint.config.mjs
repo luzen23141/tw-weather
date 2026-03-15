@@ -90,6 +90,8 @@ export default [
     files: ['**/__tests__/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}', '*.test.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      // jest.mock() factory 必須用 require()，無法改用 import
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {

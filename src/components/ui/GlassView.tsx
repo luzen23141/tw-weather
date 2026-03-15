@@ -1,6 +1,6 @@
 import { View, ViewProps } from 'react-native';
 
-import { getGlassStyle } from '@/utils/glass';
+import { getGlassStyle } from '@/components/ui/glass';
 
 export type GlassIntensity = 'subtle' | 'medium' | 'strong';
 

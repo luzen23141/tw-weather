@@ -14,4 +14,4 @@ config.transformer.getTransformOptions = async () => ({
   },
 });
 
-module.exports = withNativewind(config);
+module.exports = withNativewind(config, { input: './src/global.css' });

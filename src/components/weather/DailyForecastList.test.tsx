@@ -38,7 +38,7 @@ jest.mock('@/utils/date', () => ({
   getDayOfWeek: jest.fn((value: string) => `day:${value}`),
 }));
 
-jest.mock('@/utils/glass', () => ({
+jest.mock('@/components/ui/glass', () => ({
   getGlassStyle: jest.fn(() => ({})),
 }));
 

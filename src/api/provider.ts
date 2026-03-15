@@ -1,5 +1,16 @@
 import { proxyFetch } from './proxy-fetch';
 
+export class ProviderFetchError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number | undefined,
+    public readonly retryable: boolean,
+  ) {
+    super(message);
+    this.name = 'ProviderFetchError';
+  }
+}
+
 /** 後端回傳的資料源資訊 */
 export interface ProviderInfo {
   /** provider 代碼（呼叫 API 用） */
@@ -22,7 +33,12 @@ export async function fetchProviders(): Promise<ProviderInfo[]> {
   const response = await proxyFetch(url);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch providers: ${response.statusText}`);
+    const retryable = response.status >= 500 || response.status === 429;
+    throw new ProviderFetchError(
+      `Failed to fetch providers: ${response.status} ${response.statusText}`,
+      response.status,
+      retryable,
+    );
   }
 
   return response.json() as Promise<ProviderInfo[]>;

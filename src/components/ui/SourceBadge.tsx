@@ -1,29 +1,36 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
+import { AGGREGATE_BADGE_CLASS, SOURCE_META_MAP } from '@/api/sources';
 import { WeatherSource } from '../../api/types';
 
 export interface SourceBadgeProps {
   source: WeatherSource;
 }
 
-const SOURCE_INFO: Record<WeatherSource, { label: string; className: string }> = {
-  cwa: { label: 'CWA', className: 'bg-md-primary/15 border-glass-border' },
-  'open-meteo': { label: 'Open-Meteo', className: 'bg-md-tertiary/15 border-glass-border' },
-  weatherapi: { label: 'WeatherAPI', className: 'bg-md-secondary/15 border-glass-border' },
-  openweathermap: { label: 'OWM', className: 'bg-md-error/15 border-glass-border' },
-  aggregate: { label: '聚合', className: 'bg-md-primary-container border-glass-border' },
-};
-
 const FALLBACK_INFO = {
   label: '未知',
   className: 'bg-md-surface-variant border-glass-border',
 };
 
+const AGGREGATE_INFO = {
+  label: '聚合',
+  className: AGGREGATE_BADGE_CLASS,
+};
+
 export const SourceBadge = React.memo(function SourceBadge({
   source,
 }: SourceBadgeProps): React.ReactElement {
-  const info = SOURCE_INFO[source] ?? FALLBACK_INFO;
+  const sourceMeta =
+    source === 'aggregate'
+      ? AGGREGATE_INFO
+      : SOURCE_META_MAP[source] !== undefined
+        ? {
+            label: SOURCE_META_MAP[source].label,
+            className: SOURCE_META_MAP[source].badgeClassName,
+          }
+        : FALLBACK_INFO;
+  const info = sourceMeta;
 
   return (
     <View className={`${info.className} border px-2.5 py-1 rounded-full`}>

@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { type StatIconType, StatIcon } from '@/components/icons/StatIcon';
-import { getGlassStyle } from '@/utils/glass';
+import { getGlassStyle } from '@/components/ui/glass';
 
 export interface StatCardProps {
   iconType: StatIconType;

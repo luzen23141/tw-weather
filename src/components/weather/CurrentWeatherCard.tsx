@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { CurrentWeather, Location, WeatherSource } from '../../api/types';
 import { formatTime } from '../../utils/date';
-import { getGlassStyle } from '../../utils/glass';
+import { getGlassStyle } from '../ui/glass';
 import { formatWindSpeed } from '../../utils/unit-conversion';
 import { getWeatherCodeInfo } from '../../utils/weather-code';
 import { WeatherIcon } from '../icons/WeatherIcon';
@@ -11,6 +11,7 @@ import { SourceBadge } from '../ui/SourceBadge';
 import { StatCard } from '../ui/StatCard';
 
 import { formatLocationSecondaryName } from '@/utils/location-display';
+import { SOURCE_META_MAP } from '@/api/sources';
 
 export interface CurrentWeatherCardProps {
   data: CurrentWeather;
@@ -18,6 +19,7 @@ export interface CurrentWeatherCardProps {
   source: WeatherSource;
   eyebrow?: string;
   actionSlot?: React.ReactNode;
+  enabledSources?: WeatherSource[];
 }
 
 export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
@@ -26,6 +28,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
   source,
   eyebrow,
   actionSlot,
+  enabledSources,
 }: CurrentWeatherCardProps): React.ReactElement {
   const weatherInfo = getWeatherCodeInfo(data.weatherCode);
   const isRangeTemp = typeof data.temperature === 'string';
@@ -55,6 +58,11 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
         </View>
         <View className="items-end gap-2">
           <SourceBadge source={source} />
+          {source === 'aggregate' && enabledSources?.length ? (
+            <Text className="text-[10px] text-md-on-surface-variant text-right leading-4">
+              {(enabledSources ?? []).map((s) => SOURCE_META_MAP[s]?.label ?? s).join(' · ')}
+            </Text>
+          ) : null}
           {actionSlot ? <View>{actionSlot}</View> : null}
         </View>
       </View>

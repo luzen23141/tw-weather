@@ -15,6 +15,13 @@ import (
 	"proxy_golang/pkg/model"
 )
 
+// ─── mock cache repository ───────────────────────────────────────────────────
+
+type mockCacheRepository struct{}
+
+func (m *mockCacheRepository) Get(_ string) (*model.CacheEntry, bool) { return nil, false }
+func (m *mockCacheRepository) Set(_ string, _ *model.CacheEntry)      {}
+
 // ─── mock adapter ───────────────────────────────────────────────────────────
 
 type mockAdapter struct {
@@ -58,7 +65,8 @@ func newWeatherService(adapters ...adapter.Adapter) WeatherService {
 	}
 	registry := adapter.NewRegistry(adapters...)
 	upstream := &mockUpstreamClient{}
-	return NewWeatherService(cfg, registry, upstream)
+	cache := &mockCacheRepository{}
+	return NewWeatherService(cfg, registry, upstream, cache)
 }
 
 func baseQuery(provider string) *model.WeatherQuery {
@@ -219,7 +227,7 @@ func TestFetchWeather_MissingAPIKey_Returns500(t *testing.T) {
 	}
 	registry := adapter.NewRegistry(successAdapter("cwa"))
 	upstream := &mockUpstreamClient{}
-	svc := NewWeatherService(cfg, registry, upstream)
+	svc := NewWeatherService(cfg, registry, upstream, &mockCacheRepository{})
 
 	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
 
@@ -271,7 +279,7 @@ func TestGetCurrentWeather_OpenMeteo_NoKeyRequired(t *testing.T) {
 	cfg := &config.Config{APIKeys: config.APIKeysConfig{}}
 	registry := adapter.NewRegistry(a)
 	upstream := &mockUpstreamClient{}
-	svc := NewWeatherService(cfg, registry, upstream)
+	svc := NewWeatherService(cfg, registry, upstream, &mockCacheRepository{})
 
 	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("openmeteo"))
 

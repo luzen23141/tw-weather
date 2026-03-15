@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -76,6 +77,31 @@ func bindWeatherQuery(c *gin.Context) (*model.WeatherQuery, bool) {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "lat/lon or locationId is required"})
 		return nil, false
 	}
+
+	// 驗證 lat/lon 範圍（若有提供座標）
+	if query.LocationID == "" {
+		if query.Lat < model.MinLat || query.Lat > model.MaxLat {
+			c.JSON(http.StatusBadRequest, model.ErrorResponse{
+				Error: fmt.Sprintf("lat must be between %.1f and %.1f", model.MinLat, model.MaxLat),
+			})
+			return nil, false
+		}
+		if query.Lon < model.MinLon || query.Lon > model.MaxLon {
+			c.JSON(http.StatusBadRequest, model.ErrorResponse{
+				Error: fmt.Sprintf("lon must be between %.1f and %.1f", model.MinLon, model.MaxLon),
+			})
+			return nil, false
+		}
+	}
+
+	// 限制 days 上限
+	if query.Days > model.MaxDays {
+		query.Days = model.MaxDays
+	}
+	if query.Days < 0 {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "days must be >= 0"})
+		return nil, false
+	}
 	log.Info().
 		Str("provider", query.Provider).
 		Float64("lat", query.Lat).
@@ -99,6 +125,11 @@ func (ctrl *WeatherController) respond(c *gin.Context, resp *model.WeatherRespon
 		log.Error().Err(err).Msg("unexpected weather error")
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "internal server error"})
 		return
+	}
+	if resp.CacheHit {
+		c.Header("X-Cache", "HIT")
+	} else {
+		c.Header("X-Cache", "MISS")
 	}
 	c.JSON(http.StatusOK, resp)
 }

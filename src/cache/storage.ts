@@ -232,7 +232,9 @@ function getStorageAdapter(): StorageAdapter {
     return new LocalStorageAdapter();
   }
   // React Native（iOS、Android）使用 AsyncStorage
-  // 注：未來可升級為 MMKV + AsyncStorage fallback
+  // 若需升級為 MMKV，請實作 MmkvAdapter 並在此替換：
+  //   return new MmkvAdapter();
+  // MMKV 比 AsyncStorage 快約 10 倍，但需要原生模組（不支援 Expo Go）
   return new AsyncStorageAdapter();
 }
 

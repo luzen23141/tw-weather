@@ -13,7 +13,7 @@ import { TextField } from '@/components/ui/TextField';
 import { TAIWAN_CITIES } from '@/constants/taiwan-locations';
 import { useMDColors } from '@/hooks/useMDColors';
 import { useLocationsStore } from '@/store/locations.store';
-import { getGlassStyle } from '@/utils/glass';
+import { getGlassStyle } from '@/components/ui/glass';
 import { formatLocationDisplayName, formatLocationSecondaryName } from '@/utils/location-display';
 import { resolveTaiwanLocation } from '@/utils/location-resolver';
 

@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
 	"proxy_golang/pkg/adapter"
 	"proxy_golang/pkg/config"
 	"proxy_golang/pkg/model"
+	"proxy_golang/pkg/repository"
 )
 
 // WeatherService 天氣資料服務介面
@@ -25,6 +27,7 @@ type weatherServiceImpl struct {
 	cfg      *config.Config
 	registry *adapter.Registry
 	upstream model.UpstreamClient
+	cache    repository.CacheRepository
 }
 
 // NewWeatherService 建立 WeatherService（依賴注入）
@@ -32,11 +35,13 @@ func NewWeatherService(
 	cfg *config.Config,
 	registry *adapter.Registry,
 	upstream model.UpstreamClient,
+	cache repository.CacheRepository,
 ) WeatherService {
 	return &weatherServiceImpl{
 		cfg:      cfg,
 		registry: registry,
 		upstream: upstream,
+		cache:    cache,
 	}
 }
 
@@ -84,6 +89,19 @@ func (s *weatherServiceImpl) fetchWeather(ctx context.Context, query *model.Weat
 		}
 	}
 
+	cacheKey := fmt.Sprintf("%s:%s:%.4f:%.4f:%s:%d",
+		query.Provider, string(weatherType),
+		query.Lat, query.Lon,
+		query.Date, query.Days,
+	)
+
+	if entry, ok := s.cache.Get(cacheKey); ok && entry != nil && entry.Response != nil {
+		log.Debug().Str("cacheKey", cacheKey).Msg("cache hit")
+		resp := *entry.Response
+		resp.CacheHit = true
+		return &resp, nil
+	}
+
 	log.Info().
 		Str("provider", query.Provider).
 		Str("type", string(weatherType)).
@@ -97,13 +115,24 @@ func (s *weatherServiceImpl) fetchWeather(ctx context.Context, query *model.Weat
 	timeoutCtx, cancel := context.WithTimeout(ctx, upstreamTimeout)
 	defer cancel()
 
+	upstreamStart := time.Now()
 	resp, err := a.Fetch(timeoutCtx, query, weatherType, apiKey, s.upstream)
+	upstreamLatency := time.Since(upstreamStart)
 	if err != nil {
 		if timeoutCtx.Err() == context.DeadlineExceeded {
 			return nil, &ProxyError{Code: http.StatusGatewayTimeout, Err: fmt.Errorf("upstream timeout: %w", err)}
 		}
 		return nil, &ProxyError{Code: http.StatusBadGateway, Err: fmt.Errorf("adapter fetch failed: %w", err)}
 	}
+
+	s.cache.Set(cacheKey, &model.CacheEntry{Response: resp})
+	log.Debug().Str("cacheKey", cacheKey).Msg("cache set")
+
+	log.Info().
+		Str("provider", query.Provider).
+		Str("type", string(weatherType)).
+		Dur("upstreamLatency", upstreamLatency).
+		Msg("upstream fetch complete")
 
 	return resp, nil
 }

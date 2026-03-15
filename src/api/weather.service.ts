@@ -15,6 +15,8 @@ import {
 } from './types';
 
 export const MAX_HISTORY_FETCH_DAYS = 7;
+export const OPEN_METEO_MAX_HISTORY_DAYS = 92;
+export const WEATHERAPI_MAX_HISTORY_DAYS = 7;
 
 /**
  * WeatherService - 統一天氣資料取得服務
@@ -25,6 +27,12 @@ export const MAX_HISTORY_FETCH_DAYS = 7;
  */
 class WeatherService {
   private adapters: Map<WeatherSource, WeatherApiAdapter>;
+  private readonly failureTracker = new Map<
+    WeatherSource,
+    { count: number; lastFailTime: number }
+  >();
+  private readonly CIRCUIT_THRESHOLD = 3;
+  private readonly CIRCUIT_RESET_MS = 5 * 60 * 1000;
 
   constructor() {
     this.adapters = new Map<WeatherSource, WeatherApiAdapter>([
@@ -49,15 +57,39 @@ class WeatherService {
     return adapter;
   }
 
+  private isCircuitOpen(source: WeatherSource): boolean {
+    const tracker = this.failureTracker.get(source);
+    if (!tracker) return false;
+    if (tracker.count < this.CIRCUIT_THRESHOLD) return false;
+    if (Date.now() - tracker.lastFailTime > this.CIRCUIT_RESET_MS) {
+      this.failureTracker.delete(source);
+      return false;
+    }
+    return true;
+  }
+
+  private recordFailure(source: WeatherSource): void {
+    const existing = this.failureTracker.get(source) ?? { count: 0, lastFailTime: 0 };
+    this.failureTracker.set(source, {
+      count: existing.count + 1,
+      lastFailTime: Date.now(),
+    });
+  }
+
+  private recordSuccess(source: WeatherSource): void {
+    this.failureTracker.delete(source);
+  }
+
   private async fetchWeatherFromAdapter(
     location: Location,
     source: WeatherSource,
+    includeHistory = false,
   ): Promise<WeatherData> {
     const adapter = this.getAdapter(source);
     const weatherData = await adapter.fetchWeather(location);
 
     let history: HistoricalDayWeather[] = [];
-    if (adapter.fetchHistory) {
+    if (includeHistory && adapter.fetchHistory) {
       try {
         history = await adapter.fetchHistory(location, 7);
       } catch (error) {
@@ -100,19 +132,42 @@ class WeatherService {
     sources: WeatherSource[],
     config: AggregationConfig,
   ): Promise<WeatherData> {
+    const activeSources = sources.filter((s) => !this.isCircuitOpen(s));
+    const skippedSources = sources.filter((s) => this.isCircuitOpen(s));
+
+    if (skippedSources.length > 0) {
+      console.warn(`熔斷中，跳過以下資料源: ${skippedSources.join(', ')}`);
+    }
+
+    const fallbackSource = sources[0];
+    const sourcesToFetch =
+      activeSources.length > 0
+        ? activeSources
+        : fallbackSource !== undefined
+          ? [fallbackSource]
+          : sources;
+
     const results = await Promise.allSettled(
-      sources.map((source) => this.fetchWeatherFromAdapter(location, source)),
+      sourcesToFetch.map((source) => this.fetchWeatherFromAdapter(location, source)),
     );
 
     const successResults = results
       .filter(
         (result): result is PromiseFulfilledResult<WeatherData> => result.status === 'fulfilled',
       )
-      .map((result) => result.value);
+      .map((result, index) => {
+        const source = sourcesToFetch[index];
+        if (source) this.recordSuccess(source);
+        return result.value;
+      });
 
     const failedResults = results
       .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
-      .map((result) => result.reason);
+      .map((result, index) => {
+        const source = sourcesToFetch[index];
+        if (source) this.recordFailure(source);
+        return result.reason;
+      });
 
     if (successResults.length === 0) {
       throw new WeatherApiError(
@@ -142,11 +197,10 @@ class WeatherService {
    * 3. WeatherAPI 作為備選（限 7 天）
    */
   async fetchHistory(location: Location, days: number): Promise<HistoricalDayWeather[]> {
-    const normalizedDays = Math.min(days, MAX_HISTORY_FETCH_DAYS);
-
     // 優先使用 Open-Meteo（最多支援 92 天歷史）
     const openMeteo = this.adapters.get('open-meteo');
     if (openMeteo?.fetchHistory) {
+      const normalizedDays = Math.min(days, OPEN_METEO_MAX_HISTORY_DAYS);
       try {
         return await openMeteo.fetchHistory(location, normalizedDays);
       } catch (error) {
@@ -159,6 +213,7 @@ class WeatherService {
     // Fallback 到 WeatherAPI（限 7 天）
     const weatherApi = this.adapters.get('weatherapi');
     if (weatherApi?.fetchHistory) {
+      const normalizedDays = Math.min(days, WEATHERAPI_MAX_HISTORY_DAYS);
       try {
         return await weatherApi.fetchHistory(location, normalizedDays);
       } catch (error) {

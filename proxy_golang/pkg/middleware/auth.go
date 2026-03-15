@@ -7,7 +7,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"net/url"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -57,7 +60,7 @@ func HMACAuth(secret string) gin.HandlerFunc {
 			return
 		}
 
-		expected := computeHMAC(secret, tsStr, c.Request.Method, c.Request.URL.Path)
+		expected := computeHMAC(secret, tsStr, c.Request.Method, c.Request.URL.Path, c.Request.URL.RawQuery)
 		sigBytes, err := hex.DecodeString(sig)
 		if err != nil || !hmac.Equal(sigBytes, expected) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{
@@ -70,9 +73,33 @@ func HMACAuth(secret string) gin.HandlerFunc {
 	}
 }
 
-func computeHMAC(secret, timestamp, method, path string) []byte {
-	msg := fmt.Sprintf("%s\n%s\n%s", timestamp, method, path)
+func computeHMAC(secret, timestamp, method, path, rawQuery string) []byte {
+	var msg string
+	if rawQuery != "" {
+		msg = fmt.Sprintf("%s\n%s\n%s?%s", timestamp, method, path, sortedQuery(rawQuery))
+	} else {
+		msg = fmt.Sprintf("%s\n%s\n%s", timestamp, method, path)
+	}
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(msg))
 	return mac.Sum(nil)
+}
+
+func sortedQuery(rawQuery string) string {
+	values, err := url.ParseQuery(rawQuery)
+	if err != nil {
+		return rawQuery
+	}
+	keys := make([]string, 0, len(values))
+	for k := range values {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(values))
+	for _, k := range keys {
+		for _, v := range values[k] {
+			parts = append(parts, url.QueryEscape(k)+"="+url.QueryEscape(v))
+		}
+	}
+	return strings.Join(parts, "&")
 }

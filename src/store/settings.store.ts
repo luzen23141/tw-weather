@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-import type { WeatherSource } from '@/api/types';
+import {
+  DEFAULT_AGGREGATION_CONFIG,
+  type AggregationConfig,
+  type WeatherSource,
+} from '@/api/types';
+import { DEFAULT_ACTIVE_SOURCE, DEFAULT_ENABLED_SOURCES } from '@/api/sources';
 import { storage } from '@/cache/storage';
 
 export type ThemeMode = 'light' | 'dark';
@@ -14,12 +19,14 @@ export interface SettingsState {
   displayMode: 'single' | 'aggregate';
   activeSource: WeatherSource;
   enabledSources: WeatherSource[];
+  aggregationConfig: AggregationConfig;
 
   // Action
   setTheme: (theme: ThemeMode) => void;
   setDisplayMode: (mode: SettingsState['displayMode']) => void;
   setActiveSource: (source: WeatherSource) => void;
   toggleSource: (source: WeatherSource) => void;
+  setAggregationConfig: (config: AggregationConfig) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -28,8 +35,9 @@ export const useSettingsStore = create<SettingsState>()(
       // 初始值
       theme: 'light' as ThemeMode,
       displayMode: 'single',
-      activeSource: 'cwa',
-      enabledSources: ['cwa', 'open-meteo'],
+      activeSource: DEFAULT_ACTIVE_SOURCE,
+      enabledSources: DEFAULT_ENABLED_SOURCES,
+      aggregationConfig: DEFAULT_AGGREGATION_CONFIG,
 
       // Actions
       setTheme: (theme: ThemeMode) => set({ theme }),
@@ -57,15 +65,17 @@ export const useSettingsStore = create<SettingsState>()(
                 activeSource: nextActiveSource,
               };
         }),
+      setAggregationConfig: (config) => set({ aggregationConfig: config }),
     }),
     {
       name: 'weather-settings',
       storage: createJSONStorage(() => storage),
-      partialize: ({ theme, displayMode, activeSource, enabledSources }) => ({
+      partialize: ({ theme, displayMode, activeSource, enabledSources, aggregationConfig }) => ({
         theme,
         displayMode,
         activeSource,
         enabledSources,
+        aggregationConfig,
       }),
     },
   ),

@@ -1,4 +1,4 @@
-import '../global.css';
+import '../src/global.css';
 
 declare global {
   interface Window {

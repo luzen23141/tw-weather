@@ -24,10 +24,19 @@ type WeatherQuery struct {
 	Days       int     `form:"days"`       // 預報天數（預設 7）
 }
 
+const (
+	MaxDays = 7
+	MinLat  = -90.0
+	MaxLat  = 90.0
+	MinLon  = -180.0
+	MaxLon  = 180.0
+)
+
 // WeatherResponse 統一天氣回應
 type WeatherResponse struct {
 	Provider  string          `json:"provider"`
 	Type      WeatherType     `json:"type"`
+	CacheHit  bool            `json:"-"`
 	Location  Location        `json:"location"`
 	UpdatedAt time.Time       `json:"updatedAt"`
 	Current   *CurrentWeather `json:"current,omitempty"`

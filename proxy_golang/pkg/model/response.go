@@ -21,8 +21,7 @@ type HealthResponse struct {
 
 // CacheEntry 快取項目
 type CacheEntry struct {
-	Data       []byte
-	StatusCode int
+	Response *WeatherResponse
 }
 
 // UpstreamResponse 上游 API 回應

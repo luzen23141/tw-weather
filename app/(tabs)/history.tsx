@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 
 import { AnimatedEntry } from '@/components/ui/AnimatedEntry';
 import { MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
@@ -19,7 +19,8 @@ import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
 import { useHistory } from '@/hooks/useHistory';
 import { useSettingsStore } from '@/store/settings.store';
 import { formatDate, daysAgo } from '@/utils/date';
-import { getGlassStyle } from '@/utils/glass';
+import { getWeatherErrorMessage } from '@/utils/error-message';
+import { getGlassStyle } from '@/components/ui/glass';
 import { formatLocationSecondaryName } from '@/utils/location-display';
 
 function HistorySkeleton() {
@@ -103,8 +104,13 @@ export default function HistoryScreen() {
     isRefetching,
   } = useHistory(effectiveLocation ?? null, MAX_HISTORY_FETCH_DAYS);
 
+  const historyDateMap = useMemo(
+    () => new Map(historyData?.map((d) => [d.date, d]) ?? []),
+    [historyData],
+  );
+
   const isLoadingCombined = locationLoading || (!!effectiveLocation && isLoading);
-  const selectedDayData = historyData?.find((d) => d.date === selectedDate);
+  const selectedDayData = historyDateMap.get(selectedDate) ?? null;
 
   const locationSecondaryText = effectiveLocation
     ? formatLocationSecondaryName(effectiveLocation)
@@ -115,7 +121,7 @@ export default function HistoryScreen() {
       return;
     }
 
-    const hasSelectedDate = historyData.some((item) => item.date === selectedDate);
+    const hasSelectedDate = historyDateMap.has(selectedDate);
     if (!selectedDate || !hasSelectedDate) {
       const latestAvailableDate = historyData[0]?.date;
       if (latestAvailableDate) {
@@ -160,7 +166,7 @@ export default function HistoryScreen() {
             <PageState
               type="error"
               title="無法取得歷史資料"
-              description={error.message}
+              description={getWeatherErrorMessage(error)}
               actionLabel="重試"
               onActionPress={() => {
                 void refetch();
@@ -193,20 +199,22 @@ export default function HistoryScreen() {
                 <Text className="px-4 text-xs font-bold uppercase tracking-[1.4px] text-md-on-surface-variant">
                   選擇日期
                 </Text>
-                <ScrollView
+                <FlatList
+                  data={historyData}
                   horizontal
                   showsHorizontalScrollIndicator={false}
+                  keyExtractor={(item) => item.date}
                   contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-                >
-                  {historyData.map((item) => {
+                  initialNumToRender={7}
+                  maxToRenderPerBatch={7}
+                  windowSize={3}
+                  renderItem={({ item }) => {
                     const isSelected = item.date === selectedDate;
                     const dateObj = new Date(item.date);
                     const dayStr = dateObj.getDate().toString();
                     const monthStr = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-
                     return (
                       <TouchableOpacity
-                        key={item.date}
                         accessibilityRole="button"
                         accessibilityLabel={`選擇 ${monthStr}/${dayStr}`}
                         onPress={() => setSelectedDate(item.date)}
@@ -226,8 +234,8 @@ export default function HistoryScreen() {
                         </Text>
                       </TouchableOpacity>
                     );
-                  })}
-                </ScrollView>
+                  }}
+                />
               </View>
 
               {selectedDayData ? (

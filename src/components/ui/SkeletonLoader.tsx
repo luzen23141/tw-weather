@@ -10,7 +10,7 @@ import Animated, {
   SharedValue,
 } from 'react-native-reanimated';
 
-import { getGlassStyle } from '@/utils/glass';
+import { getGlassStyle } from '@/components/ui/glass';
 
 // ─── 共享動畫 Context ──────────────────────────────────────────────────────────
 // 所有骨架屏共用同一個 opacity SharedValue，避免每個 SkeletonBox 獨立建立計時器

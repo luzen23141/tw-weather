@@ -11,6 +11,7 @@ import (
 	"proxy_golang/pkg/adapter"
 	"proxy_golang/pkg/config"
 	"proxy_golang/pkg/controller"
+	"proxy_golang/pkg/repository"
 	"proxy_golang/pkg/router"
 	"proxy_golang/pkg/service"
 )
@@ -42,7 +43,8 @@ func New() *App {
 	)
 
 	// Service 層 - Weather
-	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient)
+	cacheRepo := repository.NewCacheRepository()
+	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient, cacheRepo)
 
 	// Controller 層
 	debugCtrl := controller.NewDebugController()

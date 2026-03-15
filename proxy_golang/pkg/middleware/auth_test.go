@@ -1,10 +1,7 @@
 package middleware
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -21,11 +18,8 @@ func init() {
 
 const testSecret = "test-secret-key-32bytes-long!!"
 
-func makeSignature(secret, tsStr, method, path string) string {
-	msg := fmt.Sprintf("%s\n%s\n%s", tsStr, method, path)
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(msg))
-	return hex.EncodeToString(mac.Sum(nil))
+func makeSignature(secret, tsStr, method, path, rawQuery string) string {
+	return hex.EncodeToString(computeHMAC(secret, tsStr, method, path, rawQuery))
 }
 
 func setupAuthRouter(secret string) *gin.Engine {
@@ -39,7 +33,7 @@ func setupAuthRouter(secret string) *gin.Engine {
 func TestHMACAuth_ValidRequest(t *testing.T) {
 	r := setupAuthRouter(testSecret)
 	tsStr := strconv.FormatInt(time.Now().Unix(), 10)
-	sig := makeSignature(testSecret, tsStr, http.MethodGet, "/api/proxy")
+	sig := makeSignature(testSecret, tsStr, http.MethodGet, "/api/proxy", "")
 
 	req := httptest.NewRequest(http.MethodGet, "/api/proxy", nil)
 	req.Header.Set("X-Timestamp", tsStr)
@@ -63,7 +57,7 @@ func TestHMACAuth_MissingHeaders(t *testing.T) {
 func TestHMACAuth_ExpiredTimestamp(t *testing.T) {
 	r := setupAuthRouter(testSecret)
 	tsStr := strconv.FormatInt(time.Now().Add(-60*time.Second).Unix(), 10)
-	sig := makeSignature(testSecret, tsStr, http.MethodGet, "/api/proxy")
+	sig := makeSignature(testSecret, tsStr, http.MethodGet, "/api/proxy", "")
 
 	req := httptest.NewRequest(http.MethodGet, "/api/proxy", nil)
 	req.Header.Set("X-Timestamp", tsStr)
@@ -78,7 +72,7 @@ func TestHMACAuth_ExpiredTimestamp(t *testing.T) {
 func TestHMACAuth_WrongSignature(t *testing.T) {
 	r := setupAuthRouter(testSecret)
 	tsStr := strconv.FormatInt(time.Now().Unix(), 10)
-	sig := makeSignature("wrong-secret", tsStr, http.MethodGet, "/api/proxy")
+	sig := makeSignature("wrong-secret", tsStr, http.MethodGet, "/api/proxy", "")
 
 	req := httptest.NewRequest(http.MethodGet, "/api/proxy", nil)
 	req.Header.Set("X-Timestamp", tsStr)

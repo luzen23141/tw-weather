@@ -136,7 +136,7 @@ class AggregationEngine {
 
   /**
    * 聚合逐時預報
-   * 以 timestamp 對齊，各時間點分別聚合
+   * 以 timestamp（截斷至小時）為 key 對齊各來源，避免索引錯位
    */
   private aggregateHourlyForecasts(
     results: WeatherData[],
@@ -144,62 +144,75 @@ class AggregationEngine {
   ): HourlyForecast[] {
     if (results.length === 0) return [];
 
-    // 使用第一個結果的 timestamp 序列作為基準
-    const baseHourly = results[0]?.hourlyForecast ?? [];
-    const allHourly = results.map((r) => r.hourlyForecast);
+    // 建立 timestamp → [HourlyForecast] 的 map，截斷至小時精度對齊
+    const hourMap = new Map<string, HourlyForecast[]>();
 
-    return baseHourly.map((baseHour, idx) => {
-      // 收集各來源在此時間點的資料
-      const hoursAtIdx = allHourly.map((h) => h[idx]).filter((h): h is HourlyForecast => !!h);
+    for (const result of results) {
+      for (const hour of result.hourlyForecast) {
+        // 截斷至小時（去除分鐘/秒），作為對齊 key
+        const hourKey = hour.timestamp.slice(0, 13); // "YYYY-MM-DDTHH"
+        const existing = hourMap.get(hourKey);
+        if (existing) {
+          existing.push(hour);
+        } else {
+          hourMap.set(hourKey, [hour]);
+        }
+      }
+    }
 
-      if (hoursAtIdx.length === 0) return baseHour;
+    // 依時間排序後聚合
+    const sortedKeys = [...hourMap.keys()].sort();
 
-      // 各欄位聚合
-      const temps = hoursAtIdx.map((h) => h.temperature);
-      const temperature = aggregateTemperature(temps, config.temperature);
+    return sortedKeys
+      .map((key) => {
+        const hoursAtKey = hourMap.get(key) ?? [];
+        const base = hoursAtKey[0];
+        if (!base) return null;
 
-      const appTemps = hoursAtIdx.map((h) => h.apparentTemperature);
-      const apparentTemperature = aggregateNumericValues(appTemps, 'average');
+        if (hoursAtKey.length === 1) return base;
 
-      const codes = hoursAtIdx.map((h) => h.weatherCode);
-      const weatherCode = mode(codes);
+        const temps = hoursAtKey.map((h) => h.temperature);
+        const temperature = aggregateTemperature(temps, config.temperature);
 
-      const humidities = hoursAtIdx.map((h) => h.humidity);
-      const humidity = aggregateNumericValues(humidities, 'average');
+        const appTemps = hoursAtKey.map((h) => h.apparentTemperature);
+        const apparentTemperature = aggregateNumericValues(appTemps, 'average');
 
-      const precipProbs = hoursAtIdx.map((h) => h.precipitationProbability);
-      const precipitationProbability = Math.round(
-        aggregatePrecipitationProbability(precipProbs, config.precipitation),
-      );
+        const codes = hoursAtKey.map((h) => h.weatherCode);
+        const weatherCode = mode(codes);
 
-      const precips = hoursAtIdx.map((h) => h.precipitation);
-      const precipitation = Math.max(...precips);
+        const humidities = hoursAtKey.map((h) => h.humidity);
+        const humidity = aggregateNumericValues(humidities, 'average');
 
-      const windSpeeds = hoursAtIdx.map((h) => h.windSpeed);
-      const windSpeed = aggregateNumericValues(windSpeeds, 'average');
+        const precipProbs = hoursAtKey.map((h) => h.precipitationProbability);
+        const precipitationProbability = Math.round(
+          aggregatePrecipitationProbability(precipProbs, config.precipitation),
+        );
 
-      const windDirection = baseHour.windDirection;
+        const precips = hoursAtKey.map((h) => h.precipitation);
+        const precipitation = Math.max(...precips);
 
-      const description = baseHour.description;
+        const windSpeeds = hoursAtKey.map((h) => h.windSpeed);
+        const windSpeed = aggregateNumericValues(windSpeeds, 'average');
 
-      return {
-        timestamp: baseHour.timestamp,
-        temperature,
-        apparentTemperature,
-        weatherCode,
-        description,
-        precipitationProbability,
-        precipitation,
-        humidity,
-        windSpeed,
-        windDirection,
-      };
-    });
+        return {
+          timestamp: base.timestamp,
+          temperature,
+          apparentTemperature,
+          weatherCode,
+          description: base.description,
+          precipitationProbability,
+          precipitation,
+          humidity,
+          windSpeed,
+          windDirection: base.windDirection,
+        };
+      })
+      .filter((h): h is HourlyForecast => h !== null);
   }
 
   /**
    * 聚合每日預報
-   * 以 date 對齊，各日期分別聚合
+   * 以 date（YYYY-MM-DD）為 key 對齊各來源，避免索引錯位
    */
   private aggregateDailyForecasts(
     results: WeatherData[],
@@ -207,65 +220,74 @@ class AggregationEngine {
   ): DailyForecast[] {
     if (results.length === 0) return [];
 
-    // 使用第一個結果的 date 序列作為基準
-    const baseDaily = results[0]?.dailyForecast ?? [];
-    const allDaily = results.map((r) => r.dailyForecast);
+    // 建立 date → [DailyForecast] 的 map
+    const dayMap = new Map<string, DailyForecast[]>();
 
-    return baseDaily.map((baseDay, idx) => {
-      // 收集各來源在此日期的資料
-      const daysAtIdx = allDaily.map((d) => d[idx]).filter((d): d is DailyForecast => !!d);
-
-      if (daysAtIdx.length === 0) return baseDay;
-
-      // 溫度範圍聚合
-      const mins = daysAtIdx.map((d) => d.temperatureMin);
-      const maxes = daysAtIdx.map((d) => d.temperatureMax);
-      const tempRange = aggregateTemperatureRange(mins, maxes, config.temperature);
-
-      const codes = daysAtIdx.map((d) => d.weatherCode);
-      const weatherCode = mode(codes);
-
-      const precipProbs = daysAtIdx.map((d) => d.precipitationProbability);
-      const precipitationProbability = Math.round(
-        aggregatePrecipitationProbability(precipProbs, config.precipitation),
-      );
-
-      const precipSums = daysAtIdx.map((d) => d.precipitationSum);
-      const precipitationSum = Math.max(...precipSums);
-
-      const windSpeeds = daysAtIdx.map((d) => d.windSpeedMax);
-      const windSpeedMax = Math.max(...windSpeeds);
-
-      const uvIndices = daysAtIdx
-        .map((d) => d.uvIndexMax)
-        .filter((u): u is number => u !== undefined);
-      const uvIndexMax = uvIndices.length > 0 ? Math.max(...uvIndices) : undefined;
-
-      // sunrise/sunset: 取第一個值
-      const sunrise = baseDay.sunrise;
-      const sunset = baseDay.sunset;
-
-      const description = baseDay.description;
-
-      const result: DailyForecast = {
-        date: baseDay.date,
-        temperatureMax: tempRange.max,
-        temperatureMin: tempRange.min,
-        weatherCode,
-        description,
-        precipitationProbability,
-        precipitationSum,
-        windSpeedMax,
-        ...(sunrise !== undefined && { sunrise }),
-        ...(sunset !== undefined && { sunset }),
-      };
-
-      if (uvIndexMax !== undefined) {
-        result.uvIndexMax = uvIndexMax;
+    for (const result of results) {
+      for (const day of result.dailyForecast) {
+        const existing = dayMap.get(day.date);
+        if (existing) {
+          existing.push(day);
+        } else {
+          dayMap.set(day.date, [day]);
+        }
       }
+    }
 
-      return result;
-    });
+    // 依日期排序後聚合
+    const sortedDates = [...dayMap.keys()].sort();
+
+    return sortedDates
+      .map((date) => {
+        const daysAtDate = dayMap.get(date) ?? [];
+        const base = daysAtDate[0];
+        if (!base) return null;
+
+        if (daysAtDate.length === 1) return base;
+
+        const mins = daysAtDate.map((d) => d.temperatureMin);
+        const maxes = daysAtDate.map((d) => d.temperatureMax);
+        const tempRange = aggregateTemperatureRange(mins, maxes, config.temperature);
+
+        const codes = daysAtDate.map((d) => d.weatherCode);
+        const weatherCode = mode(codes);
+
+        const precipProbs = daysAtDate.map((d) => d.precipitationProbability);
+        const precipitationProbability = Math.round(
+          aggregatePrecipitationProbability(precipProbs, config.precipitation),
+        );
+
+        const precipSums = daysAtDate.map((d) => d.precipitationSum);
+        const precipitationSum = Math.max(...precipSums);
+
+        const windSpeeds = daysAtDate.map((d) => d.windSpeedMax);
+        const windSpeedMax = Math.max(...windSpeeds);
+
+        const uvIndices = daysAtDate
+          .map((d) => d.uvIndexMax)
+          .filter((u): u is number => u !== undefined);
+        const uvIndexMax = uvIndices.length > 0 ? Math.max(...uvIndices) : undefined;
+
+        const result: DailyForecast = {
+          date,
+          temperatureMax: tempRange.max,
+          temperatureMin: tempRange.min,
+          weatherCode,
+          description: base.description,
+          precipitationProbability,
+          precipitationSum,
+          windSpeedMax,
+          ...(base.sunrise !== undefined && { sunrise: base.sunrise }),
+          ...(base.sunset !== undefined && { sunset: base.sunset }),
+        };
+
+        if (uvIndexMax !== undefined) {
+          result.uvIndexMax = uvIndexMax;
+        }
+
+        return result;
+      })
+      .filter((d): d is DailyForecast => d !== null);
   }
 }
 

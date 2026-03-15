@@ -2,6 +2,8 @@
 package middleware
 
 import (
+	"crypto/rand"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -33,14 +35,28 @@ func CORS() gin.HandlerFunc {
 	}
 }
 
+func generateRequestID() string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return fmt.Sprintf("%x", b)
+}
+
 // RequestLogger 請求日誌中間件
 func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
+		requestID := c.GetHeader("X-Request-ID")
+		if requestID == "" {
+			requestID = generateRequestID()
+		}
+		c.Set("requestID", requestID)
+		c.Header("X-Request-ID", requestID)
+
 		c.Next()
 
 		log.Info().
+			Str("requestID", requestID).
 			Str("method", c.Request.Method).
 			Str("path", c.Request.URL.Path).
 			Int("status", c.Writer.Status()).

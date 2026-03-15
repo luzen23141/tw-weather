@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useMDColors } from '@/hooks/useMDColors';
-import { getGlassStyle } from '@/utils/glass';
+import { getGlassStyle } from '@/components/ui/glass';
 
 export default function TabsLayout() {
   const colors = useMDColors();

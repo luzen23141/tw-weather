@@ -73,12 +73,17 @@ pnpm web
 
 ### 環境變數
 
-| 變數名稱                     | 說明                   | 必要           |
-| ---------------------------- | ---------------------- | -------------- |
-| `EXPO_PUBLIC_CWA_API_KEY`    | 中央氣象署 API 授權碼  | 是             |
-| `EXPO_PUBLIC_WEATHERAPI_KEY` | WeatherAPI.com API Key | 否（備用來源） |
+| 變數名稱                     | 說明                                           | 必要               |
+| ---------------------------- | ---------------------------------------------- | ------------------ |
+| `EXPO_PUBLIC_PROXY_URL`      | 後端 Proxy 伺服器 URL（所有 API 請求必經此處） | **是**             |
+| `EXPO_PUBLIC_PROXY_SECRET`   | Proxy HMAC 認證密鑰（需與 proxy 端一致）       | **是**             |
+| `EXPO_PUBLIC_CWA_API_KEY`    | 中央氣象署 API 授權碼（由 proxy 使用）         | 否（proxy 端設定） |
+| `EXPO_PUBLIC_WEATHERAPI_KEY` | WeatherAPI.com API Key（由 proxy 使用）        | 否（proxy 端設定） |
 
-> CWA API Key 可至[中央氣象署開放資料平台](https://opendata.cwa.gov.tw/)免費申請。
+> **注意**：前端所有天氣 API 請求都透過 `EXPO_PUBLIC_PROXY_URL` 指定的後端 Proxy 轉發，
+> 不直接呼叫氣象 API。請確保 Proxy 伺服器已正確設定並可連線。
+>
+> Proxy 伺服器原始碼位於 `proxy_golang/`，可自行部署至 Vercel 或其他平台。
 
 ---
 

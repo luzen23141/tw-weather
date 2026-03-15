@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 
+jest.mock('react', () => ({
+  ...jest.requireActual<typeof import('react')>('react'),
+  useMemo: (fn: () => unknown) => fn(),
+}));
+
 import {
   DEFAULT_AGGREGATION_CONFIG,
   type Location,
@@ -82,10 +87,12 @@ function mockStoreState(overrides?: {
     displayMode: overrides?.displayMode ?? 'single',
     activeSource: overrides?.activeSource ?? 'cwa',
     enabledSources: overrides?.enabledSources ?? ['cwa', 'open-meteo'],
+    aggregationConfig: DEFAULT_AGGREGATION_CONFIG,
     setTheme: jest.fn(),
     setDisplayMode: jest.fn(),
     setActiveSource: jest.fn(),
     toggleSource: jest.fn(),
+    setAggregationConfig: jest.fn(),
   };
 
   mockUseSettingsStore.mockImplementation((selector) => selector(state));

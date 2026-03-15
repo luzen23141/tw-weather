@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -19,7 +20,17 @@ type httpUpstreamClient struct {
 
 // NewUpstreamClient 建立 model.UpstreamClient（timeout 由呼叫方的 context 控制）
 func NewUpstreamClient() model.UpstreamClient {
-	return &httpUpstreamClient{client: &http.Client{}}
+	transport := &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     90 * time.Second,
+		TLSHandshakeTimeout: 5 * time.Second,
+		DisableCompression:  false,
+	}
+
+	return &httpUpstreamClient{
+		client: &http.Client{Transport: transport},
+	}
 }
 
 func (c *httpUpstreamClient) Do(ctx context.Context, req *model.UpstreamRequest) (*model.UpstreamResponse, error) {

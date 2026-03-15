@@ -5,7 +5,7 @@ import { AppIcon } from '@/components/icons/AppIcon';
 
 import { DailyForecast } from '../../api/types';
 import { getDayOfWeek } from '../../utils/date';
-import { getGlassStyle } from '../../utils/glass';
+import { getGlassStyle } from '../ui/glass';
 import { WeatherIcon } from '../icons/WeatherIcon';
 
 export interface DailyForecastListProps {

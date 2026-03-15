@@ -1,4 +1,6 @@
-module.exports = {
+import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
+
+const config: PartialStrykerOptions = {
   testRunner: 'jest',
   plugins: ['@stryker-mutator/jest-runner'],
   reporters: ['clear-text', 'progress', 'html', 'json'],
@@ -13,7 +15,7 @@ module.exports = {
   ],
   jest: {
     projectType: 'custom',
-    configFile: 'jest.config.unit.js',
+    configFile: 'config/jest.config.unit.js',
     enableFindRelatedTests: true,
   },
   thresholds: {
@@ -22,3 +24,5 @@ module.exports = {
     break: 40,
   },
 };
+
+export default config;

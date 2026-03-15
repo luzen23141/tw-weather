@@ -15,7 +15,7 @@ jest.mock('@/utils/date', () => ({
   formatTime: jest.fn((value: string) => `formatted:${value}`),
 }));
 
-jest.mock('@/utils/glass', () => ({
+jest.mock('@/components/ui/glass', () => ({
   getGlassStyle: jest.fn(() => ({})),
 }));
 
