@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect } from 'react';
-import { DimensionValue, View, ViewProps } from 'react-native';
+import { DimensionValue, Platform, View, ViewProps } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -79,16 +79,18 @@ export function SkeletonBox({
     opacity: opacityValue.value,
   }));
 
+  // Web 端用 CSS shimmer；Native 端用 opacity 脈衝
+  const webShimmerClass = Platform.OS === 'web' ? 'web:animate-shimmer' : '';
+
   return (
     <Animated.View
-      className={`bg-md-surface-variant ${className}`.trim()}
+      className={`bg-md-on-surface/[0.10] ${webShimmerClass} ${className}`.trim()}
       style={[
         {
           width,
           height,
           borderRadius,
         },
-        getGlassStyle(8),
         animStyle,
         style,
       ]}

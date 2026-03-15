@@ -47,6 +47,28 @@
     --color-glass-border-strong: rgba(255, 255, 255, 0.72);
   }
 
+  /* Skeleton shimmer sweep */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .web\:animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.06) 0%,
+      rgba(255, 255, 255, 0.18) 40%,
+      rgba(255, 255, 255, 0.18) 60%,
+      rgba(0, 0, 0, 0.06) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
   body {
     background-color: var(--color-md-background);
     color: var(--color-md-on-background);

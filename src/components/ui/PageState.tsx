@@ -75,7 +75,7 @@ export function PageState({
         variant="filled"
         className="items-center gap-5 px-6 py-10 shadow-glass-glow"
         style={
-          Platform.OS === 'web' ? { alignSelf: 'center', width: '100%', maxWidth: 460 } : undefined
+          Platform.OS === 'web' ? { alignSelf: 'center', width: '100%', maxWidth: 560 } : undefined
         }
       >
         <Text className="text-[11px] font-bold uppercase tracking-[2px] text-md-primary">

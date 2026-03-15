@@ -26,8 +26,12 @@ export default function TabsLayout() {
             ? {
                 alignSelf: 'center',
                 marginTop: 'auto',
-                maxWidth: 1120,
+                marginBottom: 10,
+                maxWidth: 560,
                 width: '100%',
+                borderRadius: 28,
+                borderWidth: 1,
+                borderColor: colors.glassBorder,
                 ...getGlassStyle(24),
               }
             : {}),
@@ -41,12 +45,16 @@ export default function TabsLayout() {
           backgroundColor: colors.glassHeader,
           borderBottomColor: colors.glassBorder,
           borderBottomWidth: 1,
+          ...(Platform.OS === 'web'
+            ? ({ boxShadow: '0 1px 10px rgba(0,0,0,0.05)' } as object)
+            : {}),
         },
         headerShadowVisible: false,
         headerTintColor: colors.onSurface,
         headerTitleStyle: {
           fontWeight: '700',
-          fontSize: 17,
+          fontSize: 19,
+          letterSpacing: 0.2,
         },
       }}
     >

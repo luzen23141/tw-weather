@@ -7,6 +7,7 @@ import { GlassBackground } from '@/components/ui/GlassBackground';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { RadioButton } from '@/components/ui/RadioButton';
+import { SkeletonBox, SkeletonProvider } from '@/components/ui/SkeletonLoader';
 import { useProviders } from '@/hooks/useProviders';
 import { useSettingsStore } from '@/store/settings.store';
 import { getGlassStyle } from '@/utils/glass';
@@ -210,7 +211,24 @@ export default function SettingsScreen() {
           />
         ));
       case 'sources':
-        if (!providers) return null;
+        if (!providers) {
+          return (
+            <SkeletonProvider>
+              {[0, 1, 2].map((i) => (
+                <View
+                  key={i}
+                  className={`min-h-[56px] bg-md-surface-container px-5 py-3.5 flex-row items-center justify-between ${i < 2 ? 'border-b border-glass-border' : ''}`}
+                >
+                  <View className="flex-1 gap-2 pr-4">
+                    <SkeletonBox height={14} width="42%" borderRadius={5} />
+                    <SkeletonBox height={12} width="68%" borderRadius={4} />
+                  </View>
+                  <SkeletonBox height={28} width={50} borderRadius={14} />
+                </View>
+              ))}
+            </SkeletonProvider>
+          );
+        }
         return providers
           .filter((p) => p.id in providerIdToSource)
           .map((p, index, arr) => {

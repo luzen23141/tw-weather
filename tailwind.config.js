@@ -51,6 +51,15 @@ module.exports = {
       transitionTimingFunction: {
         'em-decelerate': 'cubic-bezier(0.2, 0, 0, 1)',
       },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 1.6s ease-in-out infinite',
+      },
     },
   },
   plugins: [],
