@@ -8,8 +8,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : 2,
   reporter: [
-    ['html', { open: 'never' }],
-    ['json', { outputFile: 'test-results/playwright/results.json' }],
+    ['html', { open: 'never', outputFolder: path.resolve(__dirname, '../playwright-report') }],
+    ['json', { outputFile: path.resolve(__dirname, '../test-results/playwright/results.json') }],
   ],
   use: {
     baseURL: 'http://localhost:8081',
