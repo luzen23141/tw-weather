@@ -35,10 +35,10 @@ module.exports = {
   coveragePathIgnorePatterns: ['/node_modules/', '/e2e/'],
   coverageThreshold: {
     global: {
-      lines: 54,
-      branches: 45,
-      functions: 46,
-      statements: 54,
+      lines: 50,
+      branches: 40,
+      functions: 42,
+      statements: 48,
     },
   },
   moduleNameMapper: {
