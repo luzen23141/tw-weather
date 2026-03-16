@@ -107,7 +107,39 @@ async function warmUpCache() {
   }
 }
 
+async function verifyCacheHeaders() {
+  console.log('\nChecking cache headers on custom domain\n');
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+    const response = await fetch(`${DEFAULT_CUSTOM_URL}/?v=${Date.now()}`, {
+      method: 'HEAD',
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    const cacheControl = response.headers.get('cache-control') ?? '';
+    const cdnCacheControl = response.headers.get('cdn-cache-control') ?? '';
+
+    console.log(`  cache-control:     ${cacheControl}`);
+    console.log(`  cdn-cache-control: ${cdnCacheControl}`);
+
+    if (cacheControl.includes('max-age=31536000')) {
+      console.warn(
+        '\n⚠  WARNING: Root path still has max-age=31536000 — CDN may not have propagated yet',
+      );
+    } else if (cacheControl.includes('no-cache') || cacheControl.includes('no-store')) {
+      console.log('  ✓ Cache headers are correct');
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`\n⚠  Cache header check failed: ${message}`);
+  }
+}
+
 await verifyDeployment();
+await verifyCacheHeaders();
 await warmUpCache();
 
 console.log('\nDeployment verified\n');
