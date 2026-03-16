@@ -17,14 +17,11 @@ export async function onRequest(context) {
     return response;
   }
 
-  const cacheControl = response.headers.get('cache-control') || '';
-
-  // Only fix responses that have the Pages default long cache
-  if (cacheControl.includes('max-age=31536000')) {
-    const newResponse = new Response(response.body, response);
-    newResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    return newResponse;
-  }
-
-  return response;
+  // Always override cache-control for non-static paths (HTML, manifest, sw, etc.)
+  // Pages platform sets max-age=31536000 on SPA fallback responses AFTER _headers,
+  // so we must force it here unconditionally for non-static paths
+  const newResponse = new Response(response.body, response);
+  newResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  newResponse.headers.set('X-Cache-Override', 'middleware');
+  return newResponse;
 }
