@@ -24,6 +24,7 @@ type WeatherQuery struct {
 	Days       int     `form:"days"`       // 預報天數（預設 7）
 }
 
+// Weather request validation boundaries.
 const (
 	MaxDays = 7
 	MinLat  = -90.0
