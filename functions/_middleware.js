@@ -17,11 +17,13 @@ export async function onRequest(context) {
     return response;
   }
 
-  // Always override cache-control for non-static paths (HTML, manifest, sw, etc.)
-  // Pages platform sets max-age=31536000 on SPA fallback responses AFTER _headers,
-  // so we must force it here unconditionally for non-static paths
+  // Pages platform overwrites Cache-Control AFTER middleware returns,
+  // so we use Expires/Pragma as fallback for browsers that respect them.
+  // CDN-Cache-Control: no-store (from _headers) prevents CDN caching.
+  // Combined, this ensures browsers don't cache SPA HTML long-term.
   const newResponse = new Response(response.body, response);
   newResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  newResponse.headers.set('X-Cache-Override', 'middleware');
+  newResponse.headers.set('Expires', '0');
+  newResponse.headers.set('Pragma', 'no-cache');
   return newResponse;
 }
