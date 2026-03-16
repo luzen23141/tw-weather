@@ -63,18 +63,8 @@ func HMACAuth(secret string) gin.HandlerFunc {
 		expected := computeHMAC(secret, tsStr, c.Request.Method, c.Request.URL.Path, c.Request.URL.RawQuery)
 		sigBytes, err := hex.DecodeString(sig)
 		if err != nil || !hmac.Equal(sigBytes, expected) {
-			sorted := sortedQuery(c.Request.URL.RawQuery)
-			var debugMsg string
-			if sorted != "" {
-				debugMsg = fmt.Sprintf("%s\n%s\n%s?%s", tsStr, c.Request.Method, c.Request.URL.Path, sorted)
-			} else {
-				debugMsg = fmt.Sprintf("%s\n%s\n%s", tsStr, c.Request.Method, c.Request.URL.Path)
-			}
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":       "invalid signature",
-				"debug_msg":   debugMsg,
-				"debug_path":  c.Request.URL.Path,
-				"debug_query": c.Request.URL.RawQuery,
+			c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{
+				Error: "invalid signature",
 			})
 			return
 		}
@@ -100,6 +90,9 @@ func sortedQuery(rawQuery string) string {
 	if err != nil {
 		return rawQuery
 	}
+	// Vercel Go runtime injects "path" as a query param from the route;
+	// the frontend never includes it when signing, so strip it here.
+	values.Del("path")
 	keys := make([]string, 0, len(values))
 	for k := range values {
 		keys = append(keys, k)
