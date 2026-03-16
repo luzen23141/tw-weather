@@ -2,6 +2,8 @@
 package controller
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"os"
 
@@ -21,13 +23,21 @@ func (ctrl *DebugController) HandleHealth(c *gin.Context) {
 	cwaKey := os.Getenv("CWA_API_KEY")
 	proxySecret := os.Getenv("PROXY_SECRET")
 
+	// Hash the secret so we can compare without exposing it
+	secretHash := ""
+	if proxySecret != "" {
+		h := sha256.Sum256([]byte(proxySecret))
+		secretHash = hex.EncodeToString(h[:8]) // first 8 bytes only
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"status":           "ok",
-		"service":          "tw-weather-proxy-go",
-		"version":          "1.0.1",
-		"has_cwa_key":      cwaKey != "",
-		"cwa_key_len":      len(cwaKey),
-		"has_proxy_secret": proxySecret != "",
-		"proxy_secret_len": len(proxySecret),
+		"status":              "ok",
+		"service":             "tw-weather-proxy-go",
+		"version":             "1.0.2",
+		"has_cwa_key":         cwaKey != "",
+		"cwa_key_len":         len(cwaKey),
+		"has_proxy_secret":    proxySecret != "",
+		"proxy_secret_len":    len(proxySecret),
+		"proxy_secret_hash16": secretHash,
 	})
 }
