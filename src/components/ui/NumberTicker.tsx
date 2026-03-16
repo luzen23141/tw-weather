@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { TextProps } from 'react-native';
+import { Platform, Text, TextProps } from 'react-native';
 import Animated, {
   useSharedValue,
   useDerivedValue,
@@ -30,11 +30,7 @@ const RNText = require('react-native').Text as React.ComponentType<
 >;
 const AnimatedText = Animated.createAnimatedComponent(RNText);
 
-/**
- * NumberTicker — 數字跳動動畫。
- * 用彈簧動畫從 startValue 滾動到 value。
- */
-export function NumberTicker({
+function NativeNumberTicker({
   value,
   startValue = 0,
   direction = 'up',
@@ -73,4 +69,27 @@ export function NumberTicker({
       {...props}
     />
   );
+}
+
+/**
+ * NumberTicker — 數字跳動動畫。
+ * Native：用彈簧動畫從 startValue 滾動到 value。
+ * Web：直接顯示靜態文字（animatedProps 的 text 屬性在 Web DOM 不生效）。
+ */
+export function NumberTicker(props: NumberTickerProps) {
+  const { value, decimalPlaces = 0, suffix = '', className = '', ...rest } = props;
+
+  if (Platform.OS === 'web') {
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: decimalPlaces,
+      maximumFractionDigits: decimalPlaces,
+    }).format(value);
+    return (
+      <Text className={`tabular-nums ${className}`.trim()} {...rest}>
+        {`${formatted}${suffix}`}
+      </Text>
+    );
+  }
+
+  return <NativeNumberTicker {...props} />;
 }
