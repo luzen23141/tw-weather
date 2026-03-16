@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AnimatedEntry } from '@/components/ui/AnimatedEntry';
+import { BlurFade } from '@/components/ui/BlurFade';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
@@ -74,8 +74,8 @@ export default function ForecastScreen() {
           }}
           refreshing={isRefetching}
         >
-          <BlurDecorative color="accent" size="xl" position="top-right" />
-          <BlurDecorative color="tertiary" size="md" position="bottom-left" />
+          <BlurDecorative color="accent" size="xl" position="top-right" opacity={0.08} />
+          <BlurDecorative color="tertiary" size="md" position="bottom-left" opacity={0.06} />
 
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<ForecastSkeleton />} />
@@ -103,7 +103,7 @@ export default function ForecastScreen() {
             />
           ) : weatherData && effectiveLocation ? (
             <View className="gap-7">
-              <AnimatedEntry delay={0} duration={350}>
+              <BlurFade delay={0} duration={350}>
                 <PageHeaderCard
                   icon="partly-sunny-outline"
                   title={effectiveLocation.name}
@@ -111,15 +111,15 @@ export default function ForecastScreen() {
                   eyebrow="逐時與每日預報"
                   rightSlot={<SourceBadge source={weatherData.source} />}
                 />
-              </AnimatedEntry>
+              </BlurFade>
 
-              <AnimatedEntry delay={80} duration={400}>
+              <BlurFade delay={80} duration={400}>
                 <HourlyForecastList forecasts={weatherData.hourlyForecast} />
-              </AnimatedEntry>
+              </BlurFade>
 
-              <AnimatedEntry delay={160} duration={400}>
+              <BlurFade delay={160} duration={400}>
                 <DailyForecastList forecasts={weatherData.dailyForecast} />
-              </AnimatedEntry>
+              </BlurFade>
             </View>
           ) : null}
         </PageScrollView>

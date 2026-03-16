@@ -1,7 +1,8 @@
 import { useRouter, Stack } from 'expo-router';
 import { View } from 'react-native';
+import type { ReactNode } from 'react';
 
-import { AnimatedEntry } from '@/components/ui/AnimatedEntry';
+import { BlurFade } from '@/components/ui/BlurFade';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -9,6 +10,7 @@ import { GlassBackground } from '@/components/ui/GlassBackground';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
+import { Ripple } from '@/components/ui/Ripple';
 import { WeatherPageSkeleton } from '@/components/ui/SkeletonLoader';
 import { CurrentWeatherCard } from '@/components/weather/CurrentWeatherCard';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
@@ -36,6 +38,15 @@ export default function HomeScreen() {
     ? { ...effectiveLocation, name: primaryDisplayName }
     : null;
 
+  const renderStateWithRipple = (node: ReactNode) => (
+    <View className="relative">
+      <View className="pointer-events-none absolute left-1/2 top-10 h-[220px] w-[220px] -translate-x-1/2">
+        <Ripple count={2} size={220} color="rgba(144, 132, 255, 0.18)" />
+      </View>
+      {node}
+    </View>
+  );
+
   return (
     <ErrorBoundary
       fallback={
@@ -45,8 +56,8 @@ export default function HomeScreen() {
       }
     >
       <GlassBackground weatherCode={weatherData?.current.weatherCode}>
-        <BlurDecorative color="accent" size="xl" position="top-right" opacity={0.15} />
-        <BlurDecorative color="tertiary" size="lg" position="bottom-left" opacity={0.1} />
+        <BlurDecorative color="accent" size="xl" position="top-right" opacity={0.08} />
+        <BlurDecorative color="tertiary" size="lg" position="bottom-left" opacity={0.06} />
 
         <PageScrollView
           onRefresh={() => {
@@ -59,32 +70,36 @@ export default function HomeScreen() {
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<WeatherPageSkeleton />} />
           ) : !weatherCardLocation ? (
-            <PageState
-              type="empty"
-              title="選擇你的地點"
-              description={
-                locationError
-                  ? '目前無法取得你的定位，請先手動選擇城市，再查看即時天氣與預報。'
-                  : '前往地點管理選擇城市，或開啟定位服務自動抓取所在位置。'
-              }
-              actionLabel="前往選擇地點"
-              onActionPress={() => router.push('/locations')}
-            />
+            renderStateWithRipple(
+              <PageState
+                type="empty"
+                title="選擇你的地點"
+                description={
+                  locationError
+                    ? '目前無法取得你的定位，請先手動選擇城市，再查看即時天氣與預報。'
+                    : '前往地點管理選擇城市，或開啟定位服務自動抓取所在位置。'
+                }
+                actionLabel="前往選擇地點"
+                onActionPress={() => router.push('/locations')}
+              />,
+            )
           ) : error ? (
-            <PageState
-              type="error"
-              title="無法取得天氣資料"
-              description={getWeatherErrorMessage(error)}
-              secondaryActionLabel="重試"
-              onSecondaryAction={() => {
-                void refetch();
-              }}
-              actionLabel="選擇地點"
-              onActionPress={() => router.push('/locations')}
-            />
+            renderStateWithRipple(
+              <PageState
+                type="error"
+                title="無法取得天氣資料"
+                description={getWeatherErrorMessage(error)}
+                secondaryActionLabel="重試"
+                onSecondaryAction={() => {
+                  void refetch();
+                }}
+                actionLabel="選擇地點"
+                onActionPress={() => router.push('/locations')}
+              />,
+            )
           ) : weatherData && weatherCardLocation ? (
             <View className="gap-7">
-              <AnimatedEntry delay={0} duration={400}>
+              <BlurFade delay={0} duration={400}>
                 <CurrentWeatherCard
                   data={weatherData.current}
                   location={weatherCardLocation}
@@ -103,15 +118,15 @@ export default function HomeScreen() {
                     />
                   }
                 />
-              </AnimatedEntry>
+              </BlurFade>
 
-              <AnimatedEntry delay={120} duration={400}>
+              <BlurFade delay={120} duration={400}>
                 <HourlyForecastList forecasts={weatherData.hourlyForecast} />
-              </AnimatedEntry>
+              </BlurFade>
 
-              <AnimatedEntry delay={200} duration={400}>
+              <BlurFade delay={200} duration={400}>
                 <DailyForecastList forecasts={weatherData.dailyForecast} />
-              </AnimatedEntry>
+              </BlurFade>
             </View>
           ) : null}
         </PageScrollView>

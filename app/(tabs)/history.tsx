@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 
-import { AnimatedEntry } from '@/components/ui/AnimatedEntry';
+import { BlurFade } from '@/components/ui/BlurFade';
 import { MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { Button } from '@/components/ui/Button';
@@ -145,8 +145,8 @@ export default function HistoryScreen() {
           }}
           refreshing={isRefetching}
         >
-          <BlurDecorative color="accent" size="xl" position="top-right" />
-          <BlurDecorative color="secondary" size="md" position="bottom-left" />
+          <BlurDecorative color="accent" size="xl" position="top-right" opacity={0.08} />
+          <BlurDecorative color="secondary" size="md" position="bottom-left" opacity={0.06} />
 
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<HistorySkeleton />} />
@@ -239,7 +239,7 @@ export default function HistoryScreen() {
               </View>
 
               {selectedDayData ? (
-                <AnimatedEntry key={selectedDate} delay={40} duration={280}>
+                <BlurFade key={selectedDate} delay={40} duration={280}>
                   <View className="gap-4 px-4">
                     <View
                       className="rounded-[26px] border border-glass-border-strong bg-md-surface px-5 py-4"
@@ -285,7 +285,7 @@ export default function HistoryScreen() {
                       />
                     </View>
                   </View>
-                </AnimatedEntry>
+                </BlurFade>
               ) : (
                 <PageState type="empty" title="無該日期的歷史資料" description="請改選其他日期。" />
               )}

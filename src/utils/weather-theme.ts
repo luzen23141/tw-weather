@@ -15,24 +15,24 @@ export function getWeatherThemeType(weatherCode: number): WeatherThemeType {
   return 'cloudy';
 }
 
-/** Light mode 漸層 */
+/** Light mode 漸層 — 深藍紫基調 */
 const LIGHT_GRADIENTS: Record<WeatherThemeType, [string, string, string]> = {
-  sunny: ['#FFF9E6', '#EEF4F8', '#E6F2FF'],
-  cloudy: ['#EEF4F8', '#E8EEF4', '#EEF4F8'],
-  rainy: ['#E8F0F8', '#DDE8F5', '#E8F0F8'],
-  snowy: ['#EEF4FB', '#E8F0F8', '#EEF4FB'],
-  stormy: ['#E4E8F0', '#D8E0EE', '#E4E8F0'],
-  foggy: ['#F0F2F4', '#E8ECEE', '#F0F2F4'],
+  sunny: ['#3A5098', '#4A60A8', '#5A70B8'],
+  cloudy: ['#2A3875', '#3A4F8A', '#4A5F9A'],
+  rainy: ['#253068', '#354580', '#455A95'],
+  snowy: ['#3A4888', '#4A5898', '#5A68A8'],
+  stormy: ['#1A2555', '#2A3568', '#3A4578'],
+  foggy: ['#354080', '#455090', '#5560A0'],
 };
 
-/** Dark mode 漸層 */
+/** Dark mode 漸層 — 深夜藍紫基調 */
 const DARK_GRADIENTS: Record<WeatherThemeType, [string, string, string]> = {
-  sunny: ['#0F1A14', '#0B1520', '#0D1A24'],
-  cloudy: ['#0B1520', '#0E1A28', '#0B1520'],
-  rainy: ['#0A1525', '#0C1A30', '#0A1525'],
-  snowy: ['#0D1626', '#0B1A2E', '#0D1626'],
-  stormy: ['#090F1C', '#0C1228', '#090F1C'],
-  foggy: ['#0E1620', '#121A22', '#0E1620'],
+  sunny: ['#0E1830', '#1A2540', '#1E2A48'],
+  cloudy: ['#0E1428', '#1A2340', '#1E2A48'],
+  rainy: ['#0A1225', '#152038', '#1A2845'],
+  snowy: ['#101830', '#1A2540', '#202D50'],
+  stormy: ['#080E20', '#101830', '#181F3A'],
+  foggy: ['#101828', '#1A2238', '#1E2A42'],
 };
 
 export function getWeatherGradient(weatherCode: number, isDark: boolean): [string, string, string] {

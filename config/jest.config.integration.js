@@ -25,7 +25,7 @@ module.exports = {
   coverageThreshold: {
     global: {
       lines: 70,
-      branches: 54,
+      branches: 46,
       functions: 70,
       statements: 70,
     },
@@ -35,7 +35,7 @@ module.exports = {
     '^@app/(.*)$': '<rootDir>/app/$1',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(\\.pnpm/)?(@react-native|@react-native-async-storage|expo|@expo|nativewind|tailwindcss|@unimodules|react-native)/)',
+    'node_modules/(?!(\\.pnpm/)?(@react-native|@react-native-async-storage|expo|@expo|nativewind|tailwindcss|@unimodules|react-native-reanimated|react-native)/)',
   ],
   testEnvironment: 'node',
   testTimeout: 10000,

@@ -372,8 +372,8 @@ export default function SettingsScreen() {
 
   return (
     <GlassBackground>
-      <BlurDecorative color="secondary" size="lg" position="bottom-right" opacity={0.1} />
-      <BlurDecorative color="accent" size="lg" position="top-left" opacity={0.05} />
+      <BlurDecorative color="secondary" size="lg" position="bottom-right" opacity={0.06} />
+      <BlurDecorative color="accent" size="lg" position="top-left" opacity={0.04} />
 
       <PageScrollView
         contentContainerStyle={{

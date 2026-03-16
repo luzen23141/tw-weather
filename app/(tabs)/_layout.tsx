@@ -45,9 +45,7 @@ export default function TabsLayout() {
           backgroundColor: colors.glassHeader,
           borderBottomColor: colors.glassBorder,
           borderBottomWidth: 1,
-          ...(Platform.OS === 'web'
-            ? ({ boxShadow: '0 1px 10px rgba(0,0,0,0.05)' } as object)
-            : {}),
+          ...(Platform.OS === 'web' ? ({ boxShadow: '0 1px 10px rgba(0,0,0,0.2)' } as object) : {}),
         },
         headerShadowVisible: false,
         headerTintColor: colors.onSurface,

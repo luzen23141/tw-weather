@@ -138,8 +138,8 @@ export default function LocationsScreen() {
 
   return (
     <GlassBackground className="pt-2">
-      <BlurDecorative color="accent" size="lg" position="top-right" />
-      <BlurDecorative color="tertiary" size="sm" position="bottom-left" />
+      <BlurDecorative color="accent" size="lg" position="top-right" opacity={0.08} />
+      <BlurDecorative color="tertiary" size="sm" position="bottom-left" opacity={0.06} />
 
       <FlatList
         data={isSearching ? searchResults : savedLocations}

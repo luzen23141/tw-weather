@@ -1,5 +1,6 @@
 import { View, ViewProps } from 'react-native';
 
+import { BorderBeam } from '@/components/ui/BorderBeam';
 import { getGlassStyle } from '@/components/ui/glass';
 
 export type CardVariant = 'elevated' | 'filled' | 'outlined';
@@ -8,12 +9,15 @@ export interface CardProps extends ViewProps {
   variant?: CardVariant;
   className?: string;
   isInteractive?: boolean;
+  /** 是否顯示邊框光束效果 */
+  showBeam?: boolean;
 }
 
 export function Card({
   children,
   variant = 'filled',
   isInteractive = false,
+  showBeam = false,
   className = '',
   style,
   ...props
@@ -45,6 +49,7 @@ export function Card({
       {...props}
     >
       {children}
+      {showBeam ? <BorderBeam colorFrom="#ffaa40" colorTo="#9c40ff" size={80} /> : null}
     </View>
   );
 }
