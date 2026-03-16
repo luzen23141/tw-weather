@@ -99,7 +99,7 @@ jobs:
           PHASE="http_response_headers_transform"
 
           # Check if the rule already exists
-          EXISTING=$(curl -sf \
+          EXISTING=$(curl -s \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/phases/$PHASE/entrypoint" \
             2>/dev/null || echo '{"result":null}')
@@ -117,7 +117,7 @@ jobs:
           fi
 
           echo "Creating HTTP Response Header Transform Rule..."
-          RESPONSE=$(curl -sf -X PUT \
+          RESPONSE=$(curl -s -X PUT \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
             "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/phases/$PHASE/entrypoint" \
@@ -152,7 +152,7 @@ jobs:
 
   verify-custom-domain:
     name: Verify Custom Domain
-    needs: [purge-cdn, ensure-cache-headers]
+    needs: [purge-cdn]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
