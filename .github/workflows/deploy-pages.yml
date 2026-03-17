@@ -48,10 +48,16 @@ jobs:
             echo "::warning::CLOUDFLARE_ZONE_ID secret not set, skipping purge"
             exit 0
           fi
-          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
+          RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
             -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}'
+            --data '{"purge_everything":true}')
+          echo "$RESPONSE"
+          if ! echo "$RESPONSE" | grep -q '"success":true'; then
+            echo "::error::Cache purge failed — check CF_API_TOKEN has Zone:Cache Purge permission"
+            exit 1
+          fi
+          echo "✅ Cloudflare cache purged successfully"
 
   verify-custom-domain:
     name: Verify Custom Domain
