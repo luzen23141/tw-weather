@@ -41,7 +41,6 @@ const RippleCircle = memo(
 
     return (
       <Animated.View
-        pointerEvents="none"
         style={[
           styles.circle,
           {
@@ -49,6 +48,7 @@ const RippleCircle = memo(
             height: size,
             borderRadius: size / 2,
             backgroundColor: color,
+            pointerEvents: 'none',
           },
           animatedStyle,
         ]}
@@ -83,7 +83,7 @@ const RippleComponent = ({
   );
 
   return (
-    <View pointerEvents="none" {...(className ? { className } : {})} style={styles.wrapper}>
+    <View {...(className ? { className } : {})} style={[styles.wrapper, { pointerEvents: 'none' }]}>
       {phases.map((phase) => (
         <RippleCircle key={phase} phase={phase} progress={progress} size={size} color={color} />
       ))}

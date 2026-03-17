@@ -160,7 +160,11 @@ const Particles = memo<ParticlesProps>(
     );
 
     return (
-      <View pointerEvents="none" testID="particles" className={className} style={styles.container}>
+      <View
+        testID="particles"
+        className={className}
+        style={[styles.container, { pointerEvents: 'none' }]}
+      >
         {particles.map((data) => (
           <ParticleDot key={data.id} data={data} size={size} color={color} opacity={opacity} />
         ))}

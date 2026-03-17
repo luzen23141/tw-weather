@@ -129,8 +129,8 @@ function NativeGradientText({
             backgroundColor: primaryColor,
           },
           overlayStyle,
+          { pointerEvents: 'none' },
         ]}
-        pointerEvents="none"
       />
       <Text className={className ?? ''} style={[{ color: primaryColor }, style]} {...props}>
         {children}

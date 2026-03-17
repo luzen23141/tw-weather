@@ -213,8 +213,8 @@ function NativeBorderBeam({
         bottom: -borderWidth,
         overflow: 'hidden',
         borderRadius: 24,
+        pointerEvents: 'none',
       }}
-      pointerEvents="none"
       onLayout={onLayout}
     >
       <Animated.View style={beamStyle} />

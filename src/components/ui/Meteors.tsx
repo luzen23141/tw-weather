@@ -90,8 +90,8 @@ const Meteor = memo(function Meteor({ data, angle }: { data: MeteorData; angle: 
           height: 20,
         },
         animStyle,
+        { pointerEvents: 'none' },
       ]}
-      pointerEvents="none"
     >
       <LinearGradient
         colors={['rgba(255,255,255,0.8)', 'rgba(255,255,255,0)']}
@@ -134,7 +134,7 @@ export const Meteors = memo(function Meteors({
   );
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
       {meteors.map((m) => (
         <Meteor key={m.id} data={m} angle={angle} />
       ))}

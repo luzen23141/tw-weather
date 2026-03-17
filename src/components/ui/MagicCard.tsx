@@ -108,24 +108,24 @@ export function MagicCard({
     >
       {Platform.OS === 'web' ? (
         <AnimatedView
-          pointerEvents="none"
           style={[
             {
               position: 'absolute',
               inset: 0,
               borderRadius: 24,
+              pointerEvents: 'none',
             },
             webOverlayStyle,
           ]}
         />
       ) : (
         <AnimatedView
-          pointerEvents="none"
           style={[
             {
               position: 'absolute',
               inset: 0,
               borderRadius: 24,
+              pointerEvents: 'none',
               backgroundColor: gradientColor,
             },
             nativeOverlayStyle,

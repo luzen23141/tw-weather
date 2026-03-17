@@ -115,8 +115,8 @@ function NativeShinyText({
             bottom: 0,
           },
           animStyle,
+          { pointerEvents: 'none' },
         ]}
-        pointerEvents="none"
       />
     </View>
   );

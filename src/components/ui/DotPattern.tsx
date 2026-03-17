@@ -40,12 +40,12 @@ const DotPatternComponent = ({
   if (isWeb) {
     return (
       <View
-        pointerEvents="none"
         {...(className ? { className } : {})}
         style={[
           {
             position: 'absolute',
             inset: 0,
+            pointerEvents: 'none',
           },
           style,
         ]}
@@ -71,12 +71,12 @@ const DotPatternComponent = ({
 
   return (
     <View
-      pointerEvents="none"
       {...(className ? { className } : {})}
       style={[
         {
           position: 'absolute',
           inset: 0,
+          pointerEvents: 'none',
         },
         style,
       ]}

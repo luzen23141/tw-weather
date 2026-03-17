@@ -192,7 +192,7 @@ const NativeShimmerButton = forwardRef<View, ShimmerButtonProps>(function Native
       }}
       {...props}
     >
-      <Animated.View style={borderStyle} pointerEvents="none" />
+      <Animated.View style={[borderStyle, { pointerEvents: 'none' }]} />
       <View
         style={{
           paddingHorizontal: 24,
