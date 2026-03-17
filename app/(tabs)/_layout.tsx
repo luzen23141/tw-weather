@@ -12,16 +12,17 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.onSurfaceVariant,
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
         sceneStyle: Platform.OS === 'web' ? { flex: 1, minHeight: 0 } : undefined,
         tabBarStyle: {
           backgroundColor: colors.glassTab,
-          borderTopColor: colors.glassBorder,
+          borderTopColor: 'rgba(255, 255, 255, 0.15)',
           borderTopWidth: 1,
           height: 62,
           paddingBottom: 8,
           paddingTop: 4,
           position: Platform.OS === 'web' ? 'relative' : 'absolute',
+          ...getGlassStyle(20),
           ...(Platform.OS === 'web'
             ? {
                 alignSelf: 'center',
@@ -31,8 +32,7 @@ export default function TabsLayout() {
                 width: '100%',
                 borderRadius: 28,
                 borderWidth: 1,
-                borderColor: colors.glassBorder,
-                ...getGlassStyle(24),
+                borderColor: 'rgba(255, 255, 255, 0.18)',
               }
             : {}),
         },
@@ -43,9 +43,9 @@ export default function TabsLayout() {
         headerShown: true,
         headerStyle: {
           backgroundColor: colors.glassHeader,
-          borderBottomColor: colors.glassBorder,
+          borderBottomColor: 'rgba(255, 255, 255, 0.1)',
           borderBottomWidth: 1,
-          ...(Platform.OS === 'web' ? ({ boxShadow: '0 1px 10px rgba(0,0,0,0.2)' } as object) : {}),
+          ...getGlassStyle(16),
         },
         headerShadowVisible: false,
         headerTintColor: colors.onSurface,

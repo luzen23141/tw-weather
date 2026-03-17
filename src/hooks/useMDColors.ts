@@ -64,8 +64,8 @@ export const LIGHT: MDColors = {
   glassBorderStrong: 'rgba(255, 255, 255, 0.40)',
   glassCard: 'rgba(255, 255, 255, 0.16)',
   glassElevated: 'rgba(255, 255, 255, 0.22)',
-  glassTab: 'rgba(30, 50, 100, 0.82)',
-  glassHeader: 'rgba(30, 50, 100, 0.78)',
+  glassTab: 'rgba(30, 50, 110, 0.55)',
+  glassHeader: 'rgba(35, 52, 100, 0.45)',
 };
 
 export const DARK: MDColors = {

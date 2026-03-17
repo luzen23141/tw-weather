@@ -69,6 +69,10 @@
     animation: shimmer 1.6s ease-in-out infinite;
   }
 
+  html {
+    background: #1e2d5a;
+  }
+
   body {
     background: linear-gradient(
       160deg,
