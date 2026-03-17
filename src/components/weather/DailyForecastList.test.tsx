@@ -89,7 +89,7 @@ describe('DailyForecastList', () => {
       <DailyForecastList forecasts={mockDailyForecasts} />,
     );
 
-    expect(getByText('day:2026-03-09')).toBeTruthy();
+    expect(getByText('今天')).toBeTruthy();
     expect(getByText('day:2026-03-10')).toBeTruthy();
 
     expect(getAllByText('19°')).toHaveLength(2);
