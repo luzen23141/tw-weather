@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo } from 'react';
-import { FlatList, ListRenderItem, Text, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/icons/AppIcon';
 
@@ -11,8 +11,6 @@ import { WeatherIcon } from '../icons/WeatherIcon';
 export interface DailyForecastListProps {
   forecasts: DailyForecast[];
 }
-
-const ITEM_HEIGHT = 72;
 
 const DailyItem = React.memo(
   ({
@@ -34,43 +32,42 @@ const DailyItem = React.memo(
 
     return (
       <View
-        className={`flex-row items-center px-4 py-4 gap-3 bg-md-surface-container transition-colors hover:bg-md-surface-variant/30 ${
-          !isLast ? 'border-b border-glass-border' : ''
+        className={`flex-row items-center px-4 py-3.5 gap-3 bg-md-surface-container ${
+          !isLast ? 'border-b border-glass-border/60' : ''
         } ${isFirst ? 'rounded-t-3xl' : ''} ${isLast ? 'rounded-b-3xl' : ''}`}
       >
-        {/* 星期 */}
-        <Text className="w-8 text-sm font-semibold text-md-on-surface-variant">
-          {getDayOfWeek(item.date)}
+        <Text className="w-10 text-[13px] font-semibold text-md-on-surface-variant">
+          {isFirst ? '今天' : getDayOfWeek(item.date)}
         </Text>
 
-        {/* 天氣圖示 */}
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-md-primary/10">
-          <WeatherIcon weatherCode={item.weatherCode} size={28} />
+        <View className="h-9 w-9 items-center justify-center rounded-full bg-md-primary/8">
+          <WeatherIcon weatherCode={item.weatherCode} size={26} />
         </View>
 
-        {/* 溫度範圍 bar */}
-        <View className="flex-1 gap-1">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-xs text-md-primary font-semibold">
-              {Math.round(item.temperatureMin)}°
-            </Text>
-            <Text className="text-xs font-bold text-md-on-surface">
-              {Math.round(item.temperatureMax)}°
-            </Text>
-          </View>
-          {/* 溫度 Bar */}
-          <View className="h-2 rounded-full bg-md-surface-variant/30 overflow-hidden">
-            <View
-              className="h-full bg-md-primary rounded-full absolute"
-              style={{ left: `${barStart * 100}%`, width: `${barWidth * 100}%` }}
-            />
-          </View>
+        <Text className="w-9 text-right text-[13px] text-md-on-surface-variant font-medium">
+          {Math.round(item.temperatureMin)}°
+        </Text>
+
+        {/* Temperature range bar */}
+        <View className="flex-1 h-[6px] rounded-full bg-md-surface-variant/40 overflow-hidden">
+          <View
+            className="h-full rounded-full bg-md-primary"
+            style={{
+              position: 'absolute',
+              left: `${barStart * 100}%`,
+              width: `${Math.max(barWidth * 100, 8)}%`,
+              opacity: 0.7 + barWidth * 0.3,
+            }}
+          />
         </View>
 
-        {/* 降雨機率 */}
-        <View className="flex-row items-center gap-1 w-12 justify-end">
-          <AppIcon name="water" size={10} color="var(--color-md-primary)" />
-          <Text className="text-xs text-md-primary font-semibold">
+        <Text className="w-9 text-[13px] font-bold text-md-on-surface">
+          {Math.round(item.temperatureMax)}°
+        </Text>
+
+        <View className="flex-row items-center gap-0.5 w-11 justify-end">
+          <AppIcon name="water" size={9} color="var(--color-md-primary)" />
+          <Text className="text-[10px] text-md-primary font-semibold">
             {item.precipitationProbability}%
           </Text>
         </View>
@@ -91,30 +88,6 @@ export const DailyForecastList = React.memo(function DailyForecastList({
       globalMax: Math.max(...maxs),
     };
   }, [forecasts]);
-
-  const renderItem: ListRenderItem<DailyForecast> = useCallback(
-    ({ item, index }) => (
-      <DailyItem
-        item={item}
-        isFirst={index === 0}
-        isLast={index === (forecasts.length ?? 1) - 1}
-        globalMin={globalMin}
-        globalMax={globalMax}
-      />
-    ),
-    [forecasts.length, globalMin, globalMax],
-  );
-
-  const keyExtractor = useCallback((item: DailyForecast) => item.date, []);
-
-  const getItemLayout = useCallback(
-    (_: ArrayLike<DailyForecast> | null | undefined, index: number) => ({
-      length: ITEM_HEIGHT,
-      offset: ITEM_HEIGHT * index,
-      index,
-    }),
-    [],
-  );
 
   if (!forecasts || forecasts.length === 0) {
     return (
@@ -141,17 +114,16 @@ export const DailyForecastList = React.memo(function DailyForecastList({
         className="mx-4 overflow-hidden rounded-3xl border border-glass-border-strong shadow-glass"
         style={getGlassStyle(20)}
       >
-        <FlatList
-          data={forecasts}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          getItemLayout={getItemLayout}
-          scrollEnabled={false}
-          removeClippedSubviews
-          maxToRenderPerBatch={7}
-          windowSize={3}
-          initialNumToRender={7}
-        />
+        {forecasts.map((item, index) => (
+          <DailyItem
+            key={item.date}
+            item={item}
+            isFirst={index === 0}
+            isLast={index === forecasts.length - 1}
+            globalMin={globalMin}
+            globalMax={globalMax}
+          />
+        ))}
       </View>
     </View>
   );

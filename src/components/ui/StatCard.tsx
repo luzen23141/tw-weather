@@ -20,19 +20,23 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <View
-      style={[{ width: '48.5%' }, getGlassStyle(16)]}
-      className="rounded-[26px] border border-glass-border-strong bg-md-surface px-4 py-4 gap-3"
+      style={[{ flexBasis: '47%', flexGrow: 1 }, getGlassStyle(16)]}
+      className="rounded-[22px] border border-glass-border bg-md-surface/80 px-4 py-3.5 gap-2.5"
     >
-      <View className="flex-row items-center gap-2">
+      <View className="flex-row items-center gap-2.5">
         <View
-          className="h-8 w-8 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: `${iconColor}1A` }}
+          className="h-7 w-7 items-center justify-center rounded-xl"
+          style={{ backgroundColor: `${iconColor}18` }}
         >
-          <StatIcon type={iconType} size={16} color={iconColor} />
+          <StatIcon type={iconType} size={14} color={iconColor} />
         </View>
-        <Text className="text-xs font-medium text-md-on-surface-variant">{label}</Text>
+        <Text className="text-[11px] font-semibold uppercase tracking-[0.5px] text-md-on-surface-variant">
+          {label}
+        </Text>
       </View>
-      <Text className={`text-xl font-bold text-md-on-surface ${valueClassName}`.trim()}>
+      <Text
+        className={`text-lg font-bold tracking-tight text-md-on-surface ${valueClassName}`.trim()}
+      >
         {value}
       </Text>
     </View>

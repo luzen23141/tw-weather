@@ -112,7 +112,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
         </View>
 
         {/* 統計 Bento Grid - 2x2 */}
-        <View className="flex-row flex-wrap gap-3">
+        <View className="flex-row flex-wrap gap-2.5">
           <StatCard
             iconType="thermometer"
             label="體感溫度"
