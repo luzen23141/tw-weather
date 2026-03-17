@@ -27,7 +27,7 @@ export function PageScrollView({
   const colors = useMDColors();
 
   const baseContentStyle: ViewStyle = {
-    paddingTop: topPadding,
+    paddingTop: insets.top + topPadding,
     paddingBottom: insets.bottom + bottomOffset,
     ...(Platform.OS === 'web'
       ? {

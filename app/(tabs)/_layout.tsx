@@ -2,56 +2,44 @@ import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 
 import { AppIcon } from '@/components/icons/AppIcon';
-import { useMDColors } from '@/hooks/useMDColors';
 import { getGlassStyle } from '@/components/ui/glass';
 
 export default function TabsLayout() {
-  const colors = useMDColors();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
-        sceneStyle: Platform.OS === 'web' ? { flex: 1, minHeight: 0 } : undefined,
+        tabBarActiveTintColor: '#93b4ff',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
+        sceneStyle: { flex: 1, minHeight: 0 },
+        headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.glassTab,
-          borderTopColor: 'rgba(255, 255, 255, 0.15)',
-          borderTopWidth: 1,
-          height: 62,
+          backgroundColor: 'rgba(20, 32, 65, 0.65)',
+          borderTopWidth: 0,
+          height: 60,
           paddingBottom: 8,
-          paddingTop: 4,
-          position: Platform.OS === 'web' ? 'relative' : 'absolute',
-          ...getGlassStyle(20),
+          paddingTop: 6,
+          position: 'absolute',
+          bottom: Platform.OS === 'web' ? 12 : 0,
+          left: Platform.OS === 'web' ? '50%' : 0,
+          right: Platform.OS === 'web' ? 'auto' : 0,
           ...(Platform.OS === 'web'
             ? {
-                alignSelf: 'center',
-                marginTop: 'auto',
-                marginBottom: 10,
-                maxWidth: 560,
-                width: '100%',
-                borderRadius: 28,
+                transform: [{ translateX: '-50%' }] as unknown as string,
+                maxWidth: 420,
+                width: '92%',
+                borderRadius: 24,
                 borderWidth: 1,
-                borderColor: 'rgba(255, 255, 255, 0.18)',
+                borderColor: 'rgba(255, 255, 255, 0.12)',
               }
-            : {}),
+            : {
+                borderTopColor: 'rgba(255, 255, 255, 0.08)',
+                borderTopWidth: 1,
+              }),
+          ...getGlassStyle(24),
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',
-        },
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: colors.glassHeader,
-          borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-          borderBottomWidth: 1,
-          ...getGlassStyle(16),
-        },
-        headerShadowVisible: false,
-        headerTintColor: colors.onSurface,
-        headerTitleStyle: {
-          fontWeight: '700',
-          fontSize: 19,
           letterSpacing: 0.2,
         },
       }}
@@ -63,7 +51,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <AppIcon name="partly-sunny-outline" size={size} color={color} />
           ),
-          headerTitle: '台灣天氣',
         }}
       />
 
@@ -74,7 +61,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <AppIcon name="calendar-outline" size={size} color={color} />
           ),
-          headerTitle: '天氣預報',
         }}
       />
 
@@ -85,7 +71,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <AppIcon name="time-outline" size={size} color={color} />
           ),
-          headerTitle: '歷史天氣',
         }}
       />
 
@@ -96,7 +81,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <AppIcon name="location-outline" size={size} color={color} />
           ),
-          headerTitle: '地點管理',
         }}
       />
 
@@ -107,7 +91,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <AppIcon name="settings-outline" size={size} color={color} />
           ),
-          headerTitle: '設定',
         }}
       />
     </Tabs>
