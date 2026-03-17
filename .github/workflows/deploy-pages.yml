@@ -39,116 +39,19 @@ jobs:
     needs: [build-and-deploy]
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve Zone ID
-        id: zone
+      - name: Purge Cache
         env:
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          python - <<'PY'
-          import json
-          import os
-          import urllib.request
-
-          token = os.environ['CF_API_TOKEN']
-          headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-          zone_id = None
-
-          for zone_name in ('weather.agubear.black', 'agubear.black'):
-              req = urllib.request.Request(
-                  f'https://api.cloudflare.com/client/v4/zones?name={zone_name}',
-                  headers=headers,
-              )
-
-              with urllib.request.urlopen(req) as response:
-                  payload = json.load(response)
-
-              if payload.get('success') and payload.get('result'):
-                  zone_id = payload['result'][0]['id']
-                  break
-
-          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
-              fh.write(f'zone_id={zone_id or ""}\n')
-
-          if zone_id:
-              print(f'Resolved Cloudflare zone: {zone_id}')
-          else:
-              print('Unable to resolve Cloudflare zone; skipping cache purge')
-          PY
-
-      - name: Purge Custom Domain Cache
-        if: steps.zone.outputs.zone_id != ''
-        env:
-          CF_ZONE_ID: ${{ steps.zone.outputs.zone_id }}
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
-          -H "Authorization: Bearer $CF_API_TOKEN" \
-          -H "Content-Type: application/json" \
-          --data '{"purge_everything":true}'
-
-  ensure-cache-headers:
-    name: Ensure Cache-Control Transform Rule
-    needs: [build-and-deploy]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create or verify HTTP Response Header Transform Rule
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          ZONE_ID="e6ea90133cb6cbc3c2d904dfc941ad88"
-          PHASE="http_response_headers_transform"
-
-          # Check if the rule already exists
-          EXISTING=$(curl -s \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/phases/$PHASE/entrypoint" \
-            2>/dev/null || echo '{"result":null}')
-
-          HAS_RULE=$(echo "$EXISTING" | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          rules = data.get('result', {}).get('rules', []) if data.get('result') else []
-          print('true' if any('weather SPA' in r.get('description', '') for r in rules) else 'false')
-          ")
-
-          if [ "$HAS_RULE" = "true" ]; then
-            echo "Transform rule already exists, skipping"
+          if [ -z "$CF_ZONE_ID" ]; then
+            echo "::warning::CLOUDFLARE_ZONE_ID secret not set, skipping purge"
             exit 0
           fi
-
-          echo "Creating HTTP Response Header Transform Rule..."
-          RESPONSE=$(curl -s -X PUT \
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
-            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/phases/$PHASE/entrypoint" \
-            -d '{
-              "name": "Weather App Cache Headers",
-              "description": "Fix SPA cache-control for weather.agubear.black",
-              "rules": [
-                {
-                  "action": "rewrite",
-                  "action_parameters": {
-                    "headers": {
-                      "cache-control": {
-                        "operation": "set",
-                        "value": "no-cache, no-store, must-revalidate"
-                      }
-                    }
-                  },
-                  "expression": "(http.host eq \"weather.agubear.black\" and not starts_with(http.request.uri.path, \"/_expo/static/\") and not starts_with(http.request.uri.path, \"/assets/\"))",
-                  "description": "weather SPA cache-control fix",
-                  "enabled": true
-                }
-              ]
-            }' 2>&1)
-
-          SUCCESS=$(echo "$RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin).get('success', False))" 2>/dev/null || echo "false")
-
-          if [ "$SUCCESS" = "True" ]; then
-            echo "Transform rule created successfully"
-          else
-            echo "::warning::Failed to create transform rule (may lack permissions): $RESPONSE"
-          fi
+            --data '{"purge_everything":true}'
 
   verify-custom-domain:
     name: Verify Custom Domain
