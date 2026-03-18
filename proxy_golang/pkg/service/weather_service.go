@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -89,11 +91,7 @@ func (s *weatherServiceImpl) fetchWeather(ctx context.Context, query *model.Weat
 		}
 	}
 
-	cacheKey := fmt.Sprintf("%s:%s:%.4f:%.4f:%s:%d",
-		query.Provider, string(weatherType),
-		query.Lat, query.Lon,
-		query.Date, query.Days,
-	)
+	cacheKey := buildCacheKey(query, weatherType)
 
 	if entry, ok := s.cache.Get(cacheKey); ok && entry != nil && entry.Response != nil {
 		log.Debug().Str("cacheKey", cacheKey).Msg("cache hit")
@@ -122,6 +120,10 @@ func (s *weatherServiceImpl) fetchWeather(ctx context.Context, query *model.Weat
 		if timeoutCtx.Err() == context.DeadlineExceeded {
 			return nil, &ProxyError{Code: http.StatusGatewayTimeout, Err: fmt.Errorf("upstream timeout: %w", err)}
 		}
+		var upstreamStatusErr *UpstreamStatusError
+		if errors.As(err, &upstreamStatusErr) {
+			return nil, &ProxyError{Code: http.StatusBadGateway, Err: err}
+		}
 		return nil, &ProxyError{Code: http.StatusBadGateway, Err: fmt.Errorf("adapter fetch failed: %w", err)}
 	}
 
@@ -135,4 +137,18 @@ func (s *weatherServiceImpl) fetchWeather(ctx context.Context, query *model.Weat
 		Msg("upstream fetch complete")
 
 	return resp, nil
+}
+
+func buildCacheKey(query *model.WeatherQuery, weatherType model.WeatherType) string {
+	parts := []string{query.Provider, string(weatherType)}
+	if query.LocationID != "" {
+		parts = append(parts, "locationId="+query.LocationID)
+	} else {
+		parts = append(parts,
+			fmt.Sprintf("lat=%.4f", query.Lat),
+			fmt.Sprintf("lon=%.4f", query.Lon),
+		)
+	}
+	parts = append(parts, fmt.Sprintf("date=%s", query.Date), fmt.Sprintf("days=%d", query.Days))
+	return strings.Join(parts, ":")
 }

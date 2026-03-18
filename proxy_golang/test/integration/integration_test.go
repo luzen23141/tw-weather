@@ -19,6 +19,7 @@ import (
 	"proxy_golang/pkg/config"
 	"proxy_golang/pkg/controller"
 	"proxy_golang/pkg/model"
+	"proxy_golang/pkg/repository"
 	"proxy_golang/pkg/router"
 	"proxy_golang/pkg/service"
 )
@@ -84,7 +85,7 @@ func setupServer(t *testing.T, opts serverOptions) *httptest.Server {
 	)
 
 	// Service 層
-	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient)
+	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient, repository.NewCacheRepository())
 
 	// Controller 層
 	debugCtrl := controller.NewDebugController()
@@ -198,7 +199,7 @@ func setupMockServer(t *testing.T) *httptest.Server {
 		adapter.OpenWeatherMap{},
 	)
 
-	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient)
+	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient, repository.NewCacheRepository())
 
 	debugCtrl := controller.NewDebugController()
 	weatherCtrl := controller.NewWeatherController(weatherSvc)
@@ -225,7 +226,7 @@ func TestMock_CWA_Current(t *testing.T) {
 	srv := setupMockServer(t)
 	defer srv.Close()
 
-	resp := mockGet(t, srv.URL+"/api/weather/current?provider=cwa&lat=25.03&lon=121.56")
+	resp := mockGet(t, srv.URL+"/api/weather/current?provider=cwa&locationId=466920")
 	defer resp.Body.Close()
 
 	assert.Equal(t, 200, resp.StatusCode)
@@ -406,7 +407,7 @@ func TestMock_ResponseBody_CWA_Current(t *testing.T) {
 	srv := setupMockServer(t)
 	defer srv.Close()
 
-	resp := mockGet(t, srv.URL+"/api/weather/current?provider=cwa&lat=25.03&lon=121.56")
+	resp := mockGet(t, srv.URL+"/api/weather/current?provider=cwa&locationId=466920")
 	defer resp.Body.Close()
 
 	var result model.WeatherResponse

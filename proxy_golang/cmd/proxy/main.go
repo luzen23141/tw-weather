@@ -7,9 +7,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func main() {
-	a := app.New()
-	if err := a.Run(); err != nil {
+var (
+	newApp   = app.New
+	logFatal = func(err error) {
 		log.Fatal().Err(err).Msg("failed to start server")
+	}
+)
+
+func main() {
+	a := newApp()
+	if err := a.Run(); err != nil {
+		logFatal(err)
 	}
 }

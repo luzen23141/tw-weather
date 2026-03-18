@@ -21,6 +21,14 @@ func TestCWA_ProviderID(t *testing.T) {
 	assert.Equal(t, "cwa", CWA{}.ProviderID())
 }
 
+func TestCWA_Metadata(t *testing.T) {
+	a := CWA{}
+	assert.NotEmpty(t, a.Name())
+	assert.NotEmpty(t, a.Description())
+	assert.Equal(t, "CWA_API_KEY", a.APIKeyEnvVar())
+	assert.True(t, a.RequiresKey())
+}
+
 // --- Current ---
 
 func TestCWA_FetchCurrent_RealFixture(t *testing.T) {
@@ -193,6 +201,7 @@ func TestCWA_FetchHourly_EmptyLocations(t *testing.T) {
 func TestCWA_FetchDaily_RealFixture(t *testing.T) {
 	client := fixtureClient("cwa_daily.json")
 	q := *cwaQuery
+	q.LocationID = "大安區"
 
 	resp, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "test-key", client)
 
@@ -213,6 +222,21 @@ func TestCWA_FetchDaily_RealFixture(t *testing.T) {
 	// "晴" → WMO 0（晴天）
 	assert.Equal(t, 0, first.WeatherCode)
 	assert.Equal(t, "晴", first.Description)
+}
+
+func TestExtractCWATimeSlots_Sorted(t *testing.T) {
+	elemMap := map[string]map[string]string{
+		"溫度": {
+			"2024-01-02T06:00:00+08:00": "20",
+			"2024-01-01T06:00:00+08:00": "18",
+		},
+	}
+
+	slots := extractCWATimeSlots(elemMap)
+
+	require.Len(t, slots, 2)
+	assert.Equal(t, "2024-01-01T06:00:00+08:00", slots[0])
+	assert.Equal(t, "2024-01-02T06:00:00+08:00", slots[1])
 }
 
 func TestCWA_FetchDaily_NetworkError(t *testing.T) {

@@ -20,6 +20,14 @@ func TestOpenMeteo_ProviderID(t *testing.T) {
 	assert.Equal(t, "openmeteo", OpenMeteo{}.ProviderID())
 }
 
+func TestOpenMeteo_Metadata(t *testing.T) {
+	a := OpenMeteo{}
+	assert.NotEmpty(t, a.Name())
+	assert.NotEmpty(t, a.Description())
+	assert.Equal(t, "", a.APIKeyEnvVar())
+	assert.False(t, a.RequiresKey())
+}
+
 // --- Current ---
 
 func TestOpenMeteo_FetchCurrent_RealFixture(t *testing.T) {

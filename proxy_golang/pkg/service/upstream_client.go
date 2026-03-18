@@ -13,6 +13,8 @@ import (
 	"proxy_golang/pkg/model"
 )
 
+const maxUpstreamErrorBody = 256
+
 // httpUpstreamClient HTTP 實作
 type httpUpstreamClient struct {
 	client *http.Client
@@ -59,6 +61,17 @@ func (c *httpUpstreamClient) Do(ctx context.Context, req *model.UpstreamRequest)
 	}
 
 	log.Debug().Int("status", resp.StatusCode).Int("bodySize", len(body)).Msg("upstream response received")
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		bodyPreview := string(body)
+		if len(bodyPreview) > maxUpstreamErrorBody {
+			bodyPreview = bodyPreview[:maxUpstreamErrorBody]
+		}
+		return nil, &UpstreamStatusError{
+			StatusCode: resp.StatusCode,
+			Body:       bodyPreview,
+		}
+	}
 
 	return &model.UpstreamResponse{
 		StatusCode: resp.StatusCode,

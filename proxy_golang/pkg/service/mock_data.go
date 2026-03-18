@@ -13,7 +13,7 @@ const mockCWACurrent = `{
         "StationName": "臺北",
         "GeoInfo": {
           "Coordinates": [
-            {"StationLatitude": 25.0375, "StationLongitude": 121.5144}
+            {"StationLatitude": "25.0375", "StationLongitude": "121.5144"}
           ]
         },
         "ObsTime": {

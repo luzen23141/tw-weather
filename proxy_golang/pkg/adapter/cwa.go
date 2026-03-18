@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -241,7 +242,7 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 		return nil, fmt.Errorf("CWA hourly parse failed: %w", err)
 	}
 
-	loc, elements := extractCWALocation(raw)
+	loc, elements := extractCWALocation(raw, query.LocationID)
 	if loc == nil {
 		return nil, fmt.Errorf("CWA: no location data")
 	}
@@ -310,7 +311,7 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 		return nil, fmt.Errorf("CWA daily parse failed: %w", err)
 	}
 
-	loc, elements := extractCWALocation(raw)
+	loc, elements := extractCWALocation(raw, query.LocationID)
 	if loc == nil {
 		return nil, fmt.Errorf("CWA: no location data")
 	}
@@ -362,7 +363,7 @@ type cwaLocation struct {
 	Lon          string
 }
 
-func extractCWALocation(raw cwaForecastResponse) (*cwaLocation, []cwaForecastElement) {
+func extractCWALocation(raw cwaForecastResponse, locationID string) (*cwaLocation, []cwaForecastElement) {
 	if len(raw.Records.Locations) == 0 {
 		return nil, nil
 	}
@@ -371,6 +372,14 @@ func extractCWALocation(raw cwaForecastResponse) (*cwaLocation, []cwaForecastEle
 		return nil, nil
 	}
 	l := locations[0]
+	if locationID != "" {
+		for _, candidate := range locations {
+			if candidate.LocationName == locationID {
+				l = candidate
+				break
+			}
+		}
+	}
 	return &cwaLocation{
 		LocationName: l.LocationName,
 		Lat:          l.Lat,
@@ -404,6 +413,7 @@ func extractCWATimeSlots(elemMap map[string]map[string]string) []string {
 		}
 		break // 只需第一個 element 的時間軸
 	}
+	sort.Strings(slots)
 	return slots
 }
 

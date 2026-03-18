@@ -78,6 +78,23 @@ func bindWeatherQuery(c *gin.Context) (*model.WeatherQuery, bool) {
 		return nil, false
 	}
 
+	hasLat := query.Lat != 0
+	hasLon := query.Lon != 0
+	if hasLat != hasLon {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "lat and lon must be provided together"})
+		return nil, false
+	}
+
+	if query.LocationID != "" && query.Provider != "cwa" {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "locationId is only supported for provider=cwa"})
+		return nil, false
+	}
+
+	if query.Provider == "cwa" && query.LocationID == "" && (c.FullPath() == "/api/weather/hourly" || c.FullPath() == "/api/weather/daily") {
+		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "locationId is required for CWA hourly/daily requests"})
+		return nil, false
+	}
+
 	// 驗證 lat/lon 範圍（若有提供座標）
 	if query.LocationID == "" {
 		if query.Lat < model.MinLat || query.Lat > model.MaxLat {

@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "createdAt": "2026-03-18T05:35:12.313203Z",
+  "scenarios": [
+    {
+      "id": "cwa_current_station_C0TB40",
+      "provider": "cwa",
+      "weatherType": "current",
+      "description": "CWA current by station id",
+      "query": {
+        "Provider": "cwa",
+        "Lat": 0,
+        "Lon": 0,
+        "LocationID": "C0TB40",
+        "Date": "",
+        "Days": 0
+      },
+      "success": true,
+      "rawUrl": "https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=REDACTED\u0026StationId=C0TB40\u0026format=JSON",
+      "statusCode": 200,
+      "bodyFile": "cwa_current_station_C0TB40.json",
+      "fetchedAt": "2026-03-18T05:35:12.395293Z"
+    },
+    {
+      "id": "cwa_daily_location_F-D0047-061",
+      "provider": "cwa",
+      "weatherType": "daily",
+      "description": "CWA daily by location id",
+      "query": {
+        "Provider": "cwa",
+        "Lat": 0,
+        "Lon": 0,
+        "LocationID": "F-D0047-061",
+        "Date": "",
+        "Days": 0
+      },
+      "success": true,
+      "rawUrl": "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization=REDACTED\u0026format=JSON\u0026locationId=F-D0047-061",
+      "statusCode": 200,
+      "bodyFile": "cwa_daily_location_F-D0047-061.json",
+      "fetchedAt": "2026-03-18T05:35:12.692675Z"
+    },
+    {
+      "id": "cwa_hourly_location_F-D0047-061",
+      "provider": "cwa",
+      "weatherType": "hourly",
+      "description": "CWA hourly by location id",
+      "query": {
+        "Provider": "cwa",
+        "Lat": 0,
+        "Lon": 0,
+        "LocationID": "F-D0047-061",
+        "Date": "",
+        "Days": 0
+      },
+      "success": true,
+      "rawUrl": "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-089?Authorization=REDACTED\u0026format=JSON\u0026locationId=F-D0047-061",
+      "statusCode": 200,
+      "bodyFile": "cwa_hourly_location_F-D0047-061.json",
+      "fetchedAt": "2026-03-18T05:35:12.572636Z"
+    },
+    {
+      "id": "openmeteo_current_taipei",
+      "provider": "openmeteo",
+      "weatherType": "current",
+      "description": "Open-Meteo current Taipei",
+      "query": {
+        "Provider": "openmeteo",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "",
+        "Days": 0
+      },
+      "success": true,
+      "rawUrl": "https://api.open-meteo.com/v1/forecast?current=temperature_2m%2Capparent_temperature%2Crelative_humidity_2m%2Cweather_code%2Cwind_speed_10m%2Cwind_direction_10m%2Cprecipitation%2Cpressure_msl%2Cvisibility%2Cis_day\u0026latitude=25.033000\u0026longitude=121.565400\u0026timezone=Asia%2FTaipei",
+      "statusCode": 200,
+      "bodyFile": "openmeteo_current_taipei.json",
+      "fetchedAt": "2026-03-18T05:35:13.60144Z"
+    },
+    {
+      "id": "openmeteo_daily_taipei",
+      "provider": "openmeteo",
+      "weatherType": "daily",
+      "description": "Open-Meteo daily Taipei",
+      "query": {
+        "Provider": "openmeteo",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "",
+        "Days": 7
+      },
+      "success": true,
+      "rawUrl": "https://api.open-meteo.com/v1/forecast?daily=weather_code%2Ctemperature_2m_max%2Ctemperature_2m_min%2Cprecipitation_sum%2Cprecipitation_probability_max%2Cwind_speed_10m_max%2Cuv_index_max\u0026forecast_days=7\u0026latitude=25.033000\u0026longitude=121.565400\u0026timezone=Asia%2FTaipei",
+      "statusCode": 200,
+      "bodyFile": "openmeteo_daily_taipei.json",
+      "fetchedAt": "2026-03-18T05:35:14.052915Z"
+    },
+    {
+      "id": "openmeteo_history_taipei_2024-06-01",
+      "provider": "openmeteo",
+      "weatherType": "history",
+      "description": "Open-Meteo history Taipei",
+      "query": {
+        "Provider": "openmeteo",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "2024-06-01",
+        "Days": 0
+      },
+      "success": true,
+      "rawUrl": "https://archive-api.open-meteo.com/v1/archive?daily=weather_code%2Ctemperature_2m_max%2Ctemperature_2m_min%2Cprecipitation_sum%2Cwind_speed_10m_max%2Cuv_index_max\u0026end_date=2024-06-01\u0026latitude=25.033000\u0026longitude=121.565400\u0026start_date=2024-06-01\u0026timezone=Asia%2FTaipei",
+      "statusCode": 200,
+      "bodyFile": "openmeteo_history_taipei_2024-06-01.json",
+      "fetchedAt": "2026-03-18T05:35:15.054413Z"
+    },
+    {
+      "id": "openmeteo_hourly_taipei",
+      "provider": "openmeteo",
+      "weatherType": "hourly",
+      "description": "Open-Meteo hourly Taipei",
+      "query": {
+        "Provider": "openmeteo",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "",
+        "Days": 3
+      },
+      "success": true,
+      "rawUrl": "https://api.open-meteo.com/v1/forecast?forecast_days=3\u0026hourly=temperature_2m%2Capparent_temperature%2Crelative_humidity_2m%2Cweather_code%2Cprecipitation%2Cprecipitation_probability%2Cwind_speed_10m%2Cwind_direction_10m\u0026latitude=25.033000\u0026longitude=121.565400\u0026timezone=Asia%2FTaipei",
+      "statusCode": 200,
+      "bodyFile": "openmeteo_hourly_taipei.json",
+      "fetchedAt": "2026-03-18T05:35:13.828527Z"
+    },
+    {
+      "id": "openweathermap_current_taipei",
+      "provider": "openweathermap",
+      "weatherType": "current",
+      "description": "OpenWeatherMap current Taipei",
+      "query": {
+        "Provider": "openweathermap",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "",
+        "Days": 0
+      },
+      "success": true,
+      "rawUrl": "https://api.openweathermap.org/data/2.5/weather?appid=REDACTED\u0026lat=25.033000\u0026lon=121.565400\u0026units=metric",
+      "statusCode": 200,
+      "bodyFile": "openweathermap_current_taipei.json",
+      "fetchedAt": "2026-03-18T05:35:16.083033Z"
+    },
+    {
+      "id": "openweathermap_daily_taipei",
+      "provider": "openweathermap",
+      "weatherType": "daily",
+      "description": "OpenWeatherMap daily Taipei",
+      "query": {
+        "Provider": "openweathermap",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "",
+        "Days": 0
+      },
+      "success": true,
+      "rawUrl": "https://api.openweathermap.org/data/2.5/forecast?appid=REDACTED\u0026lat=25.033000\u0026lon=121.565400\u0026units=metric",
+      "statusCode": 200,
+      "bodyFile": "openweathermap_daily_taipei.json",
+      "fetchedAt": "2026-03-18T05:35:16.633803Z"
+    },
+    {
+      "id": "openweathermap_hourly_taipei",
+      "provider": "openweathermap",
+      "weatherType": "hourly",
+      "description": "OpenWeatherMap hourly Taipei",
+      "query": {
+        "Provider": "openweathermap",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "",
+        "Days": 0
+      },
+      "success": true,
+      "rawUrl": "https://api.openweathermap.org/data/2.5/forecast?appid=REDACTED\u0026lat=25.033000\u0026lon=121.565400\u0026units=metric",
+      "statusCode": 200,
+      "bodyFile": "openweathermap_hourly_taipei.json",
+      "fetchedAt": "2026-03-18T05:35:16.446792Z"
+    },
+    {
+      "id": "weatherapi_forecast_taipei",
+      "provider": "weatherapi",
+      "weatherType": "current",
+      "description": "WeatherAPI forecast payload for current/hourly/daily",
+      "query": {
+        "Provider": "weatherapi",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "",
+        "Days": 3
+      },
+      "success": true,
+      "rawUrl": "https://api.weatherapi.com/v1/forecast.json?alerts=no\u0026aqi=no\u0026days=3\u0026key=REDACTED\u0026q=25.033000%2C121.565400",
+      "statusCode": 200,
+      "bodyFile": "weatherapi_forecast_taipei.json",
+      "fetchedAt": "2026-03-18T05:35:15.305216Z"
+    },
+    {
+      "id": "weatherapi_history_taipei_2024-06-01",
+      "provider": "weatherapi",
+      "weatherType": "history",
+      "description": "WeatherAPI history Taipei",
+      "query": {
+        "Provider": "weatherapi",
+        "Lat": 25.033,
+        "Lon": 121.5654,
+        "LocationID": "",
+        "Date": "2024-06-01",
+        "Days": 1
+      },
+      "success": false,
+      "error": "fetch scenario weatherapi_history_taipei_2024-06-01: WeatherAPI fetch failed: upstream returned status 400",
+      "rawUrl": "https://api.weatherapi.com/v1/history.json?alerts=no\u0026aqi=no\u0026days=1\u0026dt=2024-06-01\u0026key=REDACTED\u0026q=25.033000%2C121.565400",
+      "statusCode": 400,
+      "bodyFile": "weatherapi_history_taipei_2024-06-01.json",
+      "fetchedAt": "2026-03-18T05:35:15.529999Z"
+    }
+  ]
+}

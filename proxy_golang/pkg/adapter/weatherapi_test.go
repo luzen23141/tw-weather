@@ -20,6 +20,14 @@ func TestWeatherAPI_ProviderID(t *testing.T) {
 	assert.Equal(t, "weatherapi", WeatherAPI{}.ProviderID())
 }
 
+func TestWeatherAPI_Metadata(t *testing.T) {
+	a := WeatherAPI{}
+	assert.NotEmpty(t, a.Name())
+	assert.NotEmpty(t, a.Description())
+	assert.Equal(t, "WEATHERAPI_KEY", a.APIKeyEnvVar())
+	assert.True(t, a.RequiresKey())
+}
+
 // --- Current ---
 
 func TestWeatherAPI_FetchCurrent_RealFixture(t *testing.T) {

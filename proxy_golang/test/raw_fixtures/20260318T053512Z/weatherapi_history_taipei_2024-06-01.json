@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": 1008,
+    "message": "API key is limited to get history data. Please check our pricing page and upgrade to higher plan."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "coord": { "lon": 121.5654, "lat": 25.033 },
+  "weather": [{ "id": 801, "main": "Clouds", "description": "few clouds", "icon": "02d" }],
+  "base": "stations",
+  "main": {
+    "temp": 26.36,
+    "feels_like": 26.36,
+    "temp_min": 25.03,
+    "temp_max": 28.94,
+    "pressure": 1013,
+    "humidity": 30,
+    "sea_level": 1013,
+    "grnd_level": 991
+  },
+  "visibility": 10000,
+  "wind": { "speed": 3.09, "deg": 340 },
+  "clouds": { "all": 20 },
+  "dt": 1773811819,
+  "sys": { "type": 2, "id": 68223, "country": "TW", "sunrise": 1773784823, "sunset": 1773828213 },
+  "timezone": 28800,
+  "id": 1675720,
+  "name": "Xianeibu",
+  "cod": 200
+}

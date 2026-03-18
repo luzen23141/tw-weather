@@ -77,6 +77,7 @@ func setupWeatherRouter(svc service.WeatherService) *gin.Engine {
 
 // 有效 query string（provider + lat/lon）
 const validQuery = "?provider=cwa&lat=25.04&lon=121.51"
+const validCWAForecastQuery = "?provider=cwa&locationId=F-D0047-061"
 
 // ─── HandleCurrentWeather ────────────────────────────────────────────────────
 
@@ -124,7 +125,7 @@ func TestHandleHourlyWeather_Success(t *testing.T) {
 	svc := &mockWeatherService{}
 	r := setupWeatherRouter(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/weather/hourly"+validQuery, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/hourly"+validCWAForecastQuery, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -138,7 +139,7 @@ func TestHandleDailyWeather_Success(t *testing.T) {
 	svc := &mockWeatherService{}
 	r := setupWeatherRouter(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/weather/daily"+validQuery, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/daily"+validCWAForecastQuery, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -235,4 +236,122 @@ func TestHandleCurrentWeather_WithLocationID_Success(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestHandleCurrentWeather_OnlyLat_Returns400(t *testing.T) {
+	svc := &mockWeatherService{}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/current?provider=openmeteo&lat=25.04", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "lat and lon must be provided together")
+}
+
+func TestHandleCurrentWeather_LocationIDForNonCWA_Returns400(t *testing.T) {
+	svc := &mockWeatherService{}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/current?provider=openmeteo&locationId=foo", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "locationId is only supported")
+}
+
+func TestHandleHourlyWeather_CWARequiresLocationID(t *testing.T) {
+	svc := &mockWeatherService{}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/hourly?provider=cwa&lat=25.04&lon=121.51", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "locationId is required for CWA hourly/daily requests")
+}
+
+func TestHandleCurrentWeather_InvalidLatRange_Returns400(t *testing.T) {
+	svc := &mockWeatherService{}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/current?provider=openmeteo&lat=100&lon=121.51", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "lat must be between")
+}
+
+func TestHandleCurrentWeather_InvalidLonRange_Returns400(t *testing.T) {
+	svc := &mockWeatherService{}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/current?provider=openmeteo&lat=25.04&lon=200", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "lon must be between")
+}
+
+func TestHandleCurrentWeather_NegativeDays_Returns400(t *testing.T) {
+	svc := &mockWeatherService{}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/current?provider=openmeteo&lat=25.04&lon=121.51&days=-1", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "days must be \\u003e= 0")
+}
+
+func TestHandleCurrentWeather_DaysExceedsMax_Clamps(t *testing.T) {
+	svc := &mockWeatherService{
+		getCurrentFn: func(_ context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
+			assert.Equal(t, model.MaxDays, query.Days)
+			return defaultWeatherResponse("openmeteo", model.WeatherTypeCurrent), nil
+		},
+	}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/current?provider=openmeteo&lat=25.04&lon=121.51&days=99", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestHandleDailyWeather_ProxyError(t *testing.T) {
+	svc := &mockWeatherService{
+		getDailyFn: func(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
+			return nil, &service.ProxyError{Code: http.StatusBadGateway, Err: errors.New("daily failed")}
+		},
+	}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/daily"+validCWAForecastQuery, nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadGateway, w.Code)
+}
+
+func TestHandleHistoryWeather_UnexpectedError(t *testing.T) {
+	svc := &mockWeatherService{
+		getHistoryFn: func(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
+			return nil, errors.New("history failed")
+		},
+	}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/history?provider=weatherapi&lat=25.04&lon=121.51&date=2024-01-15", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }

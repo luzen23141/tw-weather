@@ -1,4 +1,4 @@
-.PHONY: build run test test-unit test-integration lint fmt clean
+.PHONY: build run test test-unit test-integration test-coverage fixtures-raw fixtures-sync fixtures-refresh lint fmt clean
 
 # Build
 build:
@@ -15,11 +15,20 @@ test-unit:
 	go test ./... -v -count=1 -short
 
 test-integration:
-	go test ./... -v -count=1 -run Integration
+	go test ./test/integration -v -count=1 -tags=integration
 
 test-coverage:
 	go test ./... -coverprofile=coverage.out -covermode=atomic
 	go tool cover -html=coverage.out -o coverage.html
+
+# Fixtures
+fixtures-raw:
+	go run ./cmd/fetch_raw_fixtures
+
+fixtures-sync:
+	go run ./cmd/sync_fixtures
+
+fixtures-refresh: fixtures-raw fixtures-sync
 
 # Lint
 lint:

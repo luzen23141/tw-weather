@@ -17,10 +17,25 @@ import (
 
 // ─── mock cache repository ───────────────────────────────────────────────────
 
-type mockCacheRepository struct{}
+type mockCacheRepository struct {
+	entries map[string]*model.CacheEntry
+	lastKey string
+}
 
-func (m *mockCacheRepository) Get(_ string) (*model.CacheEntry, bool) { return nil, false }
-func (m *mockCacheRepository) Set(_ string, _ *model.CacheEntry)      {}
+func (m *mockCacheRepository) Get(key string) (*model.CacheEntry, bool) {
+	if m.entries == nil {
+		return nil, false
+	}
+	entry, ok := m.entries[key]
+	return entry, ok
+}
+func (m *mockCacheRepository) Set(key string, entry *model.CacheEntry) {
+	m.lastKey = key
+	if m.entries == nil {
+		m.entries = map[string]*model.CacheEntry{}
+	}
+	m.entries[key] = entry
+}
 
 // ─── mock adapter ───────────────────────────────────────────────────────────
 
@@ -288,4 +303,85 @@ func TestGetCurrentWeather_OpenMeteo_NoKeyRequired(t *testing.T) {
 	assert.Equal(t, "openmeteo", resp.Provider)
 	assert.Equal(t, "", capturedKey, "openmeteo 不應傳入 API key")
 	assert.Equal(t, 22.0, resp.Current.Temperature)
+}
+
+func TestBuildCacheKey_IncludesLocationID(t *testing.T) {
+	query := &model.WeatherQuery{
+		Provider:   "cwa",
+		LocationID: "F-D0047-061",
+		Date:       "2024-01-15",
+		Days:       3,
+	}
+
+	key := buildCacheKey(query, model.WeatherTypeHourly)
+
+	assert.Contains(t, key, "locationId=F-D0047-061")
+	assert.NotContains(t, key, "lat=")
+}
+
+func TestGetCurrentWeather_UpstreamStatusError_Returns502(t *testing.T) {
+	a := &mockAdapter{
+		providerID: "cwa",
+		fetchFn: func(_ context.Context, _ *model.WeatherQuery, _ model.WeatherType, _ string, _ model.UpstreamClient) (*model.WeatherResponse, error) {
+			return nil, &UpstreamStatusError{StatusCode: http.StatusTooManyRequests, Body: "rate limited"}
+		},
+	}
+	svc := newWeatherService(a)
+
+	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+
+	assert.Nil(t, resp)
+	require.Error(t, err)
+	var proxyErr *ProxyError
+	require.ErrorAs(t, err, &proxyErr)
+	assert.Equal(t, http.StatusBadGateway, proxyErr.Code)
+	assert.Contains(t, proxyErr.Error(), "status 429")
+}
+
+func TestGetCurrentWeather_CacheHit(t *testing.T) {
+	cache := &mockCacheRepository{entries: map[string]*model.CacheEntry{
+		buildCacheKey(baseQuery("cwa"), model.WeatherTypeCurrent): {
+			Response: &model.WeatherResponse{Provider: "cwa", Current: &model.CurrentWeather{Temperature: 30}},
+		},
+	}}
+	registry := adapter.NewRegistry(successAdapter("cwa"))
+	svc := NewWeatherService(&config.Config{APIKeys: config.APIKeysConfig{CWA: "key"}}, registry, &mockUpstreamClient{}, cache)
+
+	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+
+	require.NoError(t, err)
+	assert.True(t, resp.CacheHit)
+	assert.Equal(t, 30.0, resp.Current.Temperature)
+}
+
+func TestGetCurrentWeather_CacheMissStoresValue(t *testing.T) {
+	cache := &mockCacheRepository{}
+	registry := adapter.NewRegistry(successAdapter("cwa"))
+	svc := NewWeatherService(&config.Config{APIKeys: config.APIKeysConfig{CWA: "key"}}, registry, &mockUpstreamClient{}, cache)
+
+	_, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, cache.lastKey)
+	_, ok := cache.entries[cache.lastKey]
+	assert.True(t, ok)
+}
+
+func TestFetchWeather_AdapterTimeout_Returns504(t *testing.T) {
+	a := &mockAdapter{
+		providerID: "cwa",
+		fetchFn: func(ctx context.Context, _ *model.WeatherQuery, _ model.WeatherType, _ string, _ model.UpstreamClient) (*model.WeatherResponse, error) {
+			<-ctx.Done()
+			return nil, ctx.Err()
+		},
+	}
+	svc := newWeatherService(a)
+
+	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+
+	assert.Nil(t, resp)
+	require.Error(t, err)
+	var proxyErr *ProxyError
+	require.ErrorAs(t, err, &proxyErr)
+	assert.Equal(t, http.StatusGatewayTimeout, proxyErr.Code)
 }

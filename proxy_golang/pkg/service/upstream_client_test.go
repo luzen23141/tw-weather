@@ -41,8 +41,9 @@ func TestUpstreamClient_ServerError(t *testing.T) {
 	req := &model.UpstreamRequest{URL: server.URL, Method: http.MethodGet}
 
 	resp, err := client.Do(context.Background(), req)
-	require.NoError(t, err)
-	assert.Equal(t, 500, resp.StatusCode)
+	assert.Nil(t, resp)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "status 500")
 }
 
 func TestUpstreamClient_Timeout(t *testing.T) {

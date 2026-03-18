@@ -1,6 +1,10 @@
 package service
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 const (
 	// upstreamTimeout 是所有上游請求的統一 context 超時時間
@@ -19,4 +23,18 @@ func (e *ProxyError) Error() string {
 
 func (e *ProxyError) Unwrap() error {
 	return e.Err
+}
+
+// UpstreamStatusError 表示上游 API 回傳非 2xx 狀態碼。
+type UpstreamStatusError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *UpstreamStatusError) Error() string {
+	body := strings.TrimSpace(e.Body)
+	if body == "" {
+		return fmt.Sprintf("upstream returned status %d", e.StatusCode)
+	}
+	return fmt.Sprintf("upstream returned status %d: %s", e.StatusCode, body)
 }
