@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { BlurFade } from '@/components/ui/BlurFade';
@@ -6,6 +5,7 @@ import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { NoLocationState } from '@/components/ui/NoLocationState';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
@@ -13,32 +13,19 @@ import { SourceBadge } from '@/components/ui/SourceBadge';
 import {
   DailyForecastSkeleton,
   HourlyForecastSkeleton,
-  SkeletonBox,
+  PageHeaderCardSkeleton,
   SkeletonProvider,
 } from '@/components/ui/SkeletonLoader';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
 import { useWeatherPage } from '@/hooks/useWeatherPage';
 import { getWeatherErrorMessage } from '@/utils/error-message';
-import { getGlassStyle } from '@/components/ui/glass';
 
 function ForecastSkeleton() {
   return (
     <SkeletonProvider>
       <View className="gap-6">
-        {/* PageHeaderCard 骨架 */}
-        <View
-          className="mx-4 rounded-3xl border border-glass-border bg-md-surface-container px-5 py-4 gap-3"
-          style={getGlassStyle(20)}
-        >
-          <View className="flex-row items-center gap-3">
-            <SkeletonBox height={40} width={40} borderRadius={20} />
-            <View className="flex-1 gap-2">
-              <SkeletonBox height={10} width="30%" borderRadius={4} />
-              <SkeletonBox height={18} width="60%" borderRadius={5} />
-            </View>
-          </View>
-        </View>
+        <PageHeaderCardSkeleton />
         <HourlyForecastSkeleton />
         <DailyForecastSkeleton />
       </View>
@@ -47,7 +34,6 @@ function ForecastSkeleton() {
 }
 
 export default function ForecastScreen() {
-  const router = useRouter();
   const {
     effectiveLocation,
     secondaryDisplayName: locationSecondaryText,
@@ -80,17 +66,7 @@ export default function ForecastScreen() {
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<ForecastSkeleton />} />
           ) : !effectiveLocation ? (
-            <PageState
-              type="empty"
-              title="請先選擇地點"
-              description={
-                locationError
-                  ? '目前無法取得你的定位，請先手動選擇地點，再查看逐時與每日預報。'
-                  : '前往地點管理選擇城市後，即可查看接下來的逐時與每日預報。'
-              }
-              actionLabel="前往選擇地點"
-              onActionPress={() => router.push('/locations')}
-            />
+            <NoLocationState scope="逐時與每日預報" locationError={locationError} />
           ) : error ? (
             <PageState
               type="error"
@@ -108,7 +84,6 @@ export default function ForecastScreen() {
                   icon="partly-sunny-outline"
                   title={effectiveLocation.name}
                   subtitle={locationSecondaryText}
-                  eyebrow="逐時與每日預報"
                   rightSlot={<SourceBadge source={weatherData.source} />}
                 />
               </BlurFade>

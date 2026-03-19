@@ -7,9 +7,6 @@ import { getGlassStyle } from '../ui/glass';
 import { formatWindSpeed } from '../../utils/unit-conversion';
 import { getWeatherCodeInfo } from '../../utils/weather-code';
 import { WeatherIcon } from '../icons/WeatherIcon';
-import { MagicCard } from '../ui/MagicCard';
-import { NumberTicker } from '../ui/NumberTicker';
-import { ShineBorder } from '../ui/ShineBorder';
 import { SourceBadge } from '../ui/SourceBadge';
 import { StatCard } from '../ui/StatCard';
 
@@ -39,39 +36,33 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
   const secondaryLocationText = formatLocationSecondaryName(location);
 
   return (
-    <ShineBorder
-      borderRadius={30}
-      borderWidth={1.5}
-      duration={5000}
-      color={['rgba(91,141,239,0.6)', 'rgba(155,143,208,0.6)', 'rgba(91,141,239,0.6)']}
-      className="mx-4"
+    <View
+      className="mx-4 overflow-hidden rounded-[30px] border border-white/18 bg-white/16 px-6 py-6 shadow-glass dark:border-white/12 dark:bg-white/8"
+      style={getGlassStyle(20)}
     >
-      <MagicCard
-        gradientColor="rgba(91, 141, 239, 0.12)"
-        gradientSize={250}
-        className="rounded-[30px]"
-        style={{ padding: 24, gap: 20 }}
-      >
+      <View className="absolute inset-x-0 top-0 h-px bg-white/26 dark:bg-white/12" />
+
+      <View className="gap-5">
         <View className="flex-row items-start justify-between gap-4">
           <View className="flex-1 gap-1">
             {eyebrow ? (
-              <Text className="text-[11px] font-bold uppercase tracking-[1.8px] text-md-primary">
+              <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-md-primary">
                 {eyebrow}
               </Text>
             ) : null}
-            <Text className="text-lg font-bold text-md-on-surface tracking-tight">
+            <Text className="text-lg font-bold tracking-tight text-md-on-surface">
               {location.name}
             </Text>
-            {secondaryLocationText && (
-              <Text className="text-xs text-md-on-surface-variant mt-1 font-medium">
+            {secondaryLocationText ? (
+              <Text className="mt-1 text-[12px] font-medium text-md-on-surface-variant">
                 {secondaryLocationText}
               </Text>
-            )}
+            ) : null}
           </View>
           <View className="items-end gap-2">
             <SourceBadge source={source} />
             {source === 'aggregate' && enabledSources?.length ? (
-              <Text className="text-[10px] text-md-on-surface-variant text-right leading-4">
+              <Text className="text-[10px] leading-4 text-right text-md-on-surface-variant">
                 {(enabledSources ?? []).map((s) => SOURCE_META_MAP[s]?.label ?? s).join(' · ')}
               </Text>
             ) : null}
@@ -80,38 +71,28 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
         </View>
 
         <View
-          className="flex-row items-center justify-between gap-4 rounded-[28px] border border-glass-border bg-md-surface px-5 py-5"
+          className="flex-row items-center justify-between gap-4 rounded-[28px] border border-white/16 bg-white/14 px-5 py-5 dark:border-white/10 dark:bg-white/8"
           style={getGlassStyle(18)}
         >
           <View className="flex-1 gap-2">
-            <Text className="text-[11px] font-bold uppercase tracking-[2px] text-md-primary">
+            <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-md-primary">
               目前溫度
             </Text>
-            {isRangeTemp ? (
-              <Text
-                className="font-bold text-md-on-surface tracking-tighter"
-                style={{ fontSize: 76, lineHeight: 82 }}
-              >
-                {tempDisplay}
-              </Text>
-            ) : (
-              <NumberTicker
-                value={Math.round(data.temperature as number)}
-                suffix="°"
-                className="font-bold text-md-on-surface tracking-tighter"
-                style={{ fontSize: 76, lineHeight: 82 }}
-              />
-            )}
-            <Text className="text-base text-md-on-surface font-semibold tracking-tight opacity-90">
+            <Text
+              className="font-bold tracking-tighter text-md-on-surface"
+              style={{ fontSize: 76, lineHeight: 82 }}
+            >
+              {tempDisplay}
+            </Text>
+            <Text className="text-[15px] font-semibold tracking-tight text-md-on-surface/90">
               {weatherInfo.description}
             </Text>
           </View>
-          <View className="h-20 w-20 items-center justify-center rounded-[26px] border border-glass-border bg-md-primary/12">
+          <View className="h-20 w-20 items-center justify-center rounded-[26px] border border-white/14 bg-white/12 dark:border-white/10 dark:bg-white/8">
             <WeatherIcon weatherCode={data.weatherCode} size={46} />
           </View>
         </View>
 
-        {/* 統計 Bento Grid - 2x2 */}
         <View className="flex-row flex-wrap gap-2.5">
           <StatCard
             iconType="thermometer"
@@ -139,10 +120,10 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
           />
         </View>
 
-        <Text className="pl-1 text-sm font-medium text-md-on-surface-variant">
+        <Text className="pl-1 text-[13px] font-medium text-md-on-surface-variant">
           最後更新：{formatTime(data.timestamp)}
         </Text>
-      </MagicCard>
-    </ShineBorder>
+      </View>
+    </View>
   );
 });

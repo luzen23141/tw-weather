@@ -92,7 +92,7 @@ export const DailyForecastList = React.memo(function DailyForecastList({
   if (!forecasts || forecasts.length === 0) {
     return (
       <View className="gap-4">
-        <Text className="px-4 text-xs font-bold uppercase tracking-[1.4px] text-md-on-surface-variant">
+        <Text className="px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-md-on-surface-variant">
           7 日預報
         </Text>
         <View
@@ -107,7 +107,7 @@ export const DailyForecastList = React.memo(function DailyForecastList({
 
   return (
     <View className="gap-4">
-      <Text className="px-4 text-xs font-bold uppercase tracking-[1.4px] text-md-on-surface-variant">
+      <Text className="px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-md-on-surface-variant">
         7 日預報
       </Text>
       <View

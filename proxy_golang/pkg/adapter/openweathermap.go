@@ -17,21 +17,6 @@ const owmBaseURL = "https://api.openweathermap.org"
 // OpenWeatherMap adapter
 type OpenWeatherMap struct{}
 
-// ProviderID returns the unique identifier for the OpenWeatherMap provider.
-func (OpenWeatherMap) ProviderID() string { return "openweathermap" }
-
-// Name returns the display name for the OpenWeatherMap provider.
-func (OpenWeatherMap) Name() string { return "OpenWeatherMap" }
-
-// Description returns a brief description of the OpenWeatherMap provider.
-func (OpenWeatherMap) Description() string { return "全球覆蓋，備用資料源" }
-
-// APIKeyEnvVar returns the environment variable name for the OpenWeatherMap API key.
-func (OpenWeatherMap) APIKeyEnvVar() string { return "OPENWEATHERMAP_KEY" }
-
-// RequiresKey returns true because OpenWeatherMap requires an API key.
-func (OpenWeatherMap) RequiresKey() bool { return true }
-
 // Fetch retrieves weather data from OpenWeatherMap based on the weather type.
 func (OpenWeatherMap) Fetch(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	switch weatherType {

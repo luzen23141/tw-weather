@@ -41,13 +41,11 @@ const owmForecastFixture = `{
   }
 }`
 
-func TestOpenWeatherMap_ProviderMetadata(t *testing.T) {
+func TestOpenWeatherMap_FetchUnsupportedType(t *testing.T) {
 	a := OpenWeatherMap{}
-	assert.Equal(t, "openweathermap", a.ProviderID())
-	assert.NotEmpty(t, a.Name())
-	assert.NotEmpty(t, a.Description())
-	assert.Equal(t, "OPENWEATHERMAP_KEY", a.APIKeyEnvVar())
-	assert.True(t, a.RequiresKey())
+	resp, err := a.Fetch(context.Background(), &model.WeatherQuery{Provider: "openweathermap", Lat: 25.03, Lon: 121.56}, model.WeatherTypeHistory, "key", &mockUpstreamClient{})
+	assert.Nil(t, resp)
+	assert.Error(t, err)
 }
 
 func TestOpenWeatherMap_FetchCurrent(t *testing.T) {
@@ -96,10 +94,23 @@ func TestOWMConditionCodeToWMO(t *testing.T) {
 		code int
 		want int
 	}{
-		{800, 0}, {801, 1}, {802, 2}, {803, 3}, {804, 3},
-		{301, 51}, {500, 61}, {501, 63}, {503, 65}, {511, 66},
-		{521, 80}, {601, 71}, {611, 77}, {621, 85}, {701, 45},
-		{211, 95}, {9999, 3},
+		{800, 0},
+		{801, 1},
+		{802, 2},
+		{803, 3},
+		{804, 3},
+		{301, 51},
+		{500, 61},
+		{501, 63},
+		{503, 65},
+		{511, 66},
+		{521, 80},
+		{601, 71},
+		{611, 77},
+		{621, 85},
+		{701, 45},
+		{211, 95},
+		{9999, 3},
 	}
 	for _, tc := range tests {
 		assert.Equal(t, tc.want, owmConditionCodeToWMO(tc.code))

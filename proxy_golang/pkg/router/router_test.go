@@ -15,7 +15,10 @@ import (
 )
 
 func TestSetup_RoutesAndAuth(t *testing.T) {
-	registry := adapter.NewRegistry(adapter.CWA{}, adapter.OpenMeteo{})
+	registry := adapter.NewRegistry(
+		adapter.ProviderSpec{ID: "cwa", Name: "中央氣象署（CWA）", Description: "台灣最精準，含即時觀測與預報", APIKey: "key", RequiresKey: true, Adapter: adapter.CWA{}},
+		adapter.ProviderSpec{ID: "openmeteo", Name: "Open-Meteo", Description: "免費無限制，歷史資料豐富", RequiresKey: false, Adapter: adapter.OpenMeteo{}},
+	)
 	debugCtrl := controller.NewDebugController()
 	providerCtrl := controller.NewProviderController(registry)
 	weatherCtrl := controller.NewWeatherController(&mockWeatherServiceRouter{})
@@ -52,17 +55,8 @@ func TestSetup_RoutesAndAuth(t *testing.T) {
 
 type mockWeatherServiceRouter struct{}
 
-func (*mockWeatherServiceRouter) GetCurrentWeather(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
-	return &model.WeatherResponse{Provider: "openmeteo", Type: model.WeatherTypeCurrent}, nil
-}
-func (*mockWeatherServiceRouter) GetHourlyWeather(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
-	return &model.WeatherResponse{Provider: "openmeteo", Type: model.WeatherTypeHourly}, nil
-}
-func (*mockWeatherServiceRouter) GetDailyWeather(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
-	return &model.WeatherResponse{Provider: "openmeteo", Type: model.WeatherTypeDaily}, nil
-}
-func (*mockWeatherServiceRouter) GetHistoryWeather(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
-	return &model.WeatherResponse{Provider: "openmeteo", Type: model.WeatherTypeHistory}, nil
+func (*mockWeatherServiceRouter) GetWeather(_ context.Context, _ *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+	return &model.WeatherResponse{Provider: "openmeteo", Type: kind}, nil
 }
 
 func ginMode() string {

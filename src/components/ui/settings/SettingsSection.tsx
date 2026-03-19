@@ -7,54 +7,37 @@ import { getGlassStyle } from '@/components/ui/glass';
 type SettingsSectionProps = {
   icon: AppIconName;
   title: string;
-  description?: string | undefined;
   summary?: string | undefined;
   children: ReactNode;
   footer?: ReactNode;
 };
 
-const sectionCardClassName =
-  'overflow-hidden rounded-3xl border border-glass-border-strong bg-md-surface shadow-glass';
 const sectionCardStyle = getGlassStyle(20);
 
-export function SettingsSection({
-  icon,
-  title,
-  description,
-  summary,
-  children,
-  footer,
-}: SettingsSectionProps) {
+export function SettingsSection({ icon, title, summary, children, footer }: SettingsSectionProps) {
   return (
-    <View className="gap-3">
-      <View className="px-1">
-        <View className="flex-row items-start gap-3">
-          <View className="mt-0.5 h-10 w-10 items-center justify-center rounded-2xl border border-glass-border-strong bg-md-primary/12">
-            <AppIcon name={icon} size={18} color="var(--color-md-primary)" />
-          </View>
-          <View className="flex-1 gap-1">
-            <View className="flex-row items-center justify-between gap-3">
-              <Text className="text-[18px] font-semibold leading-6 text-md-on-surface">
-                {title}
-              </Text>
-              {summary ? (
-                <View className="rounded-full border border-glass-border-strong bg-md-surface-variant px-3 py-1">
-                  <Text className="text-[11px] font-semibold leading-4 text-md-on-surface">
-                    {summary}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-            {description ? (
-              <Text className="text-[13px] leading-5 text-md-on-surface-variant">
-                {description}
-              </Text>
-            ) : null}
-          </View>
+    <View className="mx-4 gap-2.5">
+      <View className="flex-row items-center gap-2.5">
+        <View className="h-7 w-7 items-center justify-center rounded-lg border border-white/14 bg-white/10 dark:border-white/10 dark:bg-white/8">
+          <AppIcon name={icon} size={15} color="var(--color-md-primary)" />
         </View>
+        <Text className="flex-1 text-[15px] font-bold leading-5 text-md-on-surface/80">
+          {title}
+        </Text>
+        {summary ? (
+          <View className="rounded-full border border-white/16 bg-white/14 px-2.5 py-0.5 dark:border-white/10 dark:bg-white/8">
+            <Text className="text-[11px] font-semibold leading-4 text-md-on-surface">
+              {summary}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
-      <View className={sectionCardClassName} style={sectionCardStyle}>
+      <View
+        className="overflow-hidden rounded-2xl border border-white/16 bg-white/14 shadow-glass dark:border-white/10 dark:bg-white/8"
+        style={sectionCardStyle}
+      >
+        <View className="absolute inset-x-0 top-0 h-px bg-white/24 dark:bg-white/12" />
         {children}
         {footer ? <View className="border-t border-glass-border px-5 py-3">{footer}</View> : null}
       </View>

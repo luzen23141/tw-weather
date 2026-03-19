@@ -16,16 +16,16 @@ var weatherAPIQuery = &model.WeatherQuery{
 	Lon:      121.517,
 }
 
-func TestWeatherAPI_ProviderID(t *testing.T) {
-	assert.Equal(t, "weatherapi", WeatherAPI{}.ProviderID())
-}
+func TestWeatherAPI_FetchHistory_RealFixture_Smoke(t *testing.T) {
+	client := fixtureClient("weatherapi_history.json")
+	q := *weatherAPIQuery
+	q.Date = "2024-01-01"
 
-func TestWeatherAPI_Metadata(t *testing.T) {
-	a := WeatherAPI{}
-	assert.NotEmpty(t, a.Name())
-	assert.NotEmpty(t, a.Description())
-	assert.Equal(t, "WEATHERAPI_KEY", a.APIKeyEnvVar())
-	assert.True(t, a.RequiresKey())
+	resp, err := WeatherAPI{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "test-key", client)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, model.WeatherTypeHistory, resp.Type)
 }
 
 // --- Current ---

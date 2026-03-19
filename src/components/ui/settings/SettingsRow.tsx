@@ -27,7 +27,7 @@ export type SettingRowProps = {
 
 type RadioSettingOptionProps = {
   title: string;
-  description: string;
+  description?: string | undefined;
   hint?: string | undefined;
   value: string;
   selectedValue: string;
@@ -62,9 +62,7 @@ export function SettingsRow({
         ) : null}
         <View className={`flex-1 ${hasSupportingText ? 'gap-1' : ''}`}>
           <Text
-            className={`text-[15px] font-semibold leading-5 ${
-              selected ? 'text-md-on-surface' : 'text-md-on-surface'
-            } ${disabled ? 'opacity-50' : ''}`}
+            className={`text-[15px] font-medium leading-5 text-md-on-surface ${disabled ? 'opacity-50' : ''}`}
           >
             {title}
           </Text>
@@ -109,13 +107,13 @@ export function SettingsRow({
             : isCompact
               ? 'min-h-[52px] py-3'
               : 'min-h-[56px] py-3.5'
-        } ${selected ? 'bg-md-primary/12' : ''} ${!isLast ? 'border-b border-glass-border' : ''}`}
+        } ${!isLast ? 'border-b border-glass-border' : ''}`}
         style={({ pressed }) => [
           {
             backgroundColor: pressed
               ? 'var(--color-md-surface-variant)'
               : selected
-                ? 'color-mix(in srgb, var(--color-md-primary) 12%, var(--color-md-surface))'
+                ? 'color-mix(in srgb, var(--color-md-primary) 18%, var(--color-md-surface))'
                 : 'transparent',
             opacity: disabled ? 0.55 : pressed ? 0.96 : 1,
           },

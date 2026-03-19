@@ -10,7 +10,7 @@ import (
 )
 
 func TestCacheRepository_SetAndGet(t *testing.T) {
-	repo := NewCacheRepository()
+	repo := NewCache()
 
 	entry := &model.CacheEntry{
 		Response: &model.WeatherResponse{
@@ -29,7 +29,7 @@ func TestCacheRepository_SetAndGet(t *testing.T) {
 }
 
 func TestCacheRepository_Miss(t *testing.T) {
-	repo := NewCacheRepository()
+	repo := NewCache()
 
 	got, hit := repo.Get("nonexistent")
 	assert.False(t, hit)
@@ -37,7 +37,7 @@ func TestCacheRepository_Miss(t *testing.T) {
 }
 
 func TestCacheRepository_Overwrite(t *testing.T) {
-	repo := NewCacheRepository()
+	repo := NewCache()
 
 	entry1 := &model.CacheEntry{Response: &model.WeatherResponse{Provider: "a"}}
 	entry2 := &model.CacheEntry{Response: &model.WeatherResponse{Provider: "b"}}
@@ -52,7 +52,7 @@ func TestCacheRepository_Overwrite(t *testing.T) {
 }
 
 func TestCacheRepository_MultipleDifferentKeys(t *testing.T) {
-	repo := NewCacheRepository()
+	repo := NewCache()
 
 	repo.Set("key1", &model.CacheEntry{Response: &model.WeatherResponse{Provider: "first"}})
 	repo.Set("key2", &model.CacheEntry{Response: &model.WeatherResponse{Provider: "second"}})

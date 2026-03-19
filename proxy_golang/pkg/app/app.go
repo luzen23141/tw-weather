@@ -31,19 +31,19 @@ func New() *App {
 	// 初始化日誌
 	initLogger(cfg)
 
-	// 共用 upstream client（包裝 mock 層，header 觸發時回傳寫死的三方原始回應）
-	upstreamClient := service.NewMockableUpstreamClient(service.NewUpstreamClient())
+	// 共用 upstream client
+	upstreamClient := service.NewUpstreamClient()
 
 	// Adapter Registry
 	adapterRegistry := adapter.NewRegistry(
-		adapter.CWA{},
-		adapter.WeatherAPI{},
-		adapter.OpenMeteo{},
-		adapter.OpenWeatherMap{},
+		adapter.ProviderSpec{ID: "cwa", Name: "中央氣象署（CWA）", Description: "台灣最精準，含即時觀測與預報", APIKey: cfg.APIKeys.CWA, RequiresKey: true, Adapter: adapter.CWA{}},
+		adapter.ProviderSpec{ID: "weatherapi", Name: "WeatherAPI", Description: "備用來源，支援預報與 7 天歷史", APIKey: cfg.APIKeys.WeatherAPI, RequiresKey: true, Adapter: adapter.WeatherAPI{}},
+		adapter.ProviderSpec{ID: "openmeteo", Name: "Open-Meteo", Description: "免費無限制，歷史資料豐富", APIKey: "", RequiresKey: false, Adapter: adapter.OpenMeteo{}},
+		adapter.ProviderSpec{ID: "openweathermap", Name: "OpenWeatherMap", Description: "全球覆蓋，備用資料源", APIKey: cfg.APIKeys.OpenWeatherMap, RequiresKey: true, Adapter: adapter.OpenWeatherMap{}},
 	)
 
 	// Service 層 - Weather
-	cacheRepo := repository.NewCacheRepository()
+	cacheRepo := repository.NewCache()
 	weatherSvc := service.NewWeatherService(cfg, adapterRegistry, upstreamClient, cacheRepo)
 
 	// Controller 層

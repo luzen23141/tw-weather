@@ -18,21 +18,6 @@ const (
 // OpenMeteo adapter（無需 API Key）
 type OpenMeteo struct{}
 
-// ProviderID returns the unique identifier for the Open-Meteo provider.
-func (OpenMeteo) ProviderID() string { return "openmeteo" }
-
-// Name returns the display name for the Open-Meteo provider.
-func (OpenMeteo) Name() string { return "Open-Meteo" }
-
-// Description returns a brief description of the Open-Meteo provider.
-func (OpenMeteo) Description() string { return "免費無限制，歷史資料豐富" }
-
-// APIKeyEnvVar returns empty string because Open-Meteo does not require a key.
-func (OpenMeteo) APIKeyEnvVar() string { return "" }
-
-// RequiresKey returns false because Open-Meteo is a free API with no key needed.
-func (OpenMeteo) RequiresKey() bool { return false }
-
 // Fetch retrieves weather data from Open-Meteo based on the weather type.
 func (OpenMeteo) Fetch(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, _ string, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	if weatherType == model.WeatherTypeHistory {

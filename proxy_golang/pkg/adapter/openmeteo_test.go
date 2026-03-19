@@ -16,16 +16,16 @@ var openMeteoQuery = &model.WeatherQuery{
 	Lon:      121.517,
 }
 
-func TestOpenMeteo_ProviderID(t *testing.T) {
-	assert.Equal(t, "openmeteo", OpenMeteo{}.ProviderID())
-}
+func TestOpenMeteo_FetchHistory_RealFixture_Smoke(t *testing.T) {
+	client := fixtureClient("openmeteo_archive.json")
+	q := *openMeteoQuery
+	q.Date = "2024-01-01"
 
-func TestOpenMeteo_Metadata(t *testing.T) {
-	a := OpenMeteo{}
-	assert.NotEmpty(t, a.Name())
-	assert.NotEmpty(t, a.Description())
-	assert.Equal(t, "", a.APIKeyEnvVar())
-	assert.False(t, a.RequiresKey())
+	resp, err := OpenMeteo{}.Fetch(context.Background(), &q, model.WeatherTypeHistory, "", client)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, model.WeatherTypeHistory, resp.Type)
 }
 
 // --- Current ---

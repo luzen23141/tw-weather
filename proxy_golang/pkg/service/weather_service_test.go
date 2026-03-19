@@ -29,6 +29,7 @@ func (m *mockCacheRepository) Get(key string) (*model.CacheEntry, bool) {
 	entry, ok := m.entries[key]
 	return entry, ok
 }
+
 func (m *mockCacheRepository) Set(key string, entry *model.CacheEntry) {
 	m.lastKey = key
 	if m.entries == nil {
@@ -40,24 +41,11 @@ func (m *mockCacheRepository) Set(key string, entry *model.CacheEntry) {
 // ─── mock adapter ───────────────────────────────────────────────────────────
 
 type mockAdapter struct {
-	providerID string
-	fetchFn    func(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error)
+	providerID  string
+	requiresKey bool
+	apiKey      string
+	fetchFn     func(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error)
 }
-
-func (m *mockAdapter) ProviderID() string  { return m.providerID }
-func (m *mockAdapter) Name() string        { return m.providerID }
-func (m *mockAdapter) Description() string { return "mock" }
-func (m *mockAdapter) APIKeyEnvVar() string {
-	switch m.providerID {
-	case "cwa":
-		return "CWA_API_KEY"
-	case "weatherapi":
-		return "WEATHERAPI_KEY"
-	default:
-		return ""
-	}
-}
-func (m *mockAdapter) RequiresKey() bool { return m.providerID != "openmeteo" }
 
 func (m *mockAdapter) Fetch(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	if m.fetchFn != nil {
@@ -69,16 +57,29 @@ func (m *mockAdapter) Fetch(ctx context.Context, query *model.WeatherQuery, weat
 	}, nil
 }
 
+func providerSpecFromMock(m *mockAdapter) adapter.ProviderSpec {
+	return adapter.ProviderSpec{
+		ID:          m.providerID,
+		Name:        m.providerID,
+		Description: "mock",
+		APIKey:      m.apiKey,
+		RequiresKey: m.requiresKey,
+		Adapter:     m,
+	}
+}
+
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
 
-func newWeatherService(adapters ...adapter.Adapter) WeatherService {
-	cfg := &config.Config{
-		APIKeys: config.APIKeysConfig{
-			CWA:        "test-cwa-key",
-			WeatherAPI: "test-weatherapi-key",
-		},
+func newWeatherService(adapters ...*mockAdapter) WeatherService {
+	registryProviders := make([]adapter.ProviderSpec, 0, len(adapters))
+	for _, a := range adapters {
+		if a.requiresKey && a.apiKey == "" {
+			a.apiKey = "test-key"
+		}
+		registryProviders = append(registryProviders, providerSpecFromMock(a))
 	}
-	registry := adapter.NewRegistry(adapters...)
+	cfg := &config.Config{}
+	registry := adapter.NewRegistry(registryProviders...)
 	upstream := &mockUpstreamClient{}
 	cache := &mockCacheRepository{}
 	return NewWeatherService(cfg, registry, upstream, cache)
@@ -94,7 +95,9 @@ func baseQuery(provider string) *model.WeatherQuery {
 
 func successAdapter(providerID string) *mockAdapter {
 	return &mockAdapter{
-		providerID: providerID,
+		providerID:  providerID,
+		requiresKey: providerID != "openmeteo",
+		apiKey:      "test-key",
 		fetchFn: func(_ context.Context, _ *model.WeatherQuery, _ model.WeatherType, _ string, _ model.UpstreamClient) (*model.WeatherResponse, error) {
 			return &model.WeatherResponse{
 				Provider:  providerID,
@@ -110,7 +113,7 @@ func successAdapter(providerID string) *mockAdapter {
 func TestGetCurrentWeather_Success(t *testing.T) {
 	svc := newWeatherService(successAdapter("cwa"))
 
-	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeCurrent)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -130,7 +133,7 @@ func TestGetCurrentWeather_SetsQueryType(t *testing.T) {
 	}
 	svc := newWeatherService(a)
 
-	_, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+	_, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeCurrent)
 
 	require.NoError(t, err)
 	assert.Equal(t, model.WeatherTypeCurrent, capturedType)
@@ -149,7 +152,7 @@ func TestGetHourlyWeather_Success_TypeIsHourly(t *testing.T) {
 	}
 	svc := newWeatherService(a)
 
-	resp, err := svc.GetHourlyWeather(context.Background(), baseQuery("cwa"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeHourly)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -169,7 +172,7 @@ func TestGetDailyWeather_Success_TypeIsDaily(t *testing.T) {
 	}
 	svc := newWeatherService(a)
 
-	resp, err := svc.GetDailyWeather(context.Background(), baseQuery("cwa"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeDaily)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -192,7 +195,7 @@ func TestGetHistoryWeather_Success_WithDate(t *testing.T) {
 	query := baseQuery("weatherapi")
 	query.Date = "2024-01-15"
 
-	resp, err := svc.GetHistoryWeather(context.Background(), query)
+	resp, err := svc.GetWeather(context.Background(), query, model.WeatherTypeHistory)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -205,7 +208,7 @@ func TestGetHistoryWeather_EmptyDate_Returns400(t *testing.T) {
 	query := baseQuery("weatherapi")
 	// Date 故意留空
 
-	resp, err := svc.GetHistoryWeather(context.Background(), query)
+	resp, err := svc.GetWeather(context.Background(), query, model.WeatherTypeHistory)
 
 	assert.Nil(t, resp)
 	require.Error(t, err)
@@ -222,7 +225,7 @@ func TestFetchWeather_UnknownProvider_Returns400(t *testing.T) {
 	// 不注冊任何 adapter
 	svc := newWeatherService()
 
-	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("unknown_provider"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("unknown_provider"), model.WeatherTypeCurrent)
 
 	assert.Nil(t, resp)
 	require.Error(t, err)
@@ -240,11 +243,11 @@ func TestFetchWeather_MissingAPIKey_Returns500(t *testing.T) {
 	cfg := &config.Config{
 		APIKeys: config.APIKeysConfig{}, // CWA key 為空
 	}
-	registry := adapter.NewRegistry(successAdapter("cwa"))
+	registry := adapter.NewRegistry(adapter.ProviderSpec{ID: "cwa", Name: "cwa", Description: "mock", RequiresKey: true, Adapter: successAdapter("cwa")})
 	upstream := &mockUpstreamClient{}
 	svc := NewWeatherService(cfg, registry, upstream, &mockCacheRepository{})
 
-	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeCurrent)
 
 	assert.Nil(t, resp)
 	require.Error(t, err)
@@ -266,7 +269,7 @@ func TestFetchWeather_AdapterError_Returns502(t *testing.T) {
 	}
 	svc := newWeatherService(a)
 
-	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeCurrent)
 
 	assert.Nil(t, resp)
 	require.Error(t, err)
@@ -281,7 +284,8 @@ func TestFetchWeather_AdapterError_Returns502(t *testing.T) {
 func TestGetCurrentWeather_OpenMeteo_NoKeyRequired(t *testing.T) {
 	var capturedKey string
 	a := &mockAdapter{
-		providerID: "openmeteo",
+		providerID:  "openmeteo",
+		requiresKey: false,
 		fetchFn: func(_ context.Context, _ *model.WeatherQuery, _ model.WeatherType, apiKey string, _ model.UpstreamClient) (*model.WeatherResponse, error) {
 			capturedKey = apiKey
 			return &model.WeatherResponse{
@@ -292,11 +296,11 @@ func TestGetCurrentWeather_OpenMeteo_NoKeyRequired(t *testing.T) {
 	}
 	// 完全沒設定任何 APIKeys
 	cfg := &config.Config{APIKeys: config.APIKeysConfig{}}
-	registry := adapter.NewRegistry(a)
+	registry := adapter.NewRegistry(providerSpecFromMock(a))
 	upstream := &mockUpstreamClient{}
 	svc := NewWeatherService(cfg, registry, upstream, &mockCacheRepository{})
 
-	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("openmeteo"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("openmeteo"), model.WeatherTypeCurrent)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -328,7 +332,7 @@ func TestGetCurrentWeather_UpstreamStatusError_Returns502(t *testing.T) {
 	}
 	svc := newWeatherService(a)
 
-	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeCurrent)
 
 	assert.Nil(t, resp)
 	require.Error(t, err)
@@ -344,10 +348,10 @@ func TestGetCurrentWeather_CacheHit(t *testing.T) {
 			Response: &model.WeatherResponse{Provider: "cwa", Current: &model.CurrentWeather{Temperature: 30}},
 		},
 	}}
-	registry := adapter.NewRegistry(successAdapter("cwa"))
+	registry := adapter.NewRegistry(adapter.ProviderSpec{ID: "cwa", Name: "cwa", Description: "mock", APIKey: "key", RequiresKey: true, Adapter: successAdapter("cwa")})
 	svc := NewWeatherService(&config.Config{APIKeys: config.APIKeysConfig{CWA: "key"}}, registry, &mockUpstreamClient{}, cache)
 
-	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeCurrent)
 
 	require.NoError(t, err)
 	assert.True(t, resp.CacheHit)
@@ -356,10 +360,10 @@ func TestGetCurrentWeather_CacheHit(t *testing.T) {
 
 func TestGetCurrentWeather_CacheMissStoresValue(t *testing.T) {
 	cache := &mockCacheRepository{}
-	registry := adapter.NewRegistry(successAdapter("cwa"))
+	registry := adapter.NewRegistry(adapter.ProviderSpec{ID: "cwa", Name: "cwa", Description: "mock", APIKey: "key", RequiresKey: true, Adapter: successAdapter("cwa")})
 	svc := NewWeatherService(&config.Config{APIKeys: config.APIKeysConfig{CWA: "key"}}, registry, &mockUpstreamClient{}, cache)
 
-	_, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+	_, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeCurrent)
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, cache.lastKey)
@@ -377,7 +381,7 @@ func TestFetchWeather_AdapterTimeout_Returns504(t *testing.T) {
 	}
 	svc := newWeatherService(a)
 
-	resp, err := svc.GetCurrentWeather(context.Background(), baseQuery("cwa"))
+	resp, err := svc.GetWeather(context.Background(), baseQuery("cwa"), model.WeatherTypeCurrent)
 
 	assert.Nil(t, resp)
 	require.Error(t, err)

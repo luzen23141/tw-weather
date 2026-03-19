@@ -7,15 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAPIKeysConfig_GetByEnvVar(t *testing.T) {
-	keys := &APIKeysConfig{CWA: "cwa", WeatherAPI: "wapi", OpenWeatherMap: "owm"}
-
-	assert.Equal(t, "cwa", keys.GetByEnvVar("CWA_API_KEY"))
-	assert.Equal(t, "wapi", keys.GetByEnvVar("WEATHERAPI_KEY"))
-	assert.Equal(t, "owm", keys.GetByEnvVar("OPENWEATHERMAP_KEY"))
-	assert.Equal(t, "", keys.GetByEnvVar("UNKNOWN"))
-}
-
 func TestGetEnv(t *testing.T) {
 	t.Setenv("TEST_PROXY_GOLANG_ENV", "value")
 	assert.Equal(t, "value", getEnv("TEST_PROXY_GOLANG_ENV", "fallback"))

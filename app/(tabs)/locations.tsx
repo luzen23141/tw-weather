@@ -153,8 +153,7 @@ export default function LocationsScreen() {
             <PageHeaderCard
               icon="location-outline"
               title="地點管理"
-              subtitle="搜尋並收藏常用地點，快速切換目前觀測城市。"
-              eyebrow="地點搜尋與收藏"
+              subtitle="搜尋並切換常用地點。"
             />
 
             <View className="px-4">
@@ -183,7 +182,7 @@ export default function LocationsScreen() {
 
             {!isSearching ? (
               savedLocations.length > 0 ? (
-                <Text className="mb-2 px-4 text-xs font-bold uppercase tracking-wider text-md-on-surface-variant">
+                <Text className="mb-2 px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-md-on-surface-variant">
                   已儲存地點
                 </Text>
               ) : null
@@ -198,16 +197,16 @@ export default function LocationsScreen() {
 
             return (
               <View
-                className={`mx-4 flex-row items-center justify-between rounded-3xl border border-glass-border-strong bg-md-surface-container px-4 py-3.5 ${
+                className={`mx-4 flex-row items-center justify-between rounded-[26px] border border-glass-border-strong bg-md-surface-container px-4 py-3 ${
                   !isLast ? 'border-b border-glass-border' : ''
-                } ${isFirst ? 'rounded-t-3xl' : ''} ${isLast ? 'rounded-b-3xl' : ''}`}
+                } ${isFirst ? 'rounded-t-[26px]' : ''} ${isLast ? 'rounded-b-[26px]' : ''}`}
                 style={getGlassStyle(16)}
               >
                 <View className="flex-1">
-                  <Text className="text-sm font-semibold text-md-on-surface">
+                  <Text className="text-[15px] font-semibold text-md-on-surface">
                     {getLocationPrimaryText(item)}
                   </Text>
-                  <Text className="mt-0.5 text-xs text-md-on-surface-variant">
+                  <Text className="mt-0.5 text-[12px] text-md-on-surface-variant">
                     {getLocationSecondaryText(item)}
                   </Text>
                 </View>
@@ -236,12 +235,12 @@ export default function LocationsScreen() {
 
           return (
             <View
-              className={`mx-4 flex-row items-center gap-3 rounded-3xl border px-4 py-3.5 ${
+              className={`mx-4 flex-row items-center gap-3 rounded-[26px] border px-4 py-3 ${
                 isSelected
                   ? 'border-glass-border-strong bg-md-primary-container'
                   : 'border-glass-border-strong bg-md-surface-container'
-              } ${!isLast ? 'border-b border-glass-border' : ''} ${isFirst ? 'rounded-t-3xl' : ''} ${
-                isLast ? 'rounded-b-3xl' : ''
+              } ${!isLast ? 'border-b border-glass-border' : ''} ${isFirst ? 'rounded-t-[26px]' : ''} ${
+                isLast ? 'rounded-b-[26px]' : ''
               }`}
               style={getGlassStyle(16)}
             >
@@ -254,13 +253,13 @@ export default function LocationsScreen() {
                 <View className="flex-row items-center justify-between gap-3">
                   <View className="flex-1">
                     <Text
-                      className={`text-sm font-semibold ${
+                      className={`text-[15px] font-semibold ${
                         isSelected ? 'text-md-on-primary-container' : 'text-md-on-surface'
                       }`}
                     >
                       {getLocationPrimaryText(item)}
                     </Text>
-                    <Text className="mt-0.5 text-xs text-md-on-surface-variant">
+                    <Text className="mt-0.5 text-[12px] text-md-on-surface-variant">
                       {getLocationSecondaryText(item)}
                     </Text>
                   </View>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { NoLocationState } from '@/components/ui/NoLocationState';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
 import { Ripple } from '@/components/ui/Ripple';
@@ -41,7 +42,7 @@ export default function HomeScreen() {
   const renderStateWithRipple = (node: ReactNode) => (
     <View className="relative">
       <View className="pointer-events-none absolute left-1/2 top-10 h-[220px] w-[220px] -translate-x-1/2">
-        <Ripple count={2} size={220} color="rgba(144, 132, 255, 0.18)" />
+        <Ripple count={1} size={220} color="rgba(144, 132, 255, 0.12)" />
       </View>
       {node}
     </View>
@@ -71,17 +72,7 @@ export default function HomeScreen() {
             <PageState type="loading" skeleton={<WeatherPageSkeleton />} />
           ) : !weatherCardLocation ? (
             renderStateWithRipple(
-              <PageState
-                type="empty"
-                title="選擇你的地點"
-                description={
-                  locationError
-                    ? '目前無法取得你的定位，請先手動選擇城市，再查看即時天氣與預報。'
-                    : '前往地點管理選擇城市，或開啟定位服務自動抓取所在位置。'
-                }
-                actionLabel="前往選擇地點"
-                onActionPress={() => router.push('/locations')}
-              />,
+              <NoLocationState scope="即時天氣與預報" locationError={locationError} />,
             )
           ) : error ? (
             renderStateWithRipple(
@@ -105,7 +96,6 @@ export default function HomeScreen() {
                   location={weatherCardLocation}
                   source={weatherData.source}
                   enabledSources={enabledSources}
-                  eyebrow="即時天氣與預報"
                   actionSlot={
                     <Button
                       variant="tonal"

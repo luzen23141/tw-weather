@@ -19,43 +19,6 @@ jest.mock('@/components/ui/glass', () => ({
   getGlassStyle: jest.fn(() => ({})),
 }));
 
-jest.mock('@/components/ui/MagicCard', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-
-  return {
-    MagicCard: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) =>
-      React.createElement(View, props, children),
-  };
-});
-
-jest.mock('@/components/ui/ShineBorder', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-
-  return {
-    ShineBorder: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) =>
-      React.createElement(View, props, children),
-  };
-});
-
-jest.mock('@/components/ui/NumberTicker', () => {
-  const React = require('react');
-  const { Text } = require('react-native');
-
-  return {
-    NumberTicker: ({
-      value,
-      suffix,
-      ...props
-    }: {
-      value: number;
-      suffix?: string;
-      [key: string]: unknown;
-    }) => React.createElement(Text, props, `${value}${suffix ?? ''}`),
-  };
-});
-
 jest.mock('@/utils/unit-conversion', () => ({
   formatWindSpeed: jest.fn((value: number, unit: string) => `${value}-${unit}`),
 }));

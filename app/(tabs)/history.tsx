@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'expo-router';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 
 import { BlurFade } from '@/components/ui/BlurFade';
@@ -9,10 +8,15 @@ import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { NoLocationState } from '@/components/ui/NoLocationState';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
-import { SkeletonBox, SkeletonProvider } from '@/components/ui/SkeletonLoader';
+import {
+  PageHeaderCardSkeleton,
+  SkeletonBox,
+  SkeletonProvider,
+} from '@/components/ui/SkeletonLoader';
 import { SourceBadge } from '@/components/ui/SourceBadge';
 import { StatCard } from '@/components/ui/StatCard';
 import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
@@ -27,20 +31,7 @@ function HistorySkeleton() {
   return (
     <SkeletonProvider>
       <View className="gap-6">
-        {/* PageHeaderCard 骨架 */}
-        <View
-          className="mx-4 rounded-3xl border border-glass-border bg-md-surface-container px-5 py-4 gap-3"
-          style={getGlassStyle(20)}
-        >
-          <View className="flex-row items-center gap-3">
-            <SkeletonBox height={40} width={40} borderRadius={20} />
-            <View className="flex-1 gap-2">
-              <SkeletonBox height={10} width="30%" borderRadius={4} />
-              <SkeletonBox height={18} width="55%" borderRadius={5} />
-            </View>
-          </View>
-          <SkeletonBox height={32} width={100} borderRadius={8} />
-        </View>
+        <PageHeaderCardSkeleton />
 
         {/* 日期選擇器骨架 */}
         <View className="gap-2">
@@ -87,7 +78,6 @@ function HistorySkeleton() {
 }
 
 export default function HistoryScreen() {
-  const router = useRouter();
   const { displayMode } = useSettingsStore();
   const {
     effectiveLocation,
@@ -151,17 +141,7 @@ export default function HistoryScreen() {
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<HistorySkeleton />} />
           ) : !effectiveLocation ? (
-            <PageState
-              type="empty"
-              title="請先選擇地點"
-              description={
-                locationError
-                  ? '目前無法取得你的定位，請先手動選擇地點，再查看最近 7 天的歷史天氣。'
-                  : '前往地點管理選擇城市後，即可查看最近 7 天的歷史天氣。'
-              }
-              actionLabel="前往選擇地點"
-              onActionPress={() => router.push('/locations')}
-            />
+            <NoLocationState scope="最近 7 天的歷史天氣" locationError={locationError} />
           ) : error ? (
             <PageState
               type="error"
@@ -178,7 +158,6 @@ export default function HistoryScreen() {
                 icon="time-outline"
                 title={effectiveLocation.name}
                 subtitle={locationSecondaryText}
-                eyebrow="歷史天氣與日期瀏覽"
                 rightSlot={
                   <SourceBadge source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'} />
                 }
@@ -195,8 +174,8 @@ export default function HistoryScreen() {
                 }
               />
 
-              <View className="gap-3">
-                <Text className="px-4 text-xs font-bold uppercase tracking-[1.4px] text-md-on-surface-variant">
+              <View className="gap-2.5">
+                <Text className="px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-md-on-surface-variant">
                   選擇日期
                 </Text>
                 <FlatList
@@ -218,7 +197,7 @@ export default function HistoryScreen() {
                         accessibilityRole="button"
                         accessibilityLabel={`選擇 ${monthStr}/${dayStr}`}
                         onPress={() => setSelectedDate(item.date)}
-                        className={`min-w-14 min-h-11 items-center justify-center rounded-2xl px-3 py-2.5 transition-colors duration-200 ${
+                        className={`min-w-14 min-h-11 items-center justify-center rounded-2xl px-3 py-2.5 ${
                           isSelected
                             ? 'bg-md-primary'
                             : 'border border-glass-border-strong bg-md-surface-container'
@@ -226,7 +205,7 @@ export default function HistoryScreen() {
                         style={!isSelected ? getGlassStyle(16) : undefined}
                       >
                         <Text
-                          className={`text-xs font-semibold ${
+                          className={`text-[11px] font-semibold ${
                             isSelected ? 'text-md-on-primary' : 'text-md-on-surface-variant'
                           }`}
                         >
@@ -245,13 +224,13 @@ export default function HistoryScreen() {
                       className="rounded-[26px] border border-glass-border-strong bg-md-surface px-5 py-4"
                       style={getGlassStyle(16)}
                     >
-                      <Text className="text-xs font-bold uppercase tracking-[1.4px] text-md-primary">
+                      <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-md-primary">
                         歷史摘要
                       </Text>
-                      <Text className="mt-2 text-lg font-bold text-md-on-surface">
+                      <Text className="mt-2 text-[17px] font-bold text-md-on-surface">
                         {formatDate(selectedDate)}
                       </Text>
-                      <Text className="mt-1 text-sm leading-6 text-md-on-surface-variant">
+                      <Text className="mt-1 text-[13px] leading-5 text-md-on-surface-variant">
                         {daysAgo(selectedDate) === 0
                           ? '這是今天目前可取得的歷史資料。'
                           : `${daysAgo(selectedDate)} 天前的觀測摘要。`}

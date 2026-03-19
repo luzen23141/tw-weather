@@ -1,3 +1,4 @@
+// Command fetch_raw_fixtures captures raw upstream provider responses for fixture generation.
 package main
 
 import (
@@ -38,7 +39,9 @@ func (c *captureClient) Do(ctx context.Context, req *model.UpstreamRequest) (*mo
 		c.lastError = err
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		c.lastError = readErr
@@ -62,10 +65,10 @@ func main() {
 func run() error {
 	cfg := config.Load()
 	registry := adapter.NewRegistry(
-		adapter.CWA{},
-		adapter.OpenMeteo{},
-		adapter.WeatherAPI{},
-		adapter.OpenWeatherMap{},
+		adapter.ProviderSpec{ID: "cwa", Name: "中央氣象署（CWA）", Description: "台灣最精準，含即時觀測與預報", APIKey: cfg.APIKeys.CWA, RequiresKey: true, Adapter: adapter.CWA{}},
+		adapter.ProviderSpec{ID: "openmeteo", Name: "Open-Meteo", Description: "免費無限制，歷史資料豐富", RequiresKey: false, Adapter: adapter.OpenMeteo{}},
+		adapter.ProviderSpec{ID: "weatherapi", Name: "WeatherAPI", Description: "備用來源，支援預報與 7 天歷史", APIKey: cfg.APIKeys.WeatherAPI, RequiresKey: true, Adapter: adapter.WeatherAPI{}},
+		adapter.ProviderSpec{ID: "openweathermap", Name: "OpenWeatherMap", Description: "全球覆蓋，備用資料源", APIKey: cfg.APIKeys.OpenWeatherMap, RequiresKey: true, Adapter: adapter.OpenWeatherMap{}},
 	)
 
 	root := filepath.Join(fixtures.RawFixturesDir, time.Now().UTC().Format("20060102T150405Z"))
@@ -111,25 +114,25 @@ func run() error {
 	return nil
 }
 
-func fetchScenario(root string, cfg *config.Config, registry *adapter.Registry, client *captureClient, scenario *fixtures.Scenario) error {
+func fetchScenario(root string, _ *config.Config, registry *adapter.Registry, client *captureClient, scenario *fixtures.Scenario) error {
 	client.lastURL = ""
 	client.lastResp = nil
 	client.lastError = nil
 
-	a, ok := registry.Get(scenario.Provider)
+	provider, ok := registry.Get(scenario.Provider)
 	if !ok {
 		return fmt.Errorf("provider not registered: %s", scenario.Provider)
 	}
 
-	apiKey := cfg.APIKeys.GetByEnvVar(a.APIKeyEnvVar())
-	if a.RequiresKey() && apiKey == "" {
-		return fmt.Errorf("missing API key for provider %s (%s)", scenario.Provider, a.APIKeyEnvVar())
+	apiKey := provider.APIKey
+	if provider.RequiresKey && apiKey == "" {
+		return fmt.Errorf("missing API key for provider %s", scenario.Provider)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	_, err := a.Fetch(ctx, &scenario.Query, scenario.WeatherType, apiKey, client)
+	_, err := provider.Adapter.Fetch(ctx, &scenario.Query, scenario.WeatherType, apiKey, client)
 	if client.lastResp == nil {
 		if err != nil {
 			return fmt.Errorf("fetch scenario %s: %w", scenario.ID, err)

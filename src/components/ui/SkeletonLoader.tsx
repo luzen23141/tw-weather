@@ -99,6 +99,24 @@ export function SkeletonBox({
   );
 }
 
+function PageHeaderCardSkeleton() {
+  return (
+    <View
+      className="mx-4 rounded-3xl border border-glass-border bg-md-surface-container px-5 py-4 gap-3"
+      style={getGlassStyle(20)}
+    >
+      <View className="flex-row items-center gap-3">
+        <SkeletonBox height={40} width={40} borderRadius={20} />
+        <View className="flex-1 gap-2">
+          <SkeletonBox height={10} width="30%" borderRadius={4} />
+          <SkeletonBox height={18} width="60%" borderRadius={5} />
+        </View>
+      </View>
+      <SkeletonBox height={32} width={100} borderRadius={8} />
+    </View>
+  );
+}
+
 // ─── 複合骨架屏元件 ────────────────────────────────────────────────────────────
 
 /** 當前天氣卡片骨架屏 */
@@ -223,17 +241,7 @@ export function WeatherPageSkeleton() {
   return (
     <SkeletonProvider>
       <View className="gap-6">
-        {/* PageHeaderCard 骨架 */}
-        <View className="mx-4 rounded-3xl border border-glass-border bg-md-surface-container px-5 py-4 gap-3">
-          <View className="flex-row items-center gap-3">
-            <SkeletonBox height={40} width={40} borderRadius={20} />
-            <View className="flex-1 gap-2">
-              <SkeletonBox height={10} width="30%" borderRadius={4} />
-              <SkeletonBox height={18} width="60%" borderRadius={5} />
-            </View>
-          </View>
-          <SkeletonBox height={32} width={100} borderRadius={8} />
-        </View>
+        <PageHeaderCardSkeleton />
 
         <CurrentWeatherSkeletonInner />
         <HourlyForecastSkeletonInner />
@@ -242,3 +250,5 @@ export function WeatherPageSkeleton() {
     </SkeletonProvider>
   );
 }
+
+export { PageHeaderCardSkeleton };

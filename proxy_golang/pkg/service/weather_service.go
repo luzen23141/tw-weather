@@ -13,15 +13,16 @@ import (
 	"proxy_golang/pkg/adapter"
 	"proxy_golang/pkg/config"
 	"proxy_golang/pkg/model"
-	"proxy_golang/pkg/repository"
 )
 
 // WeatherService 天氣資料服務介面
 type WeatherService interface {
-	GetCurrentWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error)
-	GetHourlyWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error)
-	GetDailyWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error)
-	GetHistoryWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error)
+	GetWeather(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType) (*model.WeatherResponse, error)
+}
+
+type cacheStore interface {
+	Get(key string) (*model.CacheEntry, bool)
+	Set(key string, entry *model.CacheEntry)
 }
 
 // weatherServiceImpl 天氣服務實作
@@ -29,7 +30,7 @@ type weatherServiceImpl struct {
 	cfg      *config.Config
 	registry *adapter.Registry
 	upstream model.UpstreamClient
-	cache    repository.CacheRepository
+	cache    cacheStore
 }
 
 // NewWeatherService 建立 WeatherService（依賴注入）
@@ -37,7 +38,7 @@ func NewWeatherService(
 	cfg *config.Config,
 	registry *adapter.Registry,
 	upstream model.UpstreamClient,
-	cache repository.CacheRepository,
+	cache cacheStore,
 ) WeatherService {
 	return &weatherServiceImpl{
 		cfg:      cfg,
@@ -47,35 +48,20 @@ func NewWeatherService(
 	}
 }
 
-// GetCurrentWeather 取得當前天氣
-func (s *weatherServiceImpl) GetCurrentWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
-	return s.fetchWeather(ctx, query, model.WeatherTypeCurrent)
-}
-
-// GetHourlyWeather 取得逐時預報
-func (s *weatherServiceImpl) GetHourlyWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
-	return s.fetchWeather(ctx, query, model.WeatherTypeHourly)
-}
-
-// GetDailyWeather 取得每日預報
-func (s *weatherServiceImpl) GetDailyWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
-	return s.fetchWeather(ctx, query, model.WeatherTypeDaily)
-}
-
-// GetHistoryWeather 取得歷史天氣
-func (s *weatherServiceImpl) GetHistoryWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
-	if query.Date == "" {
+// GetWeather 取得指定類型天氣資料
+func (s *weatherServiceImpl) GetWeather(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType) (*model.WeatherResponse, error) {
+	if weatherType == model.WeatherTypeHistory && query.Date == "" {
 		return nil, &ProxyError{
 			Code: http.StatusBadRequest,
 			Err:  fmt.Errorf("date is required for history query (YYYY-MM-DD)"),
 		}
 	}
-	return s.fetchWeather(ctx, query, model.WeatherTypeHistory)
+	return s.fetchWeather(ctx, query, weatherType)
 }
 
 // fetchWeather 共用的 adapter 呼叫邏輯
 func (s *weatherServiceImpl) fetchWeather(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType) (*model.WeatherResponse, error) {
-	a, ok := s.registry.Get(query.Provider)
+	provider, ok := s.registry.Get(query.Provider)
 	if !ok {
 		return nil, &ProxyError{
 			Code: http.StatusBadRequest,
@@ -83,8 +69,8 @@ func (s *weatherServiceImpl) fetchWeather(ctx context.Context, query *model.Weat
 		}
 	}
 
-	apiKey := s.cfg.APIKeys.GetByEnvVar(a.APIKeyEnvVar())
-	if apiKey == "" && s.registry.RequiresKey(query.Provider) {
+	apiKey := provider.APIKey
+	if apiKey == "" && provider.RequiresKey {
 		return nil, &ProxyError{
 			Code: http.StatusInternalServerError,
 			Err:  fmt.Errorf("API key not configured for provider: %s", query.Provider),
@@ -114,7 +100,7 @@ func (s *weatherServiceImpl) fetchWeather(ctx context.Context, query *model.Weat
 	defer cancel()
 
 	upstreamStart := time.Now()
-	resp, err := a.Fetch(timeoutCtx, query, weatherType, apiKey, s.upstream)
+	resp, err := provider.Adapter.Fetch(timeoutCtx, query, weatherType, apiKey, s.upstream)
 	upstreamLatency := time.Since(upstreamStart)
 	if err != nil {
 		if timeoutCtx.Err() == context.DeadlineExceeded {

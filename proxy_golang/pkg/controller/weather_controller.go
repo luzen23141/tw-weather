@@ -12,6 +12,17 @@ import (
 	"proxy_golang/pkg/service"
 )
 
+const (
+	// Current maps to the current weather endpoint kind.
+	Current = model.WeatherTypeCurrent
+	// Hourly maps to the hourly forecast endpoint kind.
+	Hourly = model.WeatherTypeHourly
+	// Daily maps to the daily forecast endpoint kind.
+	Daily = model.WeatherTypeDaily
+	// History maps to the history weather endpoint kind.
+	History = model.WeatherTypeHistory
+)
+
 // WeatherController 天氣資料控制器
 type WeatherController struct {
 	weatherService service.WeatherService
@@ -22,48 +33,20 @@ func NewWeatherController(ws service.WeatherService) *WeatherController {
 	return &WeatherController{weatherService: ws}
 }
 
-// HandleCurrentWeather 處理 GET /api/weather/current
-func (ctrl *WeatherController) HandleCurrentWeather(c *gin.Context) {
-	query, ok := bindWeatherQuery(c)
-	if !ok {
-		return
+// Handle 處理 GET /api/weather/*
+func (ctrl *WeatherController) Handle(kind model.WeatherType) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		query, ok := bindWeatherQuery(c, kind)
+		if !ok {
+			return
+		}
+		resp, err := ctrl.weatherService.GetWeather(c.Request.Context(), query, kind)
+		ctrl.respond(c, resp, err)
 	}
-	resp, err := ctrl.weatherService.GetCurrentWeather(c.Request.Context(), query)
-	ctrl.respond(c, resp, err)
-}
-
-// HandleHourlyWeather 處理 GET /api/weather/hourly
-func (ctrl *WeatherController) HandleHourlyWeather(c *gin.Context) {
-	query, ok := bindWeatherQuery(c)
-	if !ok {
-		return
-	}
-	resp, err := ctrl.weatherService.GetHourlyWeather(c.Request.Context(), query)
-	ctrl.respond(c, resp, err)
-}
-
-// HandleDailyWeather 處理 GET /api/weather/daily
-func (ctrl *WeatherController) HandleDailyWeather(c *gin.Context) {
-	query, ok := bindWeatherQuery(c)
-	if !ok {
-		return
-	}
-	resp, err := ctrl.weatherService.GetDailyWeather(c.Request.Context(), query)
-	ctrl.respond(c, resp, err)
-}
-
-// HandleHistoryWeather 處理 GET /api/weather/history
-func (ctrl *WeatherController) HandleHistoryWeather(c *gin.Context) {
-	query, ok := bindWeatherQuery(c)
-	if !ok {
-		return
-	}
-	resp, err := ctrl.weatherService.GetHistoryWeather(c.Request.Context(), query)
-	ctrl.respond(c, resp, err)
 }
 
 // bindWeatherQuery 解析並驗證共用入參
-func bindWeatherQuery(c *gin.Context) (*model.WeatherQuery, bool) {
+func bindWeatherQuery(c *gin.Context, kind model.WeatherType) (*model.WeatherQuery, bool) {
 	var query model.WeatherQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: err.Error()})
@@ -90,7 +73,7 @@ func bindWeatherQuery(c *gin.Context) (*model.WeatherQuery, bool) {
 		return nil, false
 	}
 
-	if query.Provider == "cwa" && query.LocationID == "" && (c.FullPath() == "/api/weather/hourly" || c.FullPath() == "/api/weather/daily") {
+	if query.Provider == "cwa" && query.LocationID == "" && (kind == model.WeatherTypeHourly || kind == model.WeatherTypeDaily) {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "locationId is required for CWA hourly/daily requests"})
 		return nil, false
 	}

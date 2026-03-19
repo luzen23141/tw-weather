@@ -75,21 +75,6 @@ var cwaWeeklyForecastDatasets = map[string]cwaForecastDataset{
 // CWA adapter
 type CWA struct{}
 
-// ProviderID returns the unique identifier for the CWA provider.
-func (CWA) ProviderID() string { return "cwa" }
-
-// Name returns the display name for the CWA provider.
-func (CWA) Name() string { return "中央氣象署（CWA）" }
-
-// Description returns a brief description of the CWA provider.
-func (CWA) Description() string { return "台灣最精準，含即時觀測與預報" }
-
-// APIKeyEnvVar returns the environment variable name for the CWA API key.
-func (CWA) APIKeyEnvVar() string { return "CWA_API_KEY" }
-
-// RequiresKey returns true because CWA requires an API key.
-func (CWA) RequiresKey() bool { return true }
-
 // Fetch retrieves weather data from CWA based on the weather type.
 func (CWA) Fetch(ctx context.Context, query *model.WeatherQuery, weatherType model.WeatherType, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
 	switch weatherType {
@@ -320,7 +305,7 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 		windSpeed := getCWAValue(elemMap, "風速", slot) * 3.6 // m/s → km/h
 		windDir := getCWAValue(elemMap, "風向", slot)
 		precipProb := getCWAValue(elemMap, "3小時降雨機率", slot)
-		weather := getCWAStringValue(elemMap, "天氣現象", slot)
+		weather := getCWAStringValue(elemMap, slot)
 
 		windDirInt := int(windDir)
 		precipProbInt := int(precipProb)
@@ -389,7 +374,7 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 		maxTemp := getCWAValue(elemMap, "最高溫度", slot)
 		minTemp := getCWAValue(elemMap, "最低溫度", slot)
 		precipProb := getCWAValue(elemMap, "12小時降雨機率", slot)
-		weather := getCWAStringValue(elemMap, "天氣現象", slot)
+		weather := getCWAStringValue(elemMap, slot)
 
 		precipProbInt := int(precipProb)
 		weatherCode := CWAWeatherToWMO(weather)
@@ -500,8 +485,8 @@ func getCWAValue(elemMap map[string]map[string]string, name, timeSlot string) fl
 	return 0
 }
 
-func getCWAStringValue(elemMap map[string]map[string]string, name, timeSlot string) string {
-	if timeMap, ok := elemMap[name]; ok {
+func getCWAStringValue(elemMap map[string]map[string]string, timeSlot string) string {
+	if timeMap, ok := elemMap["天氣現象"]; ok {
 		if val, ok := timeMap[timeSlot]; ok {
 			return val
 		}

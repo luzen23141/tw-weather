@@ -17,7 +17,10 @@ import (
 func TestHandleListProviders(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	ctrl := NewProviderController(adapter.NewRegistry(adapter.CWA{}, adapter.OpenMeteo{}))
+	ctrl := NewProviderController(adapter.NewRegistry(
+		adapter.ProviderSpec{ID: "cwa", Name: "中央氣象署（CWA）", Description: "台灣最精準，含即時觀測與預報", APIKey: "cwa-key", RequiresKey: true, Adapter: adapter.CWA{}},
+		adapter.ProviderSpec{ID: "openmeteo", Name: "Open-Meteo", Description: "免費無限制，歷史資料豐富", RequiresKey: false, Adapter: adapter.OpenMeteo{}},
+	))
 	r.GET("/api/provider/list", ctrl.HandleListProviders)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/provider/list", nil)

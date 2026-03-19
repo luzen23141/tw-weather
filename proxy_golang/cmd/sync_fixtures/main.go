@@ -1,3 +1,4 @@
+// Command sync_fixtures syncs captured raw fixtures into generated and embedded fixture sets.
 package main
 
 import (

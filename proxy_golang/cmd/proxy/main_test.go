@@ -28,7 +28,7 @@ func TestMain_Success(t *testing.T) {
 	newApp = func() *app.App {
 		return &app.App{Config: &config.Config{Port: "8080"}, Router: &fakeRunner{}}
 	}
-	logFatal = func(err error) {
+	logFatal = func(_ error) {
 		fatalCalled = true
 	}
 

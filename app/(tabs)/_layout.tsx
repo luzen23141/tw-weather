@@ -8,16 +8,17 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#93b4ff',
-        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
+        tabBarActiveTintColor: 'rgba(255, 255, 255, 0.92)',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.52)',
+        tabBarShowLabel: false,
         sceneStyle: { flex: 1, minHeight: 0 },
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: 'rgba(20, 32, 65, 0.65)',
+          backgroundColor: 'rgba(255, 255, 255, 0.16)',
           borderTopWidth: 0,
-          height: 60,
+          height: 56,
           paddingBottom: 8,
-          paddingTop: 6,
+          paddingTop: 8,
           position: 'absolute',
           bottom: Platform.OS === 'web' ? 12 : 0,
           left: Platform.OS === 'web' ? '50%' : 0,
@@ -25,22 +26,17 @@ export default function TabsLayout() {
           ...(Platform.OS === 'web'
             ? {
                 transform: [{ translateX: '-50%' }] as unknown as string,
-                maxWidth: 420,
-                width: '92%',
-                borderRadius: 24,
+                maxWidth: 320,
+                width: '80%',
+                borderRadius: 999,
                 borderWidth: 1,
-                borderColor: 'rgba(255, 255, 255, 0.12)',
+                borderColor: 'rgba(255, 255, 255, 0.18)',
               }
             : {
-                borderTopColor: 'rgba(255, 255, 255, 0.08)',
+                borderTopColor: 'rgba(255, 255, 255, 0.12)',
                 borderTopWidth: 1,
               }),
-          ...getGlassStyle(24),
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-          letterSpacing: 0.2,
+          ...getGlassStyle(20),
         },
       }}
     >
@@ -89,7 +85,7 @@ export default function TabsLayout() {
         options={{
           title: '設定',
           tabBarIcon: ({ color, size }) => (
-            <AppIcon name="settings-outline" size={size} color={color} />
+            <AppIcon name="options-outline" size={size} color={color} />
           ),
         }}
       />

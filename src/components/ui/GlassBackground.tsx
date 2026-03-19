@@ -2,7 +2,6 @@ import { Platform, View, ViewProps, ViewStyle } from 'react-native';
 
 import { DotPattern } from '@/components/ui/DotPattern';
 import { Meteors } from '@/components/ui/Meteors';
-import { Particles } from '@/components/ui/Particles';
 import { useSettingsStore } from '@/store/settings.store';
 import { gradientToCSS, getWeatherGradient } from '@/utils/weather-theme';
 
@@ -15,8 +14,6 @@ export interface GlassBackgroundProps extends ViewProps {
   weatherCode?: number | undefined;
   /** 是否顯示流星裝飾，預設 false */
   showMeteors?: boolean;
-  /** 是否顯示粒子裝飾，預設 true */
-  showParticles?: boolean;
   /** 是否顯示點陣背景，預設 false */
   showDotPattern?: boolean;
 }
@@ -29,7 +26,7 @@ const DEFAULT_GRADIENT_DARK =
 
 /**
  * 頁面漸層背景元件。
- * 深藍紫漸層 + 毛玻璃風格，搭配 Particles 粒子裝飾。
+ * 深藍紫漸層 + 低干擾毛玻璃背景。
  */
 export function GlassBackground({
   className = '',
@@ -37,7 +34,6 @@ export function GlassBackground({
   children,
   weatherCode,
   showMeteors = false,
-  showParticles = true,
   showDotPattern = false,
   ...props
 }: GlassBackgroundProps) {
@@ -63,15 +59,6 @@ export function GlassBackground({
       {...props}
     >
       {showDotPattern ? <DotPattern color="rgba(255,255,255,0.08)" gap={24} dotSize={1} /> : null}
-      {showParticles ? (
-        <Particles
-          quantity={30}
-          size={2}
-          color="#ffffff"
-          opacity={isDark ? 0.15 : 0.2}
-          speed={0.3}
-        />
-      ) : null}
       {showMeteors ? <Meteors number={12} /> : null}
       {children}
     </View>

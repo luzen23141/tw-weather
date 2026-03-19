@@ -78,16 +78,16 @@ export function PageState({
           Platform.OS === 'web' ? { alignSelf: 'center', width: '100%', maxWidth: 560 } : undefined
         }
       >
-        <Text className="text-[11px] font-bold uppercase tracking-[2px] text-md-primary">
+        <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-md-primary">
           {toneLabel}
         </Text>
         <View className="h-[72px] w-[72px] items-center justify-center rounded-[24px] border border-glass-border-strong bg-md-surface shadow-glass">
           <AppIcon name={config.icon} size={34} color={config.iconColor} />
         </View>
-        <Text className="text-[28px] font-bold leading-9 text-md-on-surface text-center">
+        <Text className="text-[24px] font-bold leading-8 text-md-on-surface text-center">
           {title ?? config.defaultTitle}
         </Text>
-        <Text className="max-w-[320px] text-base leading-7 text-md-on-surface-variant text-center">
+        <Text className="max-w-[320px] text-[15px] leading-6 text-md-on-surface-variant text-center">
           {description ?? config.defaultDescription}
         </Text>
         {actionLabel || secondaryActionLabel ? (

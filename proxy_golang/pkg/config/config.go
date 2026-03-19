@@ -23,20 +23,6 @@ type APIKeysConfig struct {
 	OpenWeatherMap string
 }
 
-// GetByEnvVar 透過環境變數名稱取得對應的 API Key
-func (k *APIKeysConfig) GetByEnvVar(envVar string) string {
-	switch envVar {
-	case "CWA_API_KEY":
-		return k.CWA
-	case "WEATHERAPI_KEY":
-		return k.WeatherAPI
-	case "OPENWEATHERMAP_KEY":
-		return k.OpenWeatherMap
-	default:
-		return ""
-	}
-}
-
 // Load 載入環境變數並回傳 Config
 func Load() *Config {
 	if err := godotenv.Load(); err != nil {

@@ -18,16 +18,10 @@ var cwaQuery = &model.WeatherQuery{
 	Lon:      121.517,
 }
 
-func TestCWA_ProviderID(t *testing.T) {
-	assert.Equal(t, "cwa", CWA{}.ProviderID())
-}
-
-func TestCWA_Metadata(t *testing.T) {
-	a := CWA{}
-	assert.NotEmpty(t, a.Name())
-	assert.NotEmpty(t, a.Description())
-	assert.Equal(t, "CWA_API_KEY", a.APIKeyEnvVar())
-	assert.True(t, a.RequiresKey())
+func TestCWA_Fetch_UnsupportedType_EarlyGuard(t *testing.T) {
+	resp, err := CWA{}.Fetch(context.Background(), cwaQuery, model.WeatherTypeHistory, "test-key", &mockUpstreamClient{})
+	assert.Nil(t, resp)
+	assert.Error(t, err)
 }
 
 // --- Current ---
@@ -146,7 +140,7 @@ func TestCWAHourlyParsing_WithCuratedFixture(t *testing.T) {
 		require.NoError(t, err)
 		windDirInt := int(getCWAValue(elemMap, "風向", slot))
 		precipProbInt := int(getCWAValue(elemMap, "3小時降雨機率", slot))
-		weather := getCWAStringValue(elemMap, "天氣現象", slot)
+		weather := getCWAStringValue(elemMap, slot)
 		hourly = append(hourly, model.HourlyWeather{
 			Time:          tm,
 			Temperature:   getCWAValue(elemMap, "溫度", slot),
@@ -240,7 +234,7 @@ func TestCWADailyParsing_WithCuratedFixture(t *testing.T) {
 		tm, err := parseCWATime(slot)
 		require.NoError(t, err)
 		precipProbInt := int(getCWAValue(elemMap, "12小時降雨機率", slot))
-		weather := getCWAStringValue(elemMap, "天氣現象", slot)
+		weather := getCWAStringValue(elemMap, slot)
 		daily = append(daily, model.DailyWeather{
 			Date:        tm,
 			TempMax:     getCWAValue(elemMap, "最高溫度", slot),

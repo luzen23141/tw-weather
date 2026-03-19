@@ -1,3 +1,4 @@
+// Package fixtures defines the raw fixture catalog used by proxy integration tooling.
 package fixtures
 
 import (
@@ -9,10 +10,13 @@ import (
 )
 
 const (
+	// RawFixturesDir is the directory that stores captured raw upstream fixture batches.
 	RawFixturesDir = "test/raw_fixtures"
-	ManifestName   = "manifest.json"
+	// ManifestName is the manifest file written beside each raw fixture batch.
+	ManifestName = "manifest.json"
 )
 
+// Scenario describes one captured upstream fixture scenario.
 type Scenario struct {
 	ID          string             `json:"id"`
 	Provider    string             `json:"provider"`
@@ -27,20 +31,24 @@ type Scenario struct {
 	FetchedAt   time.Time          `json:"fetchedAt"`
 }
 
+// Manifest records a batch of captured scenarios and their metadata.
 type Manifest struct {
 	Version   int        `json:"version"`
 	CreatedAt time.Time  `json:"createdAt"`
 	Scenarios []Scenario `json:"scenarios"`
 }
 
+// BodyFileName returns the fixture body file name for a scenario id.
 func BodyFileName(id string) string {
 	return fmt.Sprintf("%s.json", id)
 }
 
+// BodyFilePath returns the full path to a scenario body file under the given root.
 func BodyFilePath(root, id string) string {
 	return filepath.Join(root, BodyFileName(id))
 }
 
+// DefaultScenarios returns the default upstream capture scenarios.
 func DefaultScenarios() []Scenario {
 	return []Scenario{
 		{

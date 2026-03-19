@@ -55,8 +55,8 @@ func TestRedactURL(t *testing.T) {
 
 func TestFetchScenario_Success(t *testing.T) {
 	root := t.TempDir()
-	registry := adapter.NewRegistry(adapter.OpenMeteo{})
-	client := &captureClient{http: &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+	registry := adapter.NewRegistry(adapter.ProviderSpec{ID: "openmeteo", Name: "Open-Meteo", Description: "免費無限制，歷史資料豐富", RequiresKey: false, Adapter: adapter.OpenMeteo{}})
+	client := &captureClient{http: &http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"current":{"temperature_2m":25},"latitude":25.03,"longitude":121.56}`)), Header: make(http.Header)}, nil
 	})}}
 	scenario := &fixtures.Scenario{ID: "openmeteo_current_taipei", Provider: "openmeteo", WeatherType: model.WeatherTypeCurrent, Query: model.WeatherQuery{Provider: "openmeteo", Lat: 25.03, Lon: 121.56}}
@@ -72,11 +72,11 @@ func TestFetchScenario_Success(t *testing.T) {
 
 func TestFetchScenario_MissingKeyAndProvider(t *testing.T) {
 	root := t.TempDir()
-	client := &captureClient{http: &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+	client := &captureClient{http: &http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
 		return nil, errors.New("should not be called")
 	})}}
 
-	err := fetchScenario(root, &config.Config{}, adapter.NewRegistry(adapter.CWA{}), client, &fixtures.Scenario{ID: "cwa", Provider: "cwa", WeatherType: model.WeatherTypeCurrent, Query: model.WeatherQuery{Provider: "cwa"}})
+	err := fetchScenario(root, &config.Config{}, adapter.NewRegistry(adapter.ProviderSpec{ID: "cwa", Name: "中央氣象署（CWA）", Description: "台灣最精準，含即時觀測與預報", RequiresKey: true, Adapter: adapter.CWA{}}), client, &fixtures.Scenario{ID: "cwa", Provider: "cwa", WeatherType: model.WeatherTypeCurrent, Query: model.WeatherQuery{Provider: "cwa"}})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing API key")
 

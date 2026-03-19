@@ -21,7 +21,6 @@ func Setup(
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORS())
 	r.Use(middleware.RequestLogger())
-	r.Use(middleware.MockMode())
 
 	api := r.Group("/api")
 	{
@@ -34,10 +33,10 @@ func Setup(
 
 		weather := api.Group("/weather", middleware.HMACAuth(proxySecret))
 		{
-			weather.GET("/current", weatherCtrl.HandleCurrentWeather)
-			weather.GET("/hourly", weatherCtrl.HandleHourlyWeather)
-			weather.GET("/daily", weatherCtrl.HandleDailyWeather)
-			weather.GET("/history", weatherCtrl.HandleHistoryWeather)
+			weather.GET("/current", weatherCtrl.Handle(controller.Current))
+			weather.GET("/hourly", weatherCtrl.Handle(controller.Hourly))
+			weather.GET("/daily", weatherCtrl.Handle(controller.Daily))
+			weather.GET("/history", weatherCtrl.Handle(controller.History))
 		}
 	}
 

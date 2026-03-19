@@ -19,38 +19,18 @@ import (
 // ─── mock WeatherService ─────────────────────────────────────────────────────
 
 type mockWeatherService struct {
-	getCurrentFn func(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error)
-	getHourlyFn  func(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error)
-	getDailyFn   func(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error)
-	getHistoryFn func(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error)
+	getWeatherFn func(ctx context.Context, query *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error)
 }
 
-func (m *mockWeatherService) GetCurrentWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
-	if m.getCurrentFn != nil {
-		return m.getCurrentFn(ctx, query)
+func (m *mockWeatherService) GetWeather(ctx context.Context, query *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+	if m.getWeatherFn != nil {
+		return m.getWeatherFn(ctx, query, kind)
 	}
-	return defaultWeatherResponse("cwa", model.WeatherTypeCurrent), nil
-}
-
-func (m *mockWeatherService) GetHourlyWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
-	if m.getHourlyFn != nil {
-		return m.getHourlyFn(ctx, query)
+	provider := "cwa"
+	if kind == model.WeatherTypeHistory {
+		provider = "weatherapi"
 	}
-	return defaultWeatherResponse("cwa", model.WeatherTypeHourly), nil
-}
-
-func (m *mockWeatherService) GetDailyWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
-	if m.getDailyFn != nil {
-		return m.getDailyFn(ctx, query)
-	}
-	return defaultWeatherResponse("cwa", model.WeatherTypeDaily), nil
-}
-
-func (m *mockWeatherService) GetHistoryWeather(ctx context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
-	if m.getHistoryFn != nil {
-		return m.getHistoryFn(ctx, query)
-	}
-	return defaultWeatherResponse("weatherapi", model.WeatherTypeHistory), nil
+	return defaultWeatherResponse(provider, kind), nil
 }
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
@@ -68,17 +48,19 @@ func setupWeatherRouter(svc service.WeatherService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	ctrl := NewWeatherController(svc)
-	r.GET("/api/weather/current", ctrl.HandleCurrentWeather)
-	r.GET("/api/weather/hourly", ctrl.HandleHourlyWeather)
-	r.GET("/api/weather/daily", ctrl.HandleDailyWeather)
-	r.GET("/api/weather/history", ctrl.HandleHistoryWeather)
+	r.GET("/api/weather/current", ctrl.Handle(model.WeatherTypeCurrent))
+	r.GET("/api/weather/hourly", ctrl.Handle(model.WeatherTypeHourly))
+	r.GET("/api/weather/daily", ctrl.Handle(model.WeatherTypeDaily))
+	r.GET("/api/weather/history", ctrl.Handle(model.WeatherTypeHistory))
 	return r
 }
 
 // 有效 query string（provider + lat/lon）
-const validQuery = "?provider=cwa&lat=25.04&lon=121.51"
-const validCWAHourlyForecastQuery = "?provider=cwa&locationId=F-D0047-061"
-const validCWADailyForecastQuery = "?provider=cwa&locationId=F-D0047-063"
+const (
+	validQuery                  = "?provider=cwa&lat=25.04&lon=121.51"
+	validCWAHourlyForecastQuery = "?provider=cwa&locationId=F-D0047-061"
+	validCWADailyForecastQuery  = "?provider=cwa&locationId=F-D0047-063"
+)
 
 // ─── HandleCurrentWeather ────────────────────────────────────────────────────
 
@@ -152,7 +134,8 @@ func TestHandleDailyWeather_Success(t *testing.T) {
 
 func TestHandleHistoryWeather_Success_WithDate(t *testing.T) {
 	svc := &mockWeatherService{
-		getHistoryFn: func(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
+		getWeatherFn: func(_ context.Context, _ *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+			assert.Equal(t, model.WeatherTypeHistory, kind)
 			return &model.WeatherResponse{
 				Provider: "weatherapi",
 				Type:     model.WeatherTypeHistory,
@@ -187,7 +170,8 @@ func TestHandleCurrentWeather_ProxyError_ReturnsCorrectCode(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			svc := &mockWeatherService{
-				getCurrentFn: func(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
+				getWeatherFn: func(_ context.Context, _ *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+					assert.Equal(t, model.WeatherTypeCurrent, kind)
 					return nil, &service.ProxyError{
 						Code: tc.code,
 						Err:  errors.New(tc.message),
@@ -210,7 +194,8 @@ func TestHandleCurrentWeather_ProxyError_ReturnsCorrectCode(t *testing.T) {
 
 func TestHandleCurrentWeather_UnexpectedError_Returns500(t *testing.T) {
 	svc := &mockWeatherService{
-		getCurrentFn: func(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
+		getWeatherFn: func(_ context.Context, _ *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+			assert.Equal(t, model.WeatherTypeCurrent, kind)
 			// 回傳一個普通 error，不是 *ProxyError
 			return nil, errors.New("some unexpected panic-like error")
 		},
@@ -313,7 +298,8 @@ func TestHandleCurrentWeather_NegativeDays_Returns400(t *testing.T) {
 
 func TestHandleCurrentWeather_DaysExceedsMax_Clamps(t *testing.T) {
 	svc := &mockWeatherService{
-		getCurrentFn: func(_ context.Context, query *model.WeatherQuery) (*model.WeatherResponse, error) {
+		getWeatherFn: func(_ context.Context, query *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+			assert.Equal(t, model.WeatherTypeCurrent, kind)
 			assert.Equal(t, model.MaxDays, query.Days)
 			return defaultWeatherResponse("openmeteo", model.WeatherTypeCurrent), nil
 		},
@@ -329,7 +315,8 @@ func TestHandleCurrentWeather_DaysExceedsMax_Clamps(t *testing.T) {
 
 func TestHandleDailyWeather_ProxyError(t *testing.T) {
 	svc := &mockWeatherService{
-		getDailyFn: func(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
+		getWeatherFn: func(_ context.Context, _ *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+			assert.Equal(t, model.WeatherTypeDaily, kind)
 			return nil, &service.ProxyError{Code: http.StatusBadGateway, Err: errors.New("daily failed")}
 		},
 	}
@@ -344,7 +331,8 @@ func TestHandleDailyWeather_ProxyError(t *testing.T) {
 
 func TestHandleHistoryWeather_UnexpectedError(t *testing.T) {
 	svc := &mockWeatherService{
-		getHistoryFn: func(_ context.Context, _ *model.WeatherQuery) (*model.WeatherResponse, error) {
+		getWeatherFn: func(_ context.Context, _ *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+			assert.Equal(t, model.WeatherTypeHistory, kind)
 			return nil, errors.New("history failed")
 		},
 	}

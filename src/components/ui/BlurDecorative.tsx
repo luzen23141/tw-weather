@@ -20,7 +20,7 @@ export function BlurDecorative({
   let baseStyles = 'absolute rounded-full mix-blend-multiply ';
 
   if (Platform.OS === 'web') {
-    baseStyles += 'blur-[80px] ';
+    baseStyles += 'blur-[20px] ';
   } else {
     baseStyles += 'opacity-40 ';
   }
@@ -36,7 +36,7 @@ export function BlurDecorative({
       baseStyles += 'bg-md-tertiary ';
       break;
     case 'accent':
-      baseStyles += 'bg-[#06b6d4] ';
+      baseStyles += 'bg-md-secondary ';
       break;
   }
 
