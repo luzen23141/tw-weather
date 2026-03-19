@@ -44,6 +44,7 @@ function makeProxyResponse(
   lon: number,
 ) {
   const MOCK_CURRENT = {
+    timestamp: '2026-03-07T10:00:00+08:00',
     temperature: 20,
     apparentTemperature: 21,
     humidity: 82,
@@ -57,14 +58,14 @@ function makeProxyResponse(
 
   const MOCK_HOURLY = [
     {
-      time: '2026-03-07T12:00:00+08:00',
+      timestamp: '2026-03-07T12:00:00+08:00',
       temperature: 21,
       apparentTemperature: 22,
       humidity: 80,
       windSpeed: 3,
       windDirection: 150,
       precipitation: 0,
-      precipProb: 40,
+      precipitationProbability: 40,
       weatherCode: 3,
       description: '陰天',
     },
@@ -73,12 +74,11 @@ function makeProxyResponse(
   const MOCK_DAILY = [
     {
       date: '2026-03-07T00:00:00+08:00',
-      tempMax: 24,
-      tempMin: 18,
-      humidity: 75,
-      windSpeed: 3,
-      precipitation: 0,
-      precipProb: 30,
+      temperatureMax: 24,
+      temperatureMin: 18,
+      precipitationProbability: 30,
+      precipitationSum: 0,
+      windSpeedMax: 3,
       weatherCode: 3,
       description: '陰天',
     },
@@ -87,11 +87,20 @@ function makeProxyResponse(
   return {
     provider,
     type,
-    location: { name: '台北站', lat, lon },
-    updatedAt: '2026-03-07T10:00:00+08:00',
+    location: {
+      name: '台北市信義區',
+      city: '台北市',
+      district: '信義區',
+      township: '信義區',
+      latitude: lat,
+      longitude: lon,
+    },
+    source: provider,
+    fetchedAt: '2026-03-07T10:00:00+08:00',
     ...(type === 'current' && { current: MOCK_CURRENT }),
-    ...(type === 'hourly' && { hourly: MOCK_HOURLY }),
-    ...(type === 'daily' && { daily: MOCK_DAILY }),
+    ...(type === 'hourly' && { hourlyForecast: MOCK_HOURLY }),
+    ...(type === 'daily' && { dailyForecast: MOCK_DAILY }),
+    history: [],
   };
 }
 
@@ -131,9 +140,9 @@ test.describe('天氣頁面', () => {
 
   test('應顯示當前天氣資料', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/信義區/).first()).toBeVisible();
+    await expect(page.getByText(/20°/).first()).toBeVisible();
     // 驗證溫度顯示（mock 回傳 20 度）
-    await expect(page.getByText(/20/).first()).toBeVisible();
+    await expect(page.getByText('體感溫度')).toBeVisible();
   });
 
   test('應顯示天氣描述', async ({ page }) => {
@@ -143,7 +152,6 @@ test.describe('天氣頁面', () => {
 
   test('應顯示風速資訊', async ({ page }) => {
     await page.goto('/');
-    // mock windSpeed = 2
-    await expect(page.getByText(/km\/h/).first()).toBeVisible();
+    await expect(page.getByText('風速')).toBeVisible();
   });
 });

@@ -37,15 +37,19 @@ const SELECTED_LOCATION = {
 
 function makeMockResponse(provider: string, type: 'current' | 'hourly' | 'daily' | 'history') {
   const base = {
-    provider,
-    type,
-    location: { name: '台北站', lat: 25.033, lon: 121.5654 },
-    updatedAt: '2026-03-07T10:00:00+08:00',
+    location: { name: '台北站', latitude: 25.033, longitude: 121.5654 },
+    source: provider,
+    fetchedAt: '2026-03-07T10:00:00+08:00',
+    current: null,
+    hourlyForecast: [],
+    dailyForecast: [],
+    history: [],
   };
   if (type === 'current') {
     return {
       ...base,
       current: {
+        timestamp: '2026-03-07T10:00:00+08:00',
         temperature: 20,
         apparentTemperature: 21,
         humidity: 82,
@@ -61,37 +65,53 @@ function makeMockResponse(provider: string, type: 'current' | 'hourly' | 'daily'
   if (type === 'hourly') {
     return {
       ...base,
-      hourly: [
+      hourlyForecast: [
         {
-          time: '2026-03-07T12:00:00+08:00',
+          timestamp: '2026-03-07T12:00:00+08:00',
           temperature: 21,
           apparentTemperature: 22,
           humidity: 80,
           windSpeed: 3,
           windDirection: 150,
           precipitation: 0,
-          precipProb: 40,
+          precipitationProbability: 40,
           weatherCode: 3,
           description: '陰天',
         },
       ],
     };
   }
-  // daily 和 history 都回傳 daily 格式
+  if (type === 'daily') {
+    return {
+      ...base,
+      dailyForecast: [
+        {
+          date: '2026-03-07',
+          temperatureMax: 24,
+          temperatureMin: 18,
+          precipitationProbability: 30,
+          precipitationSum: 0,
+          windSpeedMax: 3,
+          weatherCode: 3,
+          description: '陰天',
+        },
+      ],
+    };
+  }
   return {
     ...base,
-    type: type === 'history' ? 'daily' : type,
-    daily: [
+    history: [
       {
-        date: '2026-03-07T00:00:00+08:00',
-        tempMax: 24,
-        tempMin: 18,
-        humidity: 75,
-        windSpeed: 3,
-        precipitation: 0,
-        precipProb: 30,
+        date: '2026-03-07',
+        temperatureMax: 24,
+        temperatureMin: 18,
+        temperatureAvg: 21,
         weatherCode: 3,
         description: '陰天',
+        precipitationSum: 0,
+        windSpeedAvg: 3,
+        humidityAvg: 75,
+        source: provider,
       },
     ],
   };
@@ -144,7 +164,7 @@ test.describe('聚合模式', () => {
 
     const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
     expect(settings).toContain('"displayMode":"aggregate"');
-    await expect(page.getByText(/信義區/).first()).toBeVisible();
+    await expect(page.getByText('體感溫度')).toBeVisible();
   });
 
   test('預報頁在 aggregate 模式應保留 aggregate 設定', async ({ page }) => {
@@ -153,6 +173,6 @@ test.describe('聚合模式', () => {
 
     const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
     expect(settings).toContain('"displayMode":"aggregate"');
-    await expect(page.getByText('逐時與每日預報', { exact: true })).toBeVisible();
+    await expect(page.getByText('7 日預報', { exact: true })).toBeVisible();
   });
 });

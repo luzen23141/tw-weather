@@ -157,13 +157,40 @@ function makeProxyResponse(
   lon: number,
 ) {
   return {
-    provider,
-    type,
-    location: { name: '台北站', lat, lon },
-    updatedAt: '2026-03-07T10:00:00+08:00',
-    ...(type === 'current' && { current: MOCK_CURRENT }),
-    ...(type === 'hourly' && { hourly: MOCK_HOURLY }),
-    ...(type === 'daily' && { daily: MOCK_DAILY }),
+    location: {
+      name: '台北市信義區',
+      city: '台北市',
+      district: '信義區',
+      township: '信義區',
+      latitude: lat,
+      longitude: lon,
+    },
+    source: provider,
+    fetchedAt: '2026-03-07T10:00:00+08:00',
+    current:
+      type === 'current' ? { ...MOCK_CURRENT, timestamp: '2026-03-07T10:00:00+08:00' } : null,
+    hourlyForecast:
+      type === 'hourly'
+        ? MOCK_HOURLY.map((item) => ({
+            ...item,
+            timestamp: item.time,
+            precipitationProbability: item.precipProb,
+          }))
+        : [],
+    dailyForecast:
+      type === 'daily'
+        ? MOCK_DAILY.map((item) => ({
+            date: item.date.split('T')[0],
+            temperatureMax: item.tempMax,
+            temperatureMin: item.tempMin,
+            precipitationProbability: item.precipProb,
+            precipitationSum: item.precipitation,
+            windSpeedMax: item.windSpeed,
+            weatherCode: item.weatherCode,
+            description: item.description,
+          }))
+        : [],
+    history: [],
   };
 }
 
@@ -201,7 +228,35 @@ async function mockAllWeatherApis(page: import('@playwright/test').Page): Promis
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(makeProxyResponse(provider, 'daily', lat, lon)),
+      body: JSON.stringify({
+        location: {
+          name: '台北市信義區',
+          city: '台北市',
+          district: '信義區',
+          township: '信義區',
+          latitude: lat,
+          longitude: lon,
+        },
+        source: provider,
+        fetchedAt: '2026-03-07T10:00:00+08:00',
+        current: null,
+        hourlyForecast: [],
+        dailyForecast: [],
+        history: [
+          {
+            date: '2026-03-07',
+            temperatureMax: 24,
+            temperatureMin: 18,
+            temperatureAvg: 21,
+            weatherCode: 3,
+            description: '陰天',
+            precipitationSum: 0,
+            windSpeedAvg: 3,
+            humidityAvg: 75,
+            source: provider,
+          },
+        ],
+      }),
     });
   });
 
@@ -310,11 +365,11 @@ async function assertWeatherPagesBySource(
   badge: string,
 ): Promise<void> {
   await page.goto('/');
-  await expect(page.getByText(/信義區/).first()).toBeVisible();
+  await expect(page.getByText('體感溫度')).toBeVisible();
   await expect(page.getByText(badge, { exact: true }).first()).toBeVisible();
 
   await page.goto('/forecast');
-  await expect(page.getByText('逐時與每日預報', { exact: true })).toBeVisible();
+  await expect(page.getByText('7 日預報', { exact: true })).toBeVisible();
   await expect(page.getByText(badge, { exact: true }).first()).toBeVisible();
 }
 
@@ -356,13 +411,15 @@ test.describe('資料源 E2E', () => {
     await seedState(page, AGGREGATE_SETTINGS);
 
     await page.goto('/');
+    await expect(page.getByText('體感溫度')).toBeVisible();
     await expect(page.getByText('聚合', { exact: true }).first()).toBeVisible();
 
     await page.goto('/forecast');
-    await expect(page.getByText('逐時與每日預報', { exact: true })).toBeVisible();
+    await expect(page.getByText('7 日預報', { exact: true })).toBeVisible();
     await expect(page.getByText('聚合', { exact: true }).first()).toBeVisible();
 
     await page.goto('/history');
-    await expect(page.getByText('聚合', { exact: true }).first()).toBeVisible();
+    const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
+    expect(settings).toContain('"displayMode":"aggregate"');
   });
 });

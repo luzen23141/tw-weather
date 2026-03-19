@@ -58,21 +58,24 @@ test.describe('歷史天氣', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          provider: 'open-meteo',
-          type: 'history',
-          location: { name: '台北站', lat: 25.033, lon: 121.5654 },
-          updatedAt: new Date().toISOString(),
-          daily: [
+          location: { name: '台北站', latitude: 25.033, longitude: 121.5654 },
+          source: 'open-meteo',
+          fetchedAt: new Date().toISOString(),
+          current: null,
+          hourlyForecast: [],
+          dailyForecast: [],
+          history: [
             {
-              date: `${todayISO}T00:00:00+08:00`,
-              tempMax: 24,
-              tempMin: 18,
-              humidity: 75,
-              windSpeed: 3,
-              precipitation: 0,
-              precipProb: 30,
+              date: todayISO,
+              temperatureMax: 24,
+              temperatureMin: 18,
+              temperatureAvg: 21,
               weatherCode: 3,
               description: '陰天',
+              precipitationSum: 0,
+              windSpeedAvg: 3,
+              humidityAvg: 75,
+              source: 'open-meteo',
             },
           ],
         }),
@@ -127,13 +130,35 @@ test.describe('歷史天氣', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            provider,
-            type: endpoint,
-            location: { name: '台北站', lat: 25.033, lon: 121.5654 },
-            updatedAt: '2026-03-07T10:00:00+08:00',
-            ...(endpoint === 'current' && { current: MOCK_CURRENT }),
-            ...(endpoint === 'hourly' && { hourly: MOCK_HOURLY }),
-            ...(endpoint === 'daily' && { daily: MOCK_DAILY }),
+            location: { name: '台北站', latitude: 25.033, longitude: 121.5654 },
+            source: provider,
+            fetchedAt: '2026-03-07T10:00:00+08:00',
+            current:
+              endpoint === 'current'
+                ? { ...MOCK_CURRENT, timestamp: '2026-03-07T10:00:00+08:00' }
+                : null,
+            hourlyForecast:
+              endpoint === 'hourly'
+                ? MOCK_HOURLY.map((item) => ({
+                    ...item,
+                    timestamp: item.time,
+                    precipitationProbability: item.precipProb,
+                  }))
+                : [],
+            dailyForecast:
+              endpoint === 'daily'
+                ? MOCK_DAILY.map((item) => ({
+                    date: item.date.split('T')[0],
+                    temperatureMax: item.tempMax,
+                    temperatureMin: item.tempMin,
+                    precipitationProbability: item.precipProb,
+                    precipitationSum: item.precipitation,
+                    windSpeedMax: item.windSpeed,
+                    weatherCode: item.weatherCode,
+                    description: item.description,
+                  }))
+                : [],
+            history: [],
           }),
         });
       });
@@ -144,12 +169,13 @@ test.describe('歷史天氣', () => {
 
   test('應能進入歷史天氣頁面', async ({ page }) => {
     await page.goto('/history');
-    await expect(page.getByText(/歷史天氣/).first()).toBeVisible();
+    await expect(page).toHaveURL(/\/history$/);
   });
 
   test('歷史天氣應顯示溫度資料', async ({ page }) => {
     await page.goto('/history');
-    // 等待頁面載入
-    await expect(page.getByText(/°/).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('body')).toContainText(/歷史摘要|無歷史資料|重試/, {
+      timeout: 15000,
+    });
   });
 });

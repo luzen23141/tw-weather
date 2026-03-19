@@ -83,7 +83,7 @@ const RippleComponent = ({
   );
 
   return (
-    <View {...(className ? { className } : {})} style={[styles.wrapper, { pointerEvents: 'none' }]}>
+    <View pointerEvents="none" {...(className ? { className } : {})} style={styles.wrapper}>
       {phases.map((phase) => (
         <RippleCircle key={phase} phase={phase} progress={progress} size={size} color={color} />
       ))}

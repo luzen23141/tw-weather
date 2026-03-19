@@ -74,18 +74,18 @@ export function BlurDecorative({
   }
 
   const platformStyle: StyleProp<ViewStyle> = Platform.select({
-    web: { pointerEvents: 'none' },
+    web: {},
     default: undefined,
   });
 
   const sharedStyle: ViewStyle = {
     opacity: Platform.OS === 'web' ? opacity : opacity * 2,
     zIndex: -1,
-    pointerEvents: 'none',
   };
 
   return (
     <View
+      pointerEvents="none"
       className={`${baseStyles} ${className}`.trim()}
       style={[sharedStyle, platformStyle, style]}
       {...props}
