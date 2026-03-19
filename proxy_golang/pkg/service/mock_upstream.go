@@ -6,6 +6,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"proxy_golang/internal/mockfixtures"
 	"proxy_golang/pkg/model"
 )
 
@@ -34,9 +35,9 @@ func mockResponse(rawURL string) (*model.UpstreamResponse, error) {
 	case strings.Contains(rawURL, "opendata.cwa.gov.tw"):
 		body = mockCWAByEndpoint(rawURL)
 	case strings.Contains(rawURL, "archive-api.open-meteo.com"):
-		body = mockOpenMeteoHistory
+		body = mockfixtures.Load("openmeteo_history.json")
 	case strings.Contains(rawURL, "api.open-meteo.com"):
-		body = mockOpenMeteoForecast
+		body = mockfixtures.Load("openmeteo_forecast.json")
 	case strings.Contains(rawURL, "api.weatherapi.com"):
 		body = mockWeatherAPIByEndpoint(rawURL)
 	case strings.Contains(rawURL, "api.openweathermap.org"):
@@ -54,26 +55,26 @@ func mockResponse(rawURL string) (*model.UpstreamResponse, error) {
 func mockCWAByEndpoint(rawURL string) string {
 	switch {
 	case strings.Contains(rawURL, "O-A0001-001"):
-		return mockCWACurrent
+		return mockfixtures.Load("cwa_current.json")
 	case strings.Contains(rawURL, "F-D0047-089"):
-		return mockCWAHourly
+		return mockfixtures.Load("cwa_hourly.json")
 	case strings.Contains(rawURL, "F-D0047-091"):
-		return mockCWADaily
+		return mockfixtures.Load("cwa_daily.json")
 	default:
-		return mockCWACurrent
+		return mockfixtures.Load("cwa_current.json")
 	}
 }
 
 func mockWeatherAPIByEndpoint(rawURL string) string {
 	if strings.Contains(rawURL, "history.json") {
-		return mockWeatherAPIHistory
+		return mockfixtures.Load("weatherapi_history.json")
 	}
-	return mockWeatherAPIForecast
+	return mockfixtures.Load("weatherapi_forecast.json")
 }
 
 func mockOWMByEndpoint(rawURL string) string {
 	if strings.Contains(rawURL, "/data/2.5/weather") {
-		return mockOWMCurrent
+		return mockfixtures.Load("openweathermap_current.json")
 	}
-	return mockOWMForecast
+	return mockfixtures.Load("openweathermap_forecast.json")
 }

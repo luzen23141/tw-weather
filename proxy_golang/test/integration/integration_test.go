@@ -247,7 +247,7 @@ func TestMock_CWA_Daily(t *testing.T) {
 	srv := setupMockServer(t)
 	defer srv.Close()
 
-	resp := mockGet(t, srv.URL+"/api/weather/daily?provider=cwa&locationId=F-D0047-061")
+	resp := mockGet(t, srv.URL+"/api/weather/daily?provider=cwa&locationId=F-D0047-063")
 	defer resp.Body.Close()
 
 	assert.Equal(t, 200, resp.StatusCode)

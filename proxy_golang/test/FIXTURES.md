@@ -25,7 +25,7 @@
 位置：
 
 - `test/generated_fixtures/adapter/`
-- `pkg/service/mock_fixtures/`
+- `internal/mockfixtures/`
 
 用途：
 
@@ -42,7 +42,7 @@
 位置：
 
 - `pkg/adapter/testdata/`
-- `pkg/service/mock_data.go`
+- `internal/mockfixtures/`
 
 用途：
 
@@ -71,7 +71,7 @@ go run ./cmd/sync_fixtures
 3. 人工確認後，再決定是否更新：
 
 - `pkg/adapter/testdata/`
-- `pkg/service/mock_data.go`
+- `internal/mockfixtures/`
 
 這樣可以同時兼顧：
 

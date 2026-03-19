@@ -57,20 +57,20 @@ func DefaultScenarios() []Scenario {
 			ID:          "cwa_hourly_location_F-D0047-061",
 			Provider:    "cwa",
 			WeatherType: model.WeatherTypeHourly,
-			Description: "CWA hourly by location id",
+			Description: "CWA hourly by 3-day dataset id",
 			Query: model.WeatherQuery{
 				Provider:   "cwa",
 				LocationID: "F-D0047-061",
 			},
 		},
 		{
-			ID:          "cwa_daily_location_F-D0047-061",
+			ID:          "cwa_daily_location_F-D0047-063",
 			Provider:    "cwa",
 			WeatherType: model.WeatherTypeDaily,
-			Description: "CWA daily by location id",
+			Description: "CWA daily by weekly dataset id",
 			Query: model.WeatherQuery{
 				Provider:   "cwa",
-				LocationID: "F-D0047-061",
+				LocationID: "F-D0047-063",
 			},
 		},
 		{

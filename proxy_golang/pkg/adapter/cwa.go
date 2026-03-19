@@ -17,6 +17,61 @@ import (
 
 const cwaBaseURL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore"
 
+type cwaForecastDataset struct {
+	County  string
+	Dataset string
+}
+
+var cwaThreeDayForecastDatasets = map[string]cwaForecastDataset{
+	"F-D0047-001": {County: "宜蘭縣", Dataset: "F-D0047-001"},
+	"F-D0047-005": {County: "桃園市", Dataset: "F-D0047-005"},
+	"F-D0047-009": {County: "新竹縣", Dataset: "F-D0047-009"},
+	"F-D0047-013": {County: "苗栗縣", Dataset: "F-D0047-013"},
+	"F-D0047-017": {County: "彰化縣", Dataset: "F-D0047-017"},
+	"F-D0047-021": {County: "南投縣", Dataset: "F-D0047-021"},
+	"F-D0047-025": {County: "雲林縣", Dataset: "F-D0047-025"},
+	"F-D0047-029": {County: "嘉義縣", Dataset: "F-D0047-029"},
+	"F-D0047-033": {County: "屏東縣", Dataset: "F-D0047-033"},
+	"F-D0047-037": {County: "臺東縣", Dataset: "F-D0047-037"},
+	"F-D0047-041": {County: "花蓮縣", Dataset: "F-D0047-041"},
+	"F-D0047-045": {County: "澎湖縣", Dataset: "F-D0047-045"},
+	"F-D0047-049": {County: "基隆市", Dataset: "F-D0047-049"},
+	"F-D0047-053": {County: "新竹市", Dataset: "F-D0047-053"},
+	"F-D0047-057": {County: "嘉義市", Dataset: "F-D0047-057"},
+	"F-D0047-061": {County: "臺北市", Dataset: "F-D0047-061"},
+	"F-D0047-065": {County: "高雄市", Dataset: "F-D0047-065"},
+	"F-D0047-069": {County: "新北市", Dataset: "F-D0047-069"},
+	"F-D0047-073": {County: "臺中市", Dataset: "F-D0047-073"},
+	"F-D0047-077": {County: "臺南市", Dataset: "F-D0047-077"},
+	"F-D0047-081": {County: "連江縣", Dataset: "F-D0047-081"},
+	"F-D0047-085": {County: "金門縣", Dataset: "F-D0047-085"},
+}
+
+var cwaWeeklyForecastDatasets = map[string]cwaForecastDataset{
+	"F-D0047-003": {County: "宜蘭縣", Dataset: "F-D0047-003"},
+	"F-D0047-007": {County: "桃園市", Dataset: "F-D0047-007"},
+	"F-D0047-011": {County: "新竹縣", Dataset: "F-D0047-011"},
+	"F-D0047-015": {County: "苗栗縣", Dataset: "F-D0047-015"},
+	"F-D0047-019": {County: "彰化縣", Dataset: "F-D0047-019"},
+	"F-D0047-023": {County: "南投縣", Dataset: "F-D0047-023"},
+	"F-D0047-027": {County: "雲林縣", Dataset: "F-D0047-027"},
+	"F-D0047-031": {County: "嘉義縣", Dataset: "F-D0047-031"},
+	"F-D0047-035": {County: "屏東縣", Dataset: "F-D0047-035"},
+	"F-D0047-039": {County: "臺東縣", Dataset: "F-D0047-039"},
+	"F-D0047-043": {County: "花蓮縣", Dataset: "F-D0047-043"},
+	"F-D0047-047": {County: "澎湖縣", Dataset: "F-D0047-047"},
+	"F-D0047-051": {County: "基隆市", Dataset: "F-D0047-051"},
+	"F-D0047-055": {County: "新竹市", Dataset: "F-D0047-055"},
+	"F-D0047-059": {County: "嘉義市", Dataset: "F-D0047-059"},
+	"F-D0047-063": {County: "臺北市", Dataset: "F-D0047-063"},
+	"F-D0047-067": {County: "高雄市", Dataset: "F-D0047-067"},
+	"F-D0047-071": {County: "新北市", Dataset: "F-D0047-071"},
+	"F-D0047-075": {County: "臺中市", Dataset: "F-D0047-075"},
+	"F-D0047-079": {County: "臺南市", Dataset: "F-D0047-079"},
+	"F-D0047-083": {County: "連江縣", Dataset: "F-D0047-083"},
+	"F-D0047-087": {County: "金門縣", Dataset: "F-D0047-087"},
+}
+
 // CWA adapter
 type CWA struct{}
 
@@ -224,12 +279,15 @@ func fetchCWACurrent(ctx context.Context, query *model.WeatherQuery, apiKey stri
 }
 
 func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
+	target, err := resolveCWAForecastDataset(query.LocationID, cwaThreeDayForecastDatasets)
+	if err != nil {
+		return nil, err
+	}
+
 	q := url.Values{}
 	q.Set("Authorization", apiKey)
 	q.Set("format", "JSON")
-	if query.LocationID != "" {
-		q.Set("locationId", query.LocationID)
-	}
+	q.Set("LocationName", target.County)
 
 	rawURL := fmt.Sprintf("%s/F-D0047-089?%s", cwaBaseURL, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
@@ -242,9 +300,9 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 		return nil, fmt.Errorf("CWA hourly parse failed: %w", err)
 	}
 
-	loc, elements := extractCWALocation(raw, query.LocationID)
+	loc, elements := extractCWALocation(raw, target.County)
 	if loc == nil {
-		return nil, fmt.Errorf("CWA: no location data")
+		return nil, fmt.Errorf("CWA: no location data for county %s", target.County)
 	}
 
 	// 建立 element 索引
@@ -287,18 +345,21 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 		Provider:  "cwa",
 		Type:      model.WeatherTypeHourly,
 		UpdatedAt: time.Now(),
-		Location:  model.Location{Name: loc.LocationName, Lat: lat, Lon: lon},
+		Location:  model.Location{ID: target.Dataset, Name: loc.LocationName, Lat: lat, Lon: lon},
 		Hourly:    hourly,
 	}, nil
 }
 
 func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string, client model.UpstreamClient) (*model.WeatherResponse, error) {
+	target, err := resolveCWAForecastDataset(query.LocationID, cwaWeeklyForecastDatasets)
+	if err != nil {
+		return nil, err
+	}
+
 	q := url.Values{}
 	q.Set("Authorization", apiKey)
 	q.Set("format", "JSON")
-	if query.LocationID != "" {
-		q.Set("locationId", query.LocationID)
-	}
+	q.Set("LocationName", target.County)
 
 	rawURL := fmt.Sprintf("%s/F-D0047-091?%s", cwaBaseURL, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
@@ -311,9 +372,9 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 		return nil, fmt.Errorf("CWA daily parse failed: %w", err)
 	}
 
-	loc, elements := extractCWALocation(raw, query.LocationID)
+	loc, elements := extractCWALocation(raw, target.County)
 	if loc == nil {
-		return nil, fmt.Errorf("CWA: no location data")
+		return nil, fmt.Errorf("CWA: no location data for county %s", target.County)
 	}
 
 	elemMap := buildCWAElementMap(elements)
@@ -350,7 +411,7 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 		Provider:  "cwa",
 		Type:      model.WeatherTypeDaily,
 		UpdatedAt: time.Now(),
-		Location:  model.Location{Name: loc.LocationName, Lat: lat, Lon: lon},
+		Location:  model.Location{ID: target.Dataset, Name: loc.LocationName, Lat: lat, Lon: lon},
 		Daily:     daily,
 	}, nil
 }
@@ -363,7 +424,7 @@ type cwaLocation struct {
 	Lon          string
 }
 
-func extractCWALocation(raw cwaForecastResponse, locationID string) (*cwaLocation, []cwaForecastElement) {
+func extractCWALocation(raw cwaForecastResponse, locationName string) (*cwaLocation, []cwaForecastElement) {
 	if len(raw.Records.Locations) == 0 {
 		return nil, nil
 	}
@@ -372,12 +433,17 @@ func extractCWALocation(raw cwaForecastResponse, locationID string) (*cwaLocatio
 		return nil, nil
 	}
 	l := locations[0]
-	if locationID != "" {
+	if locationName != "" {
+		matched := false
 		for _, candidate := range locations {
-			if candidate.LocationName == locationID {
+			if candidate.LocationName == locationName {
 				l = candidate
+				matched = true
 				break
 			}
+		}
+		if !matched {
+			return nil, nil
 		}
 	}
 	return &cwaLocation{
@@ -385,6 +451,14 @@ func extractCWALocation(raw cwaForecastResponse, locationID string) (*cwaLocatio
 		Lat:          l.Lat,
 		Lon:          l.Lon,
 	}, l.WeatherElement
+}
+
+func resolveCWAForecastDataset(locationID string, datasets map[string]cwaForecastDataset) (*cwaForecastDataset, error) {
+	target, ok := datasets[locationID]
+	if ok {
+		return &target, nil
+	}
+	return nil, fmt.Errorf("CWA: unsupported forecast locationId %s", locationID)
 }
 
 func buildCWAElementMap(elements []cwaForecastElement) map[string]map[string]string {

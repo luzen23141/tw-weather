@@ -1,7 +1,7 @@
 此目錄保存由 `test/raw_fixtures/` 同步產生的 fixture。
 
 - `adapter/`：可供人工檢視或未來導入 adapter tests 的生成版本
-- `pkg/service/mock_fixtures/`：mock mode 實際使用
+- `internal/mockfixtures/`：mock mode 實際使用
 
 同步指令：
 

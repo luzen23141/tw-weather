@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"proxy_golang/internal/fixtures"
 	"proxy_golang/pkg/adapter"
 	"proxy_golang/pkg/config"
-	"proxy_golang/pkg/fixtures"
 	"proxy_golang/pkg/model"
 )
 

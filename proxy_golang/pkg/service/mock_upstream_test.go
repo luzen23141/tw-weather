@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"proxy_golang/internal/mockfixtures"
 	"proxy_golang/pkg/model"
 )
 
@@ -73,7 +74,19 @@ func TestMockResponse_Routing(t *testing.T) {
 }
 
 func TestMockEndpointHelpers_Fallbacks(t *testing.T) {
-	assert.Equal(t, mockCWACurrent, mockCWAByEndpoint("https://opendata.cwa.gov.tw/unknown"))
-	assert.Equal(t, mockWeatherAPIForecast, mockWeatherAPIByEndpoint("https://api.weatherapi.com/v1/forecast.json"))
-	assert.Equal(t, mockOWMForecast, mockOWMByEndpoint("https://api.openweathermap.org/data/2.5/forecast"))
+	assert.Equal(
+		t,
+		mockfixtures.Load("cwa_current.json"),
+		mockCWAByEndpoint("https://opendata.cwa.gov.tw/unknown"),
+	)
+	assert.Equal(
+		t,
+		mockfixtures.Load("weatherapi_forecast.json"),
+		mockWeatherAPIByEndpoint("https://api.weatherapi.com/v1/forecast.json"),
+	)
+	assert.Equal(
+		t,
+		mockfixtures.Load("openweathermap_forecast.json"),
+		mockOWMByEndpoint("https://api.openweathermap.org/data/2.5/forecast"),
+	)
 }

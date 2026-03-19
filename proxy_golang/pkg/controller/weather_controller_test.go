@@ -77,7 +77,8 @@ func setupWeatherRouter(svc service.WeatherService) *gin.Engine {
 
 // 有效 query string（provider + lat/lon）
 const validQuery = "?provider=cwa&lat=25.04&lon=121.51"
-const validCWAForecastQuery = "?provider=cwa&locationId=F-D0047-061"
+const validCWAHourlyForecastQuery = "?provider=cwa&locationId=F-D0047-061"
+const validCWADailyForecastQuery = "?provider=cwa&locationId=F-D0047-063"
 
 // ─── HandleCurrentWeather ────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ func TestHandleHourlyWeather_Success(t *testing.T) {
 	svc := &mockWeatherService{}
 	r := setupWeatherRouter(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/weather/hourly"+validCWAForecastQuery, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/hourly"+validCWAHourlyForecastQuery, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -139,7 +140,7 @@ func TestHandleDailyWeather_Success(t *testing.T) {
 	svc := &mockWeatherService{}
 	r := setupWeatherRouter(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/weather/daily"+validCWAForecastQuery, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/daily"+validCWADailyForecastQuery, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -334,7 +335,7 @@ func TestHandleDailyWeather_ProxyError(t *testing.T) {
 	}
 	r := setupWeatherRouter(svc)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/weather/daily"+validCWAForecastQuery, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/daily"+validCWADailyForecastQuery, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

@@ -2,7 +2,7 @@
 
 來源：
 
-- test/raw_fixtures/<timestamp>/
+- `test/raw_fixtures/<timestamp>/`
 
 更新方式：
 
@@ -11,5 +11,5 @@
 
 注意：
 
-- 這裡是給 mock mode 使用的 fixture
+- 這裡是給 mock mode 使用的 shared fixture
 - `test/raw_fixtures/` 才是不可改寫的最原始 response 保存區

@@ -58,3 +58,13 @@ func mustReadFixture(name string) []byte {
 	}
 	return data
 }
+
+func mustReadProjectFixture(relPath string) []byte {
+	_, file, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(file), "..", "..")
+	data, err := os.ReadFile(filepath.Join(root, relPath))
+	if err != nil {
+		panic("cannot read project fixture " + relPath + ": " + err.Error())
+	}
+	return data
+}

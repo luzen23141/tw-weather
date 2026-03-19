@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"proxy_golang/pkg/fixtures"
+	"proxy_golang/internal/fixtures"
 )
 
 type scenarioIndex map[string]fixtures.Scenario
@@ -37,7 +37,7 @@ func run() error {
 	if err := os.MkdirAll("test/generated_fixtures/adapter", 0o755); err != nil {
 		return err
 	}
-	if err := os.MkdirAll("pkg/service/mock_fixtures", 0o755); err != nil {
+	if err := os.MkdirAll("internal/mockfixtures", 0o755); err != nil {
 		return err
 	}
 
@@ -47,7 +47,7 @@ func run() error {
 	if err := copyScenario(idx, rawDir, "cwa_hourly_location_F-D0047-061", "test/generated_fixtures/adapter/cwa_hourly.json", true); err != nil {
 		return err
 	}
-	if err := copyScenario(idx, rawDir, "cwa_daily_location_F-D0047-061", "test/generated_fixtures/adapter/cwa_daily.json", true); err != nil {
+	if err := copyScenario(idx, rawDir, "cwa_daily_location_F-D0047-063", "test/generated_fixtures/adapter/cwa_daily.json", true); err != nil {
 		return err
 	}
 	if err := mergeOpenMeteoForecast(idx, rawDir, "test/generated_fixtures/adapter/openmeteo_forecast.json"); err != nil {
@@ -61,29 +61,29 @@ func run() error {
 	}
 	_ = copyScenario(idx, rawDir, "weatherapi_history_taipei_2024-06-01", "test/generated_fixtures/adapter/weatherapi_history.json", false)
 
-	if err := copyScenario(idx, rawDir, "cwa_current_station_C0TB40", "pkg/service/mock_fixtures/cwa_current.json", true); err != nil {
+	if err := copyScenario(idx, rawDir, "cwa_current_station_C0TB40", "internal/mockfixtures/cwa_current.json", true); err != nil {
 		return err
 	}
-	if err := copyScenario(idx, rawDir, "cwa_hourly_location_F-D0047-061", "pkg/service/mock_fixtures/cwa_hourly.json", true); err != nil {
+	if err := copyScenario(idx, rawDir, "cwa_hourly_location_F-D0047-061", "internal/mockfixtures/cwa_hourly.json", true); err != nil {
 		return err
 	}
-	if err := copyScenario(idx, rawDir, "cwa_daily_location_F-D0047-061", "pkg/service/mock_fixtures/cwa_daily.json", true); err != nil {
+	if err := copyScenario(idx, rawDir, "cwa_daily_location_F-D0047-063", "internal/mockfixtures/cwa_daily.json", true); err != nil {
 		return err
 	}
-	if err := mergeOpenMeteoForecast(idx, rawDir, "pkg/service/mock_fixtures/openmeteo_forecast.json"); err != nil {
+	if err := mergeOpenMeteoForecast(idx, rawDir, "internal/mockfixtures/openmeteo_forecast.json"); err != nil {
 		return err
 	}
-	if err := copyScenario(idx, rawDir, "openmeteo_history_taipei_2024-06-01", "pkg/service/mock_fixtures/openmeteo_history.json", true); err != nil {
+	if err := copyScenario(idx, rawDir, "openmeteo_history_taipei_2024-06-01", "internal/mockfixtures/openmeteo_history.json", true); err != nil {
 		return err
 	}
-	if err := copyScenario(idx, rawDir, "weatherapi_forecast_taipei", "pkg/service/mock_fixtures/weatherapi_forecast.json", true); err != nil {
+	if err := copyScenario(idx, rawDir, "weatherapi_forecast_taipei", "internal/mockfixtures/weatherapi_forecast.json", true); err != nil {
 		return err
 	}
-	_ = copyScenario(idx, rawDir, "weatherapi_history_taipei_2024-06-01", "pkg/service/mock_fixtures/weatherapi_history.json", false)
-	if err := copyScenario(idx, rawDir, "openweathermap_current_taipei", "pkg/service/mock_fixtures/openweathermap_current.json", true); err != nil {
+	_ = copyScenario(idx, rawDir, "weatherapi_history_taipei_2024-06-01", "internal/mockfixtures/weatherapi_history.json", false)
+	if err := copyScenario(idx, rawDir, "openweathermap_current_taipei", "internal/mockfixtures/openweathermap_current.json", true); err != nil {
 		return err
 	}
-	if err := copyScenario(idx, rawDir, "openweathermap_hourly_taipei", "pkg/service/mock_fixtures/openweathermap_forecast.json", true); err != nil {
+	if err := copyScenario(idx, rawDir, "openweathermap_hourly_taipei", "internal/mockfixtures/openweathermap_forecast.json", true); err != nil {
 		return err
 	}
 

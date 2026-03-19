@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"proxy_golang/pkg/fixtures"
+	"proxy_golang/internal/fixtures"
 )
 
 func TestLatestRawFixtureDir(t *testing.T) {
@@ -68,6 +68,18 @@ func TestCopyScenario_FailureHandling(t *testing.T) {
 
 	err = copyScenario(idx, t.TempDir(), "missing", filepath.Join(t.TempDir(), "out.json"), true)
 	require.Error(t, err)
+}
+
+func TestCopyScenario_UsesUpdatedCWADailyScenarioID(t *testing.T) {
+	idx := scenarioIndex{
+		"cwa_daily_location_F-D0047-063": {ID: "cwa_daily_location_F-D0047-063", Success: true, BodyFile: "daily.json"},
+	}
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "daily.json"), []byte(`{"ok":true}`), 0o644))
+	dest := filepath.Join(t.TempDir(), "out.json")
+
+	err := copyScenario(idx, root, "cwa_daily_location_F-D0047-063", dest, true)
+	require.NoError(t, err)
 }
 
 func TestMergeOpenMeteoForecast(t *testing.T) {

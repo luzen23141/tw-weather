@@ -30,6 +30,8 @@ func TestDefaultScenarios(t *testing.T) {
 
 	assert.Equal(t, model.WeatherTypeCurrent, scenarios[0].WeatherType)
 	assert.Equal(t, "C0TB40", scenarios[0].Query.LocationID)
+	assert.Equal(t, "F-D0047-061", scenarios[1].Query.LocationID)
+	assert.Equal(t, "F-D0047-063", scenarios[2].Query.LocationID)
 	assert.Equal(t, model.WeatherTypeHistory, scenarios[8].WeatherType)
 	assert.Equal(t, "2024-06-01", scenarios[8].Query.Date)
 }

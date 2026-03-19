@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"encoding/json"
 	"sort"
 	"testing"
 
@@ -119,25 +120,47 @@ func TestCWA_FetchCurrent_BadJSON(t *testing.T) {
 
 // --- Hourly ---
 
-func TestCWA_FetchHourly_RealFixture(t *testing.T) {
-	client := fixtureClient("cwa_hourly.json")
-	q := *cwaQuery
+func TestExtractCWALocation_ByLocationName(t *testing.T) {
+	var raw cwaForecastResponse
+	require.NoError(t, json.Unmarshal(mustReadFixture("cwa_hourly.json"), &raw))
 
-	q.LocationID = "大安區"
+	loc, elements := extractCWALocation(raw, "大安區")
+	require.NotNil(t, loc)
+	require.NotEmpty(t, elements)
+	assert.Equal(t, "大安區", loc.LocationName)
+}
 
-	resp, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "test-key", client)
+func TestCWAHourlyParsing_WithCuratedFixture(t *testing.T) {
+	var raw cwaForecastResponse
+	require.NoError(t, json.Unmarshal(mustReadFixture("cwa_hourly.json"), &raw))
 
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-	assert.Equal(t, model.WeatherTypeHourly, resp.Type)
-	assert.Equal(t, "大安區", resp.Location.Name)
+	loc, elements := extractCWALocation(raw, "大安區")
+	require.NotNil(t, loc)
+	elemMap := buildCWAElementMap(elements)
+	timeSlots := extractCWATimeSlots(elemMap)
+	require.NotEmpty(t, timeSlots)
 
-	require.NotEmpty(t, resp.Hourly)
-	// 按時間排序確保順序穩定（map 遍歷順序不確定）
-	sort.Slice(resp.Hourly, func(i, j int) bool {
-		return resp.Hourly[i].Time.Before(resp.Hourly[j].Time)
-	})
-	first := resp.Hourly[0]
+	hourly := make([]model.HourlyWeather, 0, len(timeSlots))
+	for _, slot := range timeSlots {
+		tm, err := parseCWATime(slot)
+		require.NoError(t, err)
+		windDirInt := int(getCWAValue(elemMap, "風向", slot))
+		precipProbInt := int(getCWAValue(elemMap, "3小時降雨機率", slot))
+		weather := getCWAStringValue(elemMap, "天氣現象", slot)
+		hourly = append(hourly, model.HourlyWeather{
+			Time:          tm,
+			Temperature:   getCWAValue(elemMap, "溫度", slot),
+			Humidity:      int(getCWAValue(elemMap, "相對濕度", slot)),
+			WindSpeed:     getCWAValue(elemMap, "風速", slot) * 3.6,
+			WindDirection: &windDirInt,
+			PrecipProb:    &precipProbInt,
+			WeatherCode:   CWAWeatherToWMO(weather),
+			Description:   weather,
+		})
+	}
+
+	sort.Slice(hourly, func(i, j int) bool { return hourly[i].Time.Before(hourly[j].Time) })
+	first := hourly[0]
 	assert.InDelta(t, 18.0, first.Temperature, 0.01)
 	assert.Equal(t, 75, first.Humidity)
 	assert.InDelta(t, 12.6, first.WindSpeed, 0.01)
@@ -153,7 +176,7 @@ func TestCWA_FetchHourly_WithLocationID(t *testing.T) {
 	client := &mockUpstreamClient{
 		doFn: func(_ context.Context, req *model.UpstreamRequest) (*model.UpstreamResponse, error) {
 			capturedURL = req.URL
-			return &model.UpstreamResponse{StatusCode: 200, Body: mustReadFixture("cwa_hourly.json")}, nil
+			return &model.UpstreamResponse{StatusCode: 200, Body: []byte(`{"records":{"Locations":[{"Location":[{"LocationName":"臺北市","Lat":"25.03","Lon":"121.56","WeatherElement":[{"ElementName":"溫度","Time":[{"StartTime":"2026-03-18T12:00:00+08:00","ElementValue":[{"Value":"28"}]}]},{"ElementName":"相對濕度","Time":[{"StartTime":"2026-03-18T12:00:00+08:00","ElementValue":[{"Value":"70"}]}]},{"ElementName":"風速","Time":[{"StartTime":"2026-03-18T12:00:00+08:00","ElementValue":[{"Value":"3.0"}]}]},{"ElementName":"風向","Time":[{"StartTime":"2026-03-18T12:00:00+08:00","ElementValue":[{"Value":"180"}]}]},{"ElementName":"3小時降雨機率","Time":[{"StartTime":"2026-03-18T12:00:00+08:00","ElementValue":[{"Value":"20"}]}]},{"ElementName":"天氣現象","Time":[{"StartTime":"2026-03-18T12:00:00+08:00","ElementValue":[{"Value":"多雲"}]}]}]}]}]}}`)}, nil
 		},
 	}
 
@@ -163,11 +186,13 @@ func TestCWA_FetchHourly_WithLocationID(t *testing.T) {
 
 	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", client)
 	require.NoError(t, err)
-	assert.Contains(t, capturedURL, "locationId=F-D0047-061")
+	assert.Contains(t, capturedURL, "LocationName=%E8%87%BA%E5%8C%97%E5%B8%82")
+	assert.NotContains(t, capturedURL, "locationId=")
 }
 
 func TestCWA_FetchHourly_NetworkError(t *testing.T) {
 	q := *cwaQuery
+	q.LocationID = "F-D0047-061"
 
 	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", errorClient(assert.AnError))
 	require.Error(t, err)
@@ -176,6 +201,7 @@ func TestCWA_FetchHourly_NetworkError(t *testing.T) {
 
 func TestCWA_FetchHourly_BadJSON(t *testing.T) {
 	q := *cwaQuery
+	q.LocationID = "F-D0047-061"
 
 	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", badJSONClient())
 	require.Error(t, err)
@@ -190,6 +216,7 @@ func TestCWA_FetchHourly_EmptyLocations(t *testing.T) {
 	}
 
 	q := *cwaQuery
+	q.LocationID = "F-D0047-061"
 
 	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", client)
 	require.Error(t, err)
@@ -198,30 +225,107 @@ func TestCWA_FetchHourly_EmptyLocations(t *testing.T) {
 
 // --- Daily ---
 
-func TestCWA_FetchDaily_RealFixture(t *testing.T) {
-	client := fixtureClient("cwa_daily.json")
-	q := *cwaQuery
-	q.LocationID = "大安區"
+func TestCWADailyParsing_WithCuratedFixture(t *testing.T) {
+	var raw cwaForecastResponse
+	require.NoError(t, json.Unmarshal(mustReadFixture("cwa_daily.json"), &raw))
 
-	resp, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "test-key", client)
+	loc, elements := extractCWALocation(raw, "大安區")
+	require.NotNil(t, loc)
+	elemMap := buildCWAElementMap(elements)
+	timeSlots := extractCWATimeSlots(elemMap)
+	require.NotEmpty(t, timeSlots)
 
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-	assert.Equal(t, model.WeatherTypeDaily, resp.Type)
+	daily := make([]model.DailyWeather, 0, len(timeSlots))
+	for _, slot := range timeSlots {
+		tm, err := parseCWATime(slot)
+		require.NoError(t, err)
+		precipProbInt := int(getCWAValue(elemMap, "12小時降雨機率", slot))
+		weather := getCWAStringValue(elemMap, "天氣現象", slot)
+		daily = append(daily, model.DailyWeather{
+			Date:        tm,
+			TempMax:     getCWAValue(elemMap, "最高溫度", slot),
+			TempMin:     getCWAValue(elemMap, "最低溫度", slot),
+			PrecipProb:  &precipProbInt,
+			WeatherCode: CWAWeatherToWMO(weather),
+			Description: weather,
+		})
+	}
 
-	require.NotEmpty(t, resp.Daily)
-	// 按日期排序確保順序確定（map 遍歷順序不確定）
-	sort.Slice(resp.Daily, func(i, j int) bool {
-		return resp.Daily[i].Date.Before(resp.Daily[j].Date)
-	})
-	first := resp.Daily[0]
+	sort.Slice(daily, func(i, j int) bool { return daily[i].Date.Before(daily[j].Date) })
+	first := daily[0]
 	assert.InDelta(t, 22.0, first.TempMax, 0.01)
 	assert.InDelta(t, 15.0, first.TempMin, 0.01)
 	require.NotNil(t, first.PrecipProb)
 	assert.Equal(t, 10, *first.PrecipProb)
-	// "晴" → WMO 0（晴天）
 	assert.Equal(t, 0, first.WeatherCode)
 	assert.Equal(t, "晴", first.Description)
+}
+
+func TestCWA_FetchDaily_WithLocationID_UsesWeeklyMapping(t *testing.T) {
+	var capturedURL string
+	client := &mockUpstreamClient{
+		doFn: func(_ context.Context, req *model.UpstreamRequest) (*model.UpstreamResponse, error) {
+			capturedURL = req.URL
+			return &model.UpstreamResponse{StatusCode: 200, Body: []byte(`{"records":{"Locations":[{"Location":[{"LocationName":"臺北市","Lat":"25.03","Lon":"121.56","WeatherElement":[{"ElementName":"最高溫度","Time":[{"StartTime":"2026-03-18T06:00:00+08:00","ElementValue":[{"Value":"28"}]}]},{"ElementName":"最低溫度","Time":[{"StartTime":"2026-03-18T06:00:00+08:00","ElementValue":[{"Value":"21"}]}]},{"ElementName":"12小時降雨機率","Time":[{"StartTime":"2026-03-18T06:00:00+08:00","ElementValue":[{"Value":"30"}]}]},{"ElementName":"天氣現象","Time":[{"StartTime":"2026-03-18T06:00:00+08:00","ElementValue":[{"Value":"多雲"}]}]}]}]}]}}`)}, nil
+		},
+	}
+
+	q := *cwaQuery
+	q.LocationID = "F-D0047-063"
+
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "key", client)
+	require.NoError(t, err)
+	assert.Contains(t, capturedURL, "LocationName=%E8%87%BA%E5%8C%97%E5%B8%82")
+	assert.NotContains(t, capturedURL, "locationId=")
+}
+
+func TestCWA_FetchHourly_WithGeneratedFixture_SelectsTaipeiCity(t *testing.T) {
+	client := &mockUpstreamClient{
+		doFn: func(_ context.Context, _ *model.UpstreamRequest) (*model.UpstreamResponse, error) {
+			return &model.UpstreamResponse{
+				StatusCode: 200,
+				Body:       mustReadProjectFixture("test/generated_fixtures/adapter/cwa_hourly.json"),
+			}, nil
+		},
+	}
+
+	q := *cwaQuery
+	q.LocationID = "F-D0047-061"
+
+	resp, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", client)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, "臺北市", resp.Location.Name)
+	assert.Equal(t, "F-D0047-061", resp.Location.ID)
+}
+
+func TestCWA_FetchDaily_WithGeneratedFixture_SelectsTaipeiCity(t *testing.T) {
+	client := &mockUpstreamClient{
+		doFn: func(_ context.Context, _ *model.UpstreamRequest) (*model.UpstreamResponse, error) {
+			return &model.UpstreamResponse{
+				StatusCode: 200,
+				Body:       mustReadProjectFixture("test/generated_fixtures/adapter/cwa_daily.json"),
+			}, nil
+		},
+	}
+
+	q := *cwaQuery
+	q.LocationID = "F-D0047-063"
+
+	resp, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "key", client)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, "臺北市", resp.Location.Name)
+	assert.Equal(t, "F-D0047-063", resp.Location.ID)
+}
+
+func TestCWA_FetchHourly_UnsupportedForecastLocationID(t *testing.T) {
+	q := *cwaQuery
+	q.LocationID = "F-D0047-063"
+
+	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeHourly, "key", &mockUpstreamClient{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported forecast locationId")
 }
 
 func TestExtractCWATimeSlots_Sorted(t *testing.T) {
@@ -241,6 +345,7 @@ func TestExtractCWATimeSlots_Sorted(t *testing.T) {
 
 func TestCWA_FetchDaily_NetworkError(t *testing.T) {
 	q := *cwaQuery
+	q.LocationID = "F-D0047-063"
 
 	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "key", errorClient(assert.AnError))
 	require.Error(t, err)
@@ -249,6 +354,7 @@ func TestCWA_FetchDaily_NetworkError(t *testing.T) {
 
 func TestCWA_FetchDaily_BadJSON(t *testing.T) {
 	q := *cwaQuery
+	q.LocationID = "F-D0047-063"
 
 	_, err := CWA{}.Fetch(context.Background(), &q, model.WeatherTypeDaily, "key", badJSONClient())
 	require.Error(t, err)
