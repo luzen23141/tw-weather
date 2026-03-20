@@ -5,36 +5,33 @@
 @import 'nativewind/theme';
 @layer base {
   :root {
-    /* ===== Deep Blue-Purple Glassmorphism — Light Mode ===== */
+    /* ===== Liquid Glass — Unified Theme ===== */
 
-    /* Primary: 柔和藍色 */
-    --color-md-primary: #5b8def;
+    --color-md-primary: #7c9bff;
     --color-md-on-primary: #ffffff;
-    --color-md-primary-container: rgba(91, 141, 239, 0.16);
-    --color-md-on-primary-container: #1a3a7a;
+    --color-md-primary-container: rgba(124, 155, 255, 0.18);
+    --color-md-on-primary-container: #eaf0ff;
 
-    --color-md-secondary: #7b8fae;
-    --color-md-secondary-container: rgba(123, 143, 174, 0.14);
-    --color-md-on-secondary-container: #2a3d5c;
+    --color-md-secondary: #9ec5ff;
+    --color-md-secondary-container: rgba(158, 197, 255, 0.16);
+    --color-md-on-secondary-container: #eef5ff;
 
-    --color-md-tertiary: #9b8fd0;
+    --color-md-tertiary: #d39bff;
     --color-md-on-tertiary: #ffffff;
-    --color-md-tertiary-container: rgba(155, 143, 208, 0.14);
-    --color-md-on-tertiary-container: #3b3270;
+    --color-md-tertiary-container: rgba(211, 155, 255, 0.16);
+    --color-md-on-tertiary-container: #faf2ff;
 
-    /* Background: 深藍紫漸層底層 */
-    --color-md-background: #3a4f8a;
+    --color-md-background: #5168b7;
     --color-md-on-background: #ffffff;
 
-    /* Surface: 半透明毛玻璃 */
     --color-md-surface: rgba(255, 255, 255, 0.18);
     --color-md-on-surface: #ffffff;
     --color-md-surface-variant: rgba(255, 255, 255, 0.12);
-    --color-md-on-surface-variant: rgba(255, 255, 255, 0.72);
+    --color-md-on-surface-variant: rgba(255, 255, 255, 0.78);
 
-    --color-md-surface-container-low: rgba(255, 255, 255, 0.14);
-    --color-md-surface-container: rgba(255, 255, 255, 0.18);
-    --color-md-outline: rgba(255, 255, 255, 0.5);
+    --color-md-surface-container-low: rgba(255, 255, 255, 0.12);
+    --color-md-surface-container: rgba(255, 255, 255, 0.16);
+    --color-md-outline: rgba(255, 255, 255, 0.42);
 
     /* Error */
     --color-md-error: #ff6b6b;
@@ -42,9 +39,8 @@
     --color-md-error-container: rgba(255, 107, 107, 0.18);
     --color-md-on-error-container: #ffd0d0;
 
-    /* Glass Token */
-    --color-glass-border: rgba(255, 255, 255, 0.25);
-    --color-glass-border-strong: rgba(255, 255, 255, 0.4);
+    --color-glass-border: rgba(255, 255, 255, 0.26);
+    --color-glass-border-strong: rgba(255, 255, 255, 0.42);
   }
 
   /* Skeleton shimmer sweep */
@@ -76,11 +72,11 @@
   body {
     background: linear-gradient(
       160deg,
-      #2a3875 0%,
-      #3a4f8a 30%,
-      #4a5f9a 50%,
-      #5a6faa 70%,
-      #6a7fba 100%
+      #4159a8 0%,
+      #5168b7 26%,
+      #6a7fd1 52%,
+      #7b78cf 76%,
+      #8b6fc8 100%
     );
     background-attachment: fixed;
     color: var(--color-md-on-background);

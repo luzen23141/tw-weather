@@ -6,7 +6,6 @@ const APP_STORAGE_PREFIXES = [
   'weather-locations',
   'weather:',
   'history:',
-  'timestamp:history:',
 ] as const;
 
 function isAppStorageKey(key: string): boolean {
@@ -16,7 +15,7 @@ function isAppStorageKey(key: string): boolean {
 /**
  * 統一 Storage 層 adapter
  * Platform-aware：
- * - React Native: 優先 MMKV（若可用），否則 AsyncStorage
+ * - React Native: AsyncStorage
  * - Web: localStorage
  */
 
@@ -162,9 +161,7 @@ class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
-/**
- * AsyncStorage adapter 實作（React Native 備選方案）
- */
+/** React Native 使用 AsyncStorage */
 class AsyncStorageAdapter implements StorageAdapter {
   async getItem(key: string): Promise<string | null> {
     try {
@@ -231,10 +228,6 @@ function getStorageAdapter(): StorageAdapter {
   if (Platform.OS === 'web') {
     return new LocalStorageAdapter();
   }
-  // React Native（iOS、Android）使用 AsyncStorage
-  // 若需升級為 MMKV，請實作 MmkvAdapter 並在此替換：
-  //   return new MmkvAdapter();
-  // MMKV 比 AsyncStorage 快約 10 倍，但需要原生模組（不支援 Expo Go）
   return new AsyncStorageAdapter();
 }
 

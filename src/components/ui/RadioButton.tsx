@@ -15,11 +15,12 @@ export function RadioButton({ selected, disabled = false }: RadioButtonProps) {
     <View
       style={{
         pointerEvents: 'none',
-        height: 20,
-        width: 20,
-        borderRadius: 10,
+        height: 22,
+        width: 22,
+        borderRadius: 11,
         borderWidth: 2,
-        borderColor: selected ? colors.primary : colors.outline,
+        borderColor: selected ? 'rgba(255,255,255,0.92)' : colors.outline,
+        backgroundColor: selected ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
         alignItems: 'center',
         justifyContent: 'center',
         opacity: disabled ? 0.55 : 1,
@@ -31,7 +32,7 @@ export function RadioButton({ selected, disabled = false }: RadioButtonProps) {
             height: 10,
             width: 10,
             borderRadius: 5,
-            backgroundColor: colors.primary,
+            backgroundColor: '#FFFFFF',
           }}
         />
       ) : null}

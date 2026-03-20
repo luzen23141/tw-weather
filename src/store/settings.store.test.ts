@@ -77,7 +77,6 @@ describe('Settings Store', () => {
   describe('設定持久化', () => {
     it('應能保存所有設定', () => {
       const settings = {
-        theme: 'dark',
         sources: { cwa: true },
         aggregateMode: false,
         location: 'Taipei',
@@ -86,18 +85,16 @@ describe('Settings Store', () => {
       const saved = JSON.stringify(settings);
       const loaded = JSON.parse(saved);
 
-      expect(loaded.theme).toBe('dark');
       expect(loaded.location).toBe('Taipei');
     });
 
     it('應能恢復預設值', () => {
       const defaults = {
-        theme: 'light',
         sources: { cwa: true },
         aggregateMode: false,
       };
 
-      expect(defaults.theme).toBe('light');
+      expect(defaults.sources.cwa).toBe(true);
     });
   });
 });

@@ -15,6 +15,7 @@ export type AppIconName =
   | 'options-outline'
   | 'partly-sunny-outline'
   | 'rainy-outline'
+  | 'refresh-outline'
   | 'settings-outline'
   | 'thermometer-outline'
   | 'time-outline'
@@ -217,6 +218,13 @@ const RainyOutlineIcon = ({ s, color }: IconComponentProps) => (
   </Svg>
 );
 
+const RefreshOutlineIcon = ({ s, color }: IconComponentProps) => (
+  <Svg width={s} height={s} viewBox="0 0 24 24">
+    <Path d="M20 6v5h-5" stroke={color} {...baseStrokeProps} />
+    <Path d="M18 11a7 7 0 1 0 1.1 6.5" stroke={color} {...baseStrokeProps} />
+  </Svg>
+);
+
 const AlertCircleOutlineIcon = ({ s, color }: IconComponentProps) => (
   <Svg width={s} height={s} viewBox="0 0 24 24">
     <Circle cx={12} cy={12} r={8.5} stroke={color} {...baseStrokeProps} />
@@ -247,6 +255,7 @@ const iconComponents: Record<AppIconName, React.FC<IconComponentProps>> = {
   'options-outline': OptionsOutlineIcon,
   'partly-sunny-outline': PartlySunnyOutlineIcon,
   'rainy-outline': RainyOutlineIcon,
+  'refresh-outline': RefreshOutlineIcon,
   'settings-outline': SettingsOutlineIcon,
   'thermometer-outline': ThermometerOutlineIcon,
   'time-outline': TimeOutlineIcon,

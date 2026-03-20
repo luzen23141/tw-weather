@@ -1,4 +1,4 @@
-import { CacheKeys, CacheExpiry, isCacheExpired } from './keys';
+import { CacheKeys } from './keys';
 import { storage, serializeValue, deserializeValue } from './storage';
 
 import { HistoricalDayWeather } from '@/api/types';
@@ -9,9 +9,6 @@ import { HistoricalDayWeather } from '@/api/types';
 interface HistoryIndex {
   /** 已快取的日期列表 (YYYY-MM-DD) */
   cachedDates: string[];
-
-  /** 最後清理時間 */
-  lastCleanupTime: number;
 }
 
 /**
@@ -51,8 +48,7 @@ export class HistoryCacheManager {
     const parsed = deserializeValue<CachedHistoryDay>(cached);
     if (!parsed) return null;
 
-    // 歷史天氣不應過期，但保留此檢查以防萬一
-    if (isCacheExpired(parsed.expiryTime)) {
+    if (Date.now() > parsed.expiryTime) {
       await storage.removeItem(key);
       return null;
     }
@@ -73,7 +69,7 @@ export class HistoryCacheManager {
 
     const cacheItem: CachedHistoryDay = {
       data,
-      expiryTime: Date.now() + CacheExpiry.history,
+      expiryTime: Infinity,
     };
 
     await storage.setItem(key, serializeValue(cacheItem));
@@ -91,7 +87,7 @@ export class HistoryCacheManager {
   ): Promise<void> {
     if (dataList.length === 0) return;
 
-    const expiryTime = Date.now() + CacheExpiry.history;
+    const expiryTime = Infinity;
 
     // 並行寫入所有資料（不更新索引）
     await Promise.all(
@@ -213,47 +209,11 @@ export class HistoryCacheManager {
    */
   async clearAll(): Promise<void> {
     const allKeys = await storage.getAllKeys();
-    const historyKeys = allKeys.filter(
-      (key) => key.startsWith('history:') || key.startsWith('timestamp:history:'),
-    );
+    const historyKeys = allKeys.filter((key) => key.startsWith('history:'));
 
     if (historyKeys.length > 0) {
       await storage.multiRemove(historyKeys);
     }
-  }
-
-  /**
-   * 取得某個地點已快取的所有日期
-   */
-  async getAllCachedDates(latitude: number, longitude: number): Promise<string[]> {
-    const index = await this.readIndex(latitude, longitude);
-    return index?.cachedDates ?? [];
-  }
-
-  /**
-   * 獲取快取統計資訊
-   */
-  async getStats(
-    latitude: number,
-    longitude: number,
-  ): Promise<{
-    cachedDays: number;
-    oldestDate: string | null;
-    newestDate: string | null;
-  }> {
-    const index = await this.readIndex(latitude, longitude);
-
-    if (!index || index.cachedDates.length === 0) {
-      return { cachedDays: 0, oldestDate: null, newestDate: null };
-    }
-
-    const sorted = [...index.cachedDates].sort();
-
-    return {
-      cachedDays: sorted.length,
-      oldestDate: sorted[0] ?? null,
-      newestDate: sorted[sorted.length - 1] ?? null,
-    };
   }
 
   /**
@@ -273,10 +233,7 @@ export class HistoryCacheManager {
     longitude: number,
     dates: string[],
   ): Promise<void> {
-    const index = (await this.readIndex(latitude, longitude)) ?? {
-      cachedDates: [],
-      lastCleanupTime: Date.now(),
-    };
+    const index = (await this.readIndex(latitude, longitude)) ?? { cachedDates: [] };
 
     const existingSet = new Set(index.cachedDates);
     for (const date of dates) {
@@ -295,10 +252,7 @@ export class HistoryCacheManager {
     cachedDates: string[],
   ): Promise<void> {
     const indexKey = CacheKeys.historyIndex(latitude, longitude);
-    const index: HistoryIndex = {
-      cachedDates,
-      lastCleanupTime: Date.now(),
-    };
+    const index: HistoryIndex = { cachedDates };
 
     await storage.setItem(indexKey, serializeValue(index));
   }

@@ -72,22 +72,21 @@ export function PageState({
   return (
     <View className={`px-4 py-10 ${className}`.trim()} style={{ minHeight: 420 }}>
       <Card
-        variant="filled"
         className="items-center gap-5 px-6 py-10 shadow-glass-glow"
         style={
           Platform.OS === 'web' ? { alignSelf: 'center', width: '100%', maxWidth: 560 } : undefined
         }
       >
-        <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-md-primary">
+        <Text className="text-[10px] font-bold uppercase tracking-[1.8px] text-md-primary">
           {toneLabel}
         </Text>
-        <View className="h-[72px] w-[72px] items-center justify-center rounded-[24px] border border-glass-border-strong bg-md-surface shadow-glass">
+        <View className="h-[72px] w-[72px] items-center justify-center rounded-[24px] border border-white/24 bg-white/14 shadow-glass">
           <AppIcon name={config.icon} size={34} color={config.iconColor} />
         </View>
-        <Text className="text-[24px] font-bold leading-8 text-md-on-surface text-center">
+        <Text className="text-center text-[24px] font-bold leading-8 tracking-tight text-md-on-surface">
           {title ?? config.defaultTitle}
         </Text>
-        <Text className="max-w-[320px] text-[15px] leading-6 text-md-on-surface-variant text-center">
+        <Text className="max-w-[320px] text-center text-[14px] font-medium leading-6 text-md-on-surface-variant/86">
           {description ?? config.defaultDescription}
         </Text>
         {actionLabel || secondaryActionLabel ? (

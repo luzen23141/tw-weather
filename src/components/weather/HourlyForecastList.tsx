@@ -19,38 +19,36 @@ const HourlyItem = React.memo(
   ({ item, isCurrent }: { item: HourlyForecast; isCurrent: boolean }) => {
     return (
       <View
-        className={`rounded-[22px] py-3.5 gap-2.5 items-center ${
+        className={`items-center gap-2 rounded-[22px] py-3.5 ${
           isCurrent
-            ? 'bg-md-primary-container border-[1.5px] border-md-primary/30 shadow-sm'
-            : 'bg-md-surface-container/80 border border-glass-border'
+            ? 'bg-white/18 border-[1.5px] border-white/30 shadow-sm'
+            : 'bg-white/12 border border-white/18'
         }`}
         style={[{ width: 76 }, getGlassStyle(16)]}
       >
         <Text
-          className={`text-[11px] font-semibold ${isCurrent ? 'text-md-on-primary-container' : 'text-md-on-surface-variant'}`}
+          className={`text-[10px] font-bold uppercase tracking-[0.8px] ${isCurrent ? 'text-md-on-surface/90' : 'text-md-on-surface-variant/82'}`}
         >
           {formatTime(item.timestamp)}
         </Text>
         <View
           className={`h-9 w-9 items-center justify-center rounded-full ${
-            isCurrent ? 'bg-md-on-primary-container/10' : 'bg-md-primary/8'
+            isCurrent ? 'bg-white/14' : 'bg-white/10'
           }`}
         >
           <WeatherIcon weatherCode={item.weatherCode} size={26} />
         </View>
-        <Text
-          className={`text-[15px] font-bold tracking-tight ${isCurrent ? 'text-md-on-primary-container' : 'text-md-on-surface'}`}
-        >
+        <Text className="text-[16px] font-bold tracking-tight text-md-on-surface">
           {Math.round(item.temperature)}°
         </Text>
         <View className="flex-row items-center gap-0.5">
           <AppIcon
             name="water"
             size={9}
-            color={isCurrent ? 'var(--color-md-on-primary-container)' : 'var(--color-md-primary)'}
+            color={isCurrent ? 'rgba(255,255,255,0.84)' : 'var(--color-md-primary)'}
           />
           <Text
-            className={`text-[10px] font-semibold ${isCurrent ? 'text-md-on-primary-container opacity-80' : 'text-md-primary'}`}
+            className={`text-[10px] font-bold ${isCurrent ? 'text-md-on-surface/82' : 'text-md-primary'}`}
           >
             {item.precipitationProbability}%
           </Text>
@@ -86,7 +84,7 @@ export const HourlyForecastList = React.memo(function HourlyForecastList({
           逐時預報
         </Text>
         <View
-          className="bg-md-surface-variant border border-glass-border rounded-2xl p-4 mx-4 items-center justify-center"
+          className="mx-4 items-center justify-center rounded-[24px] border border-white/18 bg-white/12 p-4"
           style={getGlassStyle(16)}
         >
           <Text className="text-sm text-md-on-surface-variant">無逐時預報資料</Text>

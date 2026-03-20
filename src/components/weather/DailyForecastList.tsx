@@ -32,42 +32,43 @@ const DailyItem = React.memo(
 
     return (
       <View
-        className={`flex-row items-center px-4 py-3.5 gap-3 bg-md-surface-container ${
-          !isLast ? 'border-b border-glass-border/60' : ''
+        className={`flex-row items-center gap-3 bg-white/12 px-4 py-3.5 ${
+          !isLast ? 'border-b border-white/12' : ''
         } ${isFirst ? 'rounded-t-3xl' : ''} ${isLast ? 'rounded-b-3xl' : ''}`}
       >
-        <Text className="w-10 text-[13px] font-semibold text-md-on-surface-variant">
+        <Text className="w-10 text-[12px] font-bold tracking-[0.2px] text-md-on-surface-variant/84">
           {isFirst ? '今天' : getDayOfWeek(item.date)}
         </Text>
 
-        <View className="h-9 w-9 items-center justify-center rounded-full bg-md-primary/8">
+        <View className="h-9 w-9 items-center justify-center rounded-full bg-white/10">
           <WeatherIcon weatherCode={item.weatherCode} size={26} />
         </View>
 
-        <Text className="w-9 text-right text-[13px] text-md-on-surface-variant font-medium">
+        <Text className="w-9 text-right text-[12px] font-semibold text-md-on-surface-variant/82">
           {Math.round(item.temperatureMin)}°
         </Text>
 
         {/* Temperature range bar */}
-        <View className="flex-1 h-[6px] rounded-full bg-md-surface-variant/40 overflow-hidden">
+        <View className="h-[6px] flex-1 overflow-hidden rounded-full bg-white/10">
           <View
-            className="h-full rounded-full bg-md-primary"
+            className="h-full rounded-full"
             style={{
               position: 'absolute',
               left: `${barStart * 100}%`,
               width: `${Math.max(barWidth * 100, 8)}%`,
+              backgroundColor: 'rgba(255,255,255,0.82)',
               opacity: 0.7 + barWidth * 0.3,
             }}
           />
         </View>
 
-        <Text className="w-9 text-[13px] font-bold text-md-on-surface">
+        <Text className="w-9 text-[13px] font-bold tracking-tight text-md-on-surface">
           {Math.round(item.temperatureMax)}°
         </Text>
 
-        <View className="flex-row items-center gap-0.5 w-11 justify-end">
+        <View className="w-11 flex-row items-center justify-end gap-0.5">
           <AppIcon name="water" size={9} color="var(--color-md-primary)" />
-          <Text className="text-[10px] text-md-primary font-semibold">
+          <Text className="text-[10px] font-bold text-md-primary">
             {item.precipitationProbability}%
           </Text>
         </View>
@@ -96,7 +97,7 @@ export const DailyForecastList = React.memo(function DailyForecastList({
           7 日預報
         </Text>
         <View
-          className="bg-md-surface-variant border border-glass-border rounded-2xl p-4 mx-4 items-center justify-center"
+          className="mx-4 items-center justify-center rounded-[24px] border border-white/18 bg-white/12 p-4"
           style={getGlassStyle(16)}
         >
           <Text className="text-sm text-md-on-surface-variant">無每日預報資料</Text>
@@ -111,7 +112,7 @@ export const DailyForecastList = React.memo(function DailyForecastList({
         7 日預報
       </Text>
       <View
-        className="mx-4 overflow-hidden rounded-3xl border border-glass-border-strong shadow-glass"
+        className="mx-4 overflow-hidden rounded-3xl border border-white/20 bg-white/8 shadow-glass"
         style={getGlassStyle(20)}
       >
         {forecasts.map((item, index) => (

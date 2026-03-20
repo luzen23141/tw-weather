@@ -1,20 +1,21 @@
 import { useRouter, Stack } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import type { ReactNode } from 'react';
 
+import { AppIcon } from '@/components/icons/AppIcon';
 import { BlurFade } from '@/components/ui/BlurFade';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
-import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { NoLocationState } from '@/components/ui/NoLocationState';
+import { PageErrorFallback } from '@/components/ui/PageErrorFallback';
+import { PAGE_ENTER } from '@/components/ui/page-motion';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
 import { Ripple } from '@/components/ui/Ripple';
 import { WeatherPageSkeleton } from '@/components/ui/SkeletonLoader';
+import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
 import { CurrentWeatherCard } from '@/components/weather/CurrentWeatherCard';
-import { DailyForecastList } from '@/components/weather/DailyForecastList';
 import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
 import { useWeatherPage } from '@/hooks/useWeatherPage';
 import { getWeatherErrorMessage } from '@/utils/error-message';
@@ -49,13 +50,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <ErrorBoundary
-      fallback={
-        <GlassBackground className="items-center justify-center">
-          <LoadingSpinner label="頁面出錯，請重新整理" />
-        </GlassBackground>
-      }
-    >
+    <ErrorBoundary fallback={<PageErrorFallback />}>
       <GlassBackground weatherCode={weatherData?.current.weatherCode}>
         <BlurDecorative color="accent" size="xl" position="top-right" opacity={0.08} />
         <BlurDecorative color="tertiary" size="lg" position="bottom-left" opacity={0.06} />
@@ -90,32 +85,38 @@ export default function HomeScreen() {
             )
           ) : weatherData && weatherCardLocation ? (
             <View className="gap-7">
-              <BlurFade delay={0} duration={400}>
+              <BlurFade delay={PAGE_ENTER.firstDelay} duration={PAGE_ENTER.duration}>
                 <CurrentWeatherCard
                   data={weatherData.current}
                   location={weatherCardLocation}
                   source={weatherData.source}
                   enabledSources={enabledSources}
                   actionSlot={
-                    <Button
-                      variant="tonal"
-                      size="sm"
-                      label="手動刷新"
-                      loading={isRefetching}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="手動刷新"
+                      accessibilityState={{ busy: isRefetching, disabled: isRefetching }}
+                      className="h-11 w-11 items-center justify-center rounded-full border border-white/24 bg-white/14"
+                      disabled={isRefetching}
                       onPress={() => {
                         void refetch();
                       }}
-                    />
+                      style={(state) =>
+                        getPressFeedbackStyle(state, {
+                          disabled: isRefetching,
+                          pressedOpacity: 0.84,
+                          pressedScale: 0.97,
+                        })
+                      }
+                    >
+                      <AppIcon name="refresh-outline" size={18} color="rgba(255,255,255,0.92)" />
+                    </Pressable>
                   }
                 />
               </BlurFade>
 
-              <BlurFade delay={120} duration={400}>
+              <BlurFade delay={PAGE_ENTER.staggerDelay} duration={PAGE_ENTER.secondaryDuration}>
                 <HourlyForecastList forecasts={weatherData.hourlyForecast} />
-              </BlurFade>
-
-              <BlurFade delay={200} duration={400}>
-                <DailyForecastList forecasts={weatherData.dailyForecast} />
               </BlurFade>
             </View>
           ) : null}

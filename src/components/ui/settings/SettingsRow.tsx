@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
+import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
 import { RadioButton } from '@/components/ui/RadioButton';
 
 export type SettingRowProps = {
@@ -56,19 +57,19 @@ export function SettingsRow({
     <>
       <View className="flex-1 flex-row items-start gap-3 pr-4">
         {leadingIcon ? (
-          <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-xl bg-md-primary/10">
+          <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-xl border border-white/18 bg-white/10">
             <AppIcon name={leadingIcon} size={18} color="var(--color-md-primary)" />
           </View>
         ) : null}
         <View className={`flex-1 ${hasSupportingText ? 'gap-1' : ''}`}>
           <Text
-            className={`text-[15px] font-medium leading-5 text-md-on-surface ${disabled ? 'opacity-50' : ''}`}
+            className={`text-[15px] font-semibold leading-5 tracking-tight text-md-on-surface ${disabled ? 'opacity-50' : ''}`}
           >
             {title}
           </Text>
           {description ? (
             <Text
-              className={`text-[13px] leading-[18px] text-md-on-surface-variant ${
+              className={`text-[13px] font-medium leading-[18px] text-md-on-surface-variant/86 ${
                 disabled ? 'opacity-50' : ''
               }`}
             >
@@ -77,7 +78,7 @@ export function SettingsRow({
           ) : null}
           {hint ? (
             <Text
-              className={`text-[12px] leading-4 text-md-on-surface-variant ${disabled ? 'opacity-50' : ''}`}
+              className={`text-[11px] font-medium leading-4 text-md-on-surface-variant/78 ${disabled ? 'opacity-50' : ''}`}
             >
               {hint}
             </Text>
@@ -107,16 +108,19 @@ export function SettingsRow({
             : isCompact
               ? 'min-h-[52px] py-3'
               : 'min-h-[56px] py-3.5'
-        } ${!isLast ? 'border-b border-glass-border' : ''}`}
+        } ${!isLast ? 'border-b border-white/12' : ''}`}
         style={({ pressed }) => [
           {
             backgroundColor: pressed
-              ? 'var(--color-md-surface-variant)'
+              ? 'rgba(255,255,255,0.08)'
               : selected
-                ? 'color-mix(in srgb, var(--color-md-primary) 18%, var(--color-md-surface))'
+                ? 'rgba(255,255,255,0.12)'
                 : 'transparent',
-            opacity: disabled ? 0.55 : pressed ? 0.96 : 1,
           },
+          getPressFeedbackStyle(
+            { pressed },
+            { disabled, pressedOpacity: 0.9, pressedScale: 0.992 },
+          ),
         ]}
       >
         {content}
@@ -132,7 +136,7 @@ export function SettingsRow({
           : isCompact
             ? 'min-h-[52px] py-3'
             : 'min-h-[56px] py-3.5'
-      } ${!isLast ? 'border-b border-glass-border' : ''}`}
+      } ${!isLast ? 'border-b border-white/12' : ''}`}
     >
       {content}
     </View>

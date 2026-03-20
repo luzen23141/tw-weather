@@ -26,32 +26,32 @@ export const WEATHER_SOURCES: SourceMeta[] = [
     id: 'cwa',
     providerId: 'cwa',
     label: 'CWA',
-    badgeClassName: 'bg-md-primary/15 border-glass-border',
+    badgeClassName: 'border-white/22 bg-white/12',
   },
   {
     id: 'open-meteo',
     providerId: 'openmeteo',
     label: 'Open-Meteo',
-    badgeClassName: 'bg-md-tertiary/15 border-glass-border',
+    badgeClassName: 'border-white/22 bg-white/10',
   },
   {
     id: 'weatherapi',
     providerId: 'weatherapi',
     label: 'WeatherAPI',
-    badgeClassName: 'bg-md-secondary/15 border-glass-border',
+    badgeClassName: 'border-white/22 bg-white/10',
   },
   {
     id: 'openweathermap',
     providerId: 'openweathermap',
     label: 'OWM',
-    badgeClassName: 'bg-md-error/15 border-glass-border',
+    badgeClassName: 'border-white/22 bg-white/10',
   },
 ];
 
 /**
  * 聚合虛擬來源的 badge 樣式
  */
-export const AGGREGATE_BADGE_CLASS = 'bg-md-primary-container border-glass-border';
+export const AGGREGATE_BADGE_CLASS = 'border-white/24 bg-white/16';
 
 /**
  * 預設啟用的資料源

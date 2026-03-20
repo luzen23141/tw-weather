@@ -1,6 +1,8 @@
 import { ActivityIndicator, Pressable, PressableProps, Text, View } from 'react-native';
 
 import { useMDColors } from '@/hooks/useMDColors';
+import { getGlassStyle } from '@/components/ui/glass';
+import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
 
 export type ButtonVariant = 'filled' | 'tonal' | 'outlined' | 'text';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -26,12 +28,12 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const colors = useMDColors();
+  useMDColors();
   const isDisabled = disabled || loading;
 
   const getContainerStyles = () => {
     let base =
-      'min-w-11 flex-row items-center justify-center rounded-full overflow-hidden transition-all duration-200 ease-em-decelerate active:scale-95 ';
+      'min-w-11 flex-row items-center justify-center rounded-full overflow-hidden border transition-all duration-200 ease-em-decelerate ';
 
     switch (size) {
       case 'sm':
@@ -48,16 +50,16 @@ export function Button({
 
     switch (variant) {
       case 'filled':
-        base += 'bg-md-primary shadow-glass ';
+        base += 'border-white/24 bg-white/18 shadow-glass ';
         break;
       case 'tonal':
-        base += 'bg-md-primary-container border border-glass-border ';
+        base += 'border-white/22 bg-white/14 ';
         break;
       case 'outlined':
-        base += 'border border-glass-border bg-md-surface-variant ';
+        base += 'border-white/24 bg-white/8 ';
         break;
       case 'text':
-        base += 'bg-transparent ';
+        base += 'border-transparent bg-transparent ';
         break;
     }
 
@@ -86,14 +88,14 @@ export function Button({
 
     switch (variant) {
       case 'filled':
-        base += 'text-md-on-primary ';
+        base += 'text-md-on-surface ';
         break;
       case 'tonal':
-        base += 'text-md-on-primary-container ';
+        base += 'text-md-on-surface ';
         break;
       case 'outlined':
       case 'text':
-        base += 'text-md-primary ';
+        base += 'text-md-on-surface ';
         break;
     }
 
@@ -107,11 +109,19 @@ export function Button({
       accessibilityLabel={props.accessibilityLabel ?? label}
       className={getContainerStyles()}
       disabled={isDisabled}
+      style={({ pressed }) => [
+        getGlassStyle(18),
+        getPressFeedbackStyle({ pressed }, { disabled: isDisabled, pressedOpacity: 0.84 }),
+      ]}
       {...props}
     >
       <View className="flex-row items-center justify-center">
         {loading ? (
-          <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
+          <ActivityIndicator
+            size="small"
+            color="rgba(255,255,255,0.92)"
+            style={{ marginRight: 8 }}
+          />
         ) : null}
         {!loading && icon ? <View className="mr-2">{icon}</View> : null}
         <Text className={getLabelStyles()}>{loading ? `${label}...` : label}</Text>

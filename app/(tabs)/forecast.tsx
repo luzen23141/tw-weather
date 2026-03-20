@@ -4,20 +4,19 @@ import { BlurFade } from '@/components/ui/BlurFade';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { NoLocationState } from '@/components/ui/NoLocationState';
+import { PageErrorFallback } from '@/components/ui/PageErrorFallback';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
+import { PAGE_ENTER } from '@/components/ui/page-motion';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
 import { SourceBadge } from '@/components/ui/SourceBadge';
 import {
   DailyForecastSkeleton,
-  HourlyForecastSkeleton,
   PageHeaderCardSkeleton,
   SkeletonProvider,
 } from '@/components/ui/SkeletonLoader';
 import { DailyForecastList } from '@/components/weather/DailyForecastList';
-import { HourlyForecastList } from '@/components/weather/HourlyForecastList';
 import { useWeatherPage } from '@/hooks/useWeatherPage';
 import { getWeatherErrorMessage } from '@/utils/error-message';
 
@@ -26,7 +25,6 @@ function ForecastSkeleton() {
     <SkeletonProvider>
       <View className="gap-6">
         <PageHeaderCardSkeleton />
-        <HourlyForecastSkeleton />
         <DailyForecastSkeleton />
       </View>
     </SkeletonProvider>
@@ -46,13 +44,7 @@ export default function ForecastScreen() {
   } = useWeatherPage();
 
   return (
-    <ErrorBoundary
-      fallback={
-        <GlassBackground className="items-center justify-center">
-          <LoadingSpinner label="頁面出錯，請重新整理" />
-        </GlassBackground>
-      }
-    >
+    <ErrorBoundary fallback={<PageErrorFallback />}>
       <GlassBackground>
         <PageScrollView
           onRefresh={() => {
@@ -79,20 +71,17 @@ export default function ForecastScreen() {
             />
           ) : weatherData && effectiveLocation ? (
             <View className="gap-7">
-              <BlurFade delay={0} duration={350}>
+              <BlurFade delay={PAGE_ENTER.firstDelay} duration={PAGE_ENTER.duration}>
                 <PageHeaderCard
                   icon="partly-sunny-outline"
                   title={effectiveLocation.name}
                   subtitle={locationSecondaryText}
+                  eyebrow="未來 7 天"
                   rightSlot={<SourceBadge source={weatherData.source} />}
                 />
               </BlurFade>
 
-              <BlurFade delay={80} duration={400}>
-                <HourlyForecastList forecasts={weatherData.hourlyForecast} />
-              </BlurFade>
-
-              <BlurFade delay={160} duration={400}>
+              <BlurFade delay={PAGE_ENTER.staggerDelay} duration={PAGE_ENTER.secondaryDuration}>
                 <DailyForecastList forecasts={weatherData.dailyForecast} />
               </BlurFade>
             </View>

@@ -14,6 +14,7 @@ import { TAIWAN_CITIES } from '@/constants/taiwan-locations';
 import { useMDColors } from '@/hooks/useMDColors';
 import { useLocationsStore } from '@/store/locations.store';
 import { getGlassStyle } from '@/components/ui/glass';
+import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
 import { formatLocationDisplayName, formatLocationSecondaryName } from '@/utils/location-display';
 import { resolveTaiwanLocation } from '@/utils/location-resolver';
 
@@ -154,6 +155,7 @@ export default function LocationsScreen() {
               icon="location-outline"
               title="地點管理"
               subtitle="搜尋並切換常用地點。"
+              eyebrow="位置與收藏"
             />
 
             <View className="px-4">
@@ -197,8 +199,8 @@ export default function LocationsScreen() {
 
             return (
               <View
-                className={`mx-4 flex-row items-center justify-between rounded-[26px] border border-glass-border-strong bg-md-surface-container px-4 py-3 ${
-                  !isLast ? 'border-b border-glass-border' : ''
+                className={`mx-4 flex-row items-center justify-between rounded-[28px] border border-white/20 bg-white/12 px-4 py-3 ${
+                  !isLast ? 'border-b border-white/12' : ''
                 } ${isFirst ? 'rounded-t-[26px]' : ''} ${isLast ? 'rounded-b-[26px]' : ''}`}
                 style={getGlassStyle(16)}
               >
@@ -217,8 +219,11 @@ export default function LocationsScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`新增 ${getLocationPrimaryText(item)} 到收藏`}
                     onPress={() => handleAdd(item)}
-                    className="min-h-11 min-w-11 items-center justify-center rounded-full"
+                    className="min-h-11 min-w-11 items-center justify-center rounded-full border border-white/18 bg-white/10"
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={(state) =>
+                      getPressFeedbackStyle(state, { pressedOpacity: 0.84, pressedScale: 0.97 })
+                    }
                   >
                     <AppIcon name="add-circle-outline" size={24} color={colors.primary} />
                   </Pressable>
@@ -235,11 +240,9 @@ export default function LocationsScreen() {
 
           return (
             <View
-              className={`mx-4 flex-row items-center gap-3 rounded-[26px] border px-4 py-3 ${
-                isSelected
-                  ? 'border-glass-border-strong bg-md-primary-container'
-                  : 'border-glass-border-strong bg-md-surface-container'
-              } ${!isLast ? 'border-b border-glass-border' : ''} ${isFirst ? 'rounded-t-[26px]' : ''} ${
+              className={`mx-4 flex-row items-center gap-3 rounded-[28px] border px-4 py-3 ${
+                isSelected ? 'border-white/30 bg-white/18' : 'border-white/20 bg-white/12'
+              } ${!isLast ? 'border-b border-white/12' : ''} ${isFirst ? 'rounded-t-[26px]' : ''} ${
                 isLast ? 'rounded-b-[26px]' : ''
               }`}
               style={getGlassStyle(16)}
@@ -249,12 +252,13 @@ export default function LocationsScreen() {
                 accessibilityLabel={`選擇 ${getLocationPrimaryText(item)}`}
                 onPress={() => handleSelect(item)}
                 className="flex-1"
+                activeOpacity={0.84}
               >
                 <View className="flex-row items-center justify-between gap-3">
                   <View className="flex-1">
                     <Text
                       className={`text-[15px] font-semibold ${
-                        isSelected ? 'text-md-on-primary-container' : 'text-md-on-surface'
+                        isSelected ? 'text-md-on-surface' : 'text-md-on-surface'
                       }`}
                     >
                       {getLocationPrimaryText(item)}
@@ -272,8 +276,11 @@ export default function LocationsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`刪除 ${getLocationPrimaryText(item)}`}
                 onPress={() => handleRemove(item)}
-                className="min-h-11 min-w-11 items-center justify-center rounded-full"
+                className="min-h-11 min-w-11 items-center justify-center rounded-full border border-white/14 bg-white/8"
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={(state) =>
+                  getPressFeedbackStyle(state, { pressedOpacity: 0.84, pressedScale: 0.97 })
+                }
               >
                 <AppIcon name="trash-outline" size={18} color={colors.error} />
               </Pressable>

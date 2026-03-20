@@ -8,20 +8,13 @@ export interface StatCardProps {
   label: string;
   value: string;
   iconColor: string;
-  valueClassName?: string;
 }
 
-export function StatCard({
-  iconType,
-  label,
-  value,
-  iconColor,
-  valueClassName = '',
-}: StatCardProps) {
+export function StatCard({ iconType, label, value, iconColor }: StatCardProps) {
   return (
     <View
       style={[{ flexBasis: '47%', flexGrow: 1 }, getGlassStyle(16)]}
-      className="rounded-[22px] border border-glass-border bg-md-surface/80 px-4 py-3.5 gap-2.5"
+      className="rounded-[24px] border border-white/18 bg-white/10 px-4 py-3.5 gap-2.5"
     >
       <View className="flex-row items-center gap-2.5">
         <View
@@ -30,15 +23,11 @@ export function StatCard({
         >
           <StatIcon type={iconType} size={14} color={iconColor} />
         </View>
-        <Text className="text-[11px] font-semibold uppercase tracking-[0.5px] text-md-on-surface-variant">
+        <Text className="text-[10px] font-bold uppercase tracking-[1px] text-md-on-surface-variant/82">
           {label}
         </Text>
       </View>
-      <Text
-        className={`text-lg font-bold tracking-tight text-md-on-surface ${valueClassName}`.trim()}
-      >
-        {value}
-      </Text>
+      <Text className="text-[19px] font-bold tracking-tight text-md-on-surface">{value}</Text>
     </View>
   );
 }

@@ -102,7 +102,7 @@ export function SkeletonBox({
 function PageHeaderCardSkeleton() {
   return (
     <View
-      className="mx-4 rounded-3xl border border-glass-border bg-md-surface-container px-5 py-4 gap-3"
+      className="mx-4 gap-3 rounded-3xl border border-white/20 bg-white/14 px-5 py-4"
       style={getGlassStyle(20)}
     >
       <View className="flex-row items-center gap-3">
@@ -123,7 +123,7 @@ function PageHeaderCardSkeleton() {
 function CurrentWeatherSkeletonInner() {
   return (
     <View
-      className="mx-4 rounded-[28px] border border-glass-border bg-md-surface-container px-6 py-6 gap-6"
+      className="mx-4 gap-6 rounded-[28px] border border-white/20 bg-white/14 px-6 py-6"
       style={getGlassStyle(24)}
     >
       {/* 城市名 */}
@@ -148,7 +148,7 @@ function CurrentWeatherSkeletonInner() {
           <View
             key={i}
             style={{ width: '48%' }}
-            className="rounded-3xl border border-glass-border bg-md-surface-container px-4 py-4 gap-2"
+            className="gap-2 rounded-3xl border border-white/18 bg-white/10 px-4 py-4"
           >
             <SkeletonBox height={12} width="60%" borderRadius={4} />
             <SkeletonBox height={24} width="45%" borderRadius={6} />
@@ -171,7 +171,7 @@ function HourlyForecastSkeletonInner() {
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <View
             key={i}
-            className="rounded-3xl border border-glass-border bg-md-surface-container px-3 py-3 gap-2 items-center"
+            className="items-center gap-2 rounded-3xl border border-white/18 bg-white/10 px-3 py-3"
             style={{ width: 80 }}
           >
             <SkeletonBox height={11} width={36} borderRadius={4} />
@@ -191,13 +191,13 @@ function DailyForecastSkeletonInner() {
     <View className="gap-3.5">
       <SkeletonBox height={14} width={48} borderRadius={4} className="mx-4" />
       <View
-        className="mx-4 overflow-hidden rounded-3xl border border-glass-border"
+        className="mx-4 overflow-hidden rounded-3xl border border-white/20 bg-white/8"
         style={getGlassStyle(20)}
       >
         {[0, 1, 2, 3, 4, 5, 6].map((i) => (
           <View
             key={i}
-            className={`flex-row items-center px-4 py-4 gap-3 bg-md-surface-container ${i < 6 ? 'border-b border-glass-border' : ''}`}
+            className={`flex-row items-center gap-3 bg-white/12 px-4 py-4 ${i < 6 ? 'border-b border-white/12' : ''}`}
           >
             <SkeletonBox height={14} width={28} borderRadius={4} />
             <SkeletonBox height={40} width={40} borderRadius={20} />

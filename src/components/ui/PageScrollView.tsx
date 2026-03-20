@@ -49,6 +49,7 @@ export function PageScrollView({
             onRefresh={onRefresh}
             tintColor={colors.primary}
             colors={[colors.primary]}
+            progressBackgroundColor="rgba(255,255,255,0.12)"
           />
         ) : undefined
       }

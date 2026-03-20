@@ -37,24 +37,26 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
 
   return (
     <View
-      className="mx-4 overflow-hidden rounded-[30px] border border-white/18 bg-white/16 px-6 py-6 shadow-glass dark:border-white/12 dark:bg-white/8"
+      className="mx-4 overflow-hidden rounded-[32px] border border-white/24 bg-white/16 px-6 py-6 shadow-glass"
       style={getGlassStyle(20)}
     >
-      <View className="absolute inset-x-0 top-0 h-px bg-white/26 dark:bg-white/12" />
+      <View className="absolute inset-x-0 top-0 h-px bg-white/34" />
+      <View className="absolute -left-10 -top-12 h-32 w-32 rounded-full bg-white/10" />
+      <View className="absolute right-0 top-8 h-24 w-24 rounded-full bg-md-tertiary/10" />
 
       <View className="gap-5">
         <View className="flex-row items-start justify-between gap-4">
           <View className="flex-1 gap-1">
             {eyebrow ? (
-              <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-md-primary">
+              <Text className="text-[10px] font-bold uppercase tracking-[1.7px] text-md-primary">
                 {eyebrow}
               </Text>
             ) : null}
-            <Text className="text-lg font-bold tracking-tight text-md-on-surface">
+            <Text className="text-[22px] font-bold tracking-tight text-md-on-surface">
               {location.name}
             </Text>
             {secondaryLocationText ? (
-              <Text className="mt-1 text-[12px] font-medium text-md-on-surface-variant">
+              <Text className="mt-1 text-[12px] font-medium leading-4 text-md-on-surface-variant/88">
                 {secondaryLocationText}
               </Text>
             ) : null}
@@ -62,7 +64,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
           <View className="items-end gap-2">
             <SourceBadge source={source} />
             {source === 'aggregate' && enabledSources?.length ? (
-              <Text className="text-[10px] leading-4 text-right text-md-on-surface-variant">
+              <Text className="text-right text-[10px] leading-4 text-md-on-surface-variant/80">
                 {(enabledSources ?? []).map((s) => SOURCE_META_MAP[s]?.label ?? s).join(' · ')}
               </Text>
             ) : null}
@@ -71,24 +73,24 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
         </View>
 
         <View
-          className="flex-row items-center justify-between gap-4 rounded-[28px] border border-white/16 bg-white/14 px-5 py-5 dark:border-white/10 dark:bg-white/8"
+          className="flex-row items-center justify-between gap-4 rounded-[28px] border border-white/22 bg-white/14 px-5 py-5"
           style={getGlassStyle(18)}
         >
-          <View className="flex-1 gap-2">
-            <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-md-primary">
+          <View className="flex-1 gap-1.5">
+            <Text className="text-[10px] font-bold uppercase tracking-[1.7px] text-md-primary">
               目前溫度
             </Text>
             <Text
               className="font-bold tracking-tighter text-md-on-surface"
-              style={{ fontSize: 76, lineHeight: 82 }}
+              style={{ fontSize: 74, lineHeight: 78 }}
             >
               {tempDisplay}
             </Text>
-            <Text className="text-[15px] font-semibold tracking-tight text-md-on-surface/90">
+            <Text className="text-[15px] font-semibold tracking-tight text-md-on-surface/88">
               {weatherInfo.description}
             </Text>
           </View>
-          <View className="h-20 w-20 items-center justify-center rounded-[26px] border border-white/14 bg-white/12 dark:border-white/10 dark:bg-white/8">
+          <View className="h-20 w-20 items-center justify-center rounded-[26px] border border-white/20 bg-white/12">
             <WeatherIcon weatherCode={data.weatherCode} size={46} />
           </View>
         </View>
@@ -120,7 +122,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
           />
         </View>
 
-        <Text className="pl-1 text-[13px] font-medium text-md-on-surface-variant">
+        <Text className="pl-1 text-[12px] font-medium tracking-[0.1px] text-md-on-surface-variant/82">
           最後更新：{formatTime(data.timestamp)}
         </Text>
       </View>

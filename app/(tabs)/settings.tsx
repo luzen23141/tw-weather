@@ -1,21 +1,15 @@
 import React from 'react';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Switch, View } from 'react-native';
 
-import { PROVIDER_ID_TO_SOURCE, WEATHER_SOURCES } from '@/api/sources';
+import { WEATHER_SOURCES } from '@/api/sources';
 import type { AggregationConfig, WeatherSource } from '@/api/types';
 import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
-import { SkeletonBox, SkeletonProvider } from '@/components/ui/SkeletonLoader';
 import { RadioSettingOption, SettingsRow } from '@/components/ui/settings/SettingsRow';
 import { SettingsSection } from '@/components/ui/settings/SettingsSection';
-import { useProviders } from '@/hooks/useProviders';
 import { useSettingsStore } from '@/store/settings.store';
-
-// ---------------------------------------------------------------------------
-// Sources content — handles loading / error / data states
-// ---------------------------------------------------------------------------
 
 function SourcesContent({
   enabledSources,
@@ -24,66 +18,19 @@ function SourcesContent({
   enabledSources: WeatherSource[];
   toggleSource: (source: WeatherSource) => void;
 }) {
-  const { data: providers, error, refetch } = useProviders();
-
-  if (error) {
-    return (
-      <View className="min-h-[56px] items-center justify-center gap-3 px-5 py-4">
-        <Text className="text-sm text-md-error">無法載入資料來源清單</Text>
-        <Pressable
-          onPress={() => {
-            void refetch();
-          }}
-          className="rounded-xl bg-md-primary/10 px-4 py-2"
-        >
-          <Text className="text-sm font-semibold text-md-primary">重試</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  if (!providers) {
-    return (
-      <SkeletonProvider>
-        {[0, 1, 2].map((i) => (
-          <View
-            key={i}
-            className={`min-h-[56px] bg-md-surface-container px-5 py-3.5 flex-row items-center justify-between ${
-              i < 2 ? 'border-b border-glass-border' : ''
-            }`}
-          >
-            <View className="flex-1 gap-2 pr-4">
-              <SkeletonBox height={14} width="42%" borderRadius={5} />
-            </View>
-            <SkeletonBox height={28} width={50} borderRadius={14} />
-          </View>
-        ))}
-      </SkeletonProvider>
-    );
-  }
-
-  const sources = providers
-    .filter((p) => p.id in PROVIDER_ID_TO_SOURCE)
-    .map((p) => ({ id: p.id, name: p.name }));
-
-  const displayList =
-    sources.length > 0
-      ? sources
-      : WEATHER_SOURCES.map((s) => ({ id: s.providerId, name: s.label }));
-
   return (
     <>
-      {displayList.map((p, index) => {
-        const source = PROVIDER_ID_TO_SOURCE[p.id] as WeatherSource;
+      {WEATHER_SOURCES.map((sourceMeta, index) => {
+        const source = sourceMeta.id;
         const isEnabled = enabledSources.includes(source);
-        const isLast = index === displayList.length - 1;
+        const isLast = index === WEATHER_SOURCES.length - 1;
         return (
           <SettingsRow
-            key={p.id}
-            title={p.name}
+            key={sourceMeta.id}
+            title={sourceMeta.label}
             trailing={
               <Switch
-                accessibilityLabel={`${p.name} 開關`}
+                accessibilityLabel={`${sourceMeta.label} 開關`}
                 value={isEnabled}
                 onValueChange={() => toggleSource(source)}
                 trackColor={{
@@ -96,7 +43,6 @@ function SourcesContent({
             isLast={isLast}
             accessibilityRole="switch"
             accessibilityState={{ checked: isEnabled }}
-            onPress={() => toggleSource(source)}
           />
         );
       })}
@@ -141,7 +87,7 @@ function AggregationContent({
           isLast={i === TEMP_OPTIONS.length - 1}
         />
       ))}
-      <View className="border-t border-glass-border">
+      <View className="border-t border-white/12">
         <SettingsRow title="降雨判斷方式" compact isLast />
       </View>
       {PRECIP_OPTIONS.map((opt, i) => (
@@ -177,12 +123,10 @@ function getAggregationSummary(config: AggregationConfig): string {
 
 export default function SettingsScreen() {
   const {
-    theme,
     displayMode,
     enabledSources,
     aggregationConfig,
     activeSource,
-    setTheme,
     setDisplayMode,
     setActiveSource,
     setAggregationConfig,
@@ -200,28 +144,9 @@ export default function SettingsScreen() {
       <BlurDecorative color="primary" size="md" position="center" opacity={0.05} />
 
       <PageScrollView contentContainerStyle={{ paddingTop: 8 }} bottomOffset={156} maxWidth={720}>
-        <PageHeaderCard icon="options-outline" title="偏好設定" />
+        <PageHeaderCard icon="options-outline" title="偏好設定" eyebrow="體驗與資料" />
 
         <View className="gap-6">
-          {/* 外觀 */}
-          <SettingsSection icon="color-palette-outline" title="外觀">
-            <RadioSettingOption
-              title="淺色模式"
-              value="light"
-              selectedValue={theme}
-              onPress={() => setTheme('light')}
-              compact
-            />
-            <RadioSettingOption
-              title="深色模式"
-              value="dark"
-              selectedValue={theme}
-              onPress={() => setTheme('dark')}
-              compact
-              isLast
-            />
-          </SettingsSection>
-
           {/* 資料來源 */}
           <SettingsSection icon="cloud-outline" title="資料來源">
             <SourcesContent enabledSources={enabledSources} toggleSource={toggleSource} />

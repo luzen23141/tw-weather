@@ -25,21 +25,3 @@ export const CacheKeys = {
   historyIndex: (latitude: number, longitude: number): string =>
     `history:index:${latitude},${longitude}`,
 } as const;
-
-/**
- * 快取過期時間配置（毫秒）
- */
-export const CacheExpiry = {
-  /** 完整天氣資料：30 分鐘 */
-  fullWeather: 30 * 60 * 1000,
-
-  /** 歷史天氣：永不過期（過去天氣不會改變） */
-  history: Infinity,
-} as const;
-
-/**
- * 檢查快取是否過期
- */
-export function isCacheExpired(expiryTime: number): boolean {
-  return Date.now() > expiryTime;
-}

@@ -7,9 +7,10 @@ import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { NoLocationState } from '@/components/ui/NoLocationState';
+import { PageErrorFallback } from '@/components/ui/PageErrorFallback';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
+import { PAGE_ENTER } from '@/components/ui/page-motion';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
 import {
@@ -48,14 +49,14 @@ function HistorySkeleton() {
           <SkeletonBox height={14} width={100} borderRadius={4} />
           <View className="flex-row gap-3">
             <View
-              className="flex-1 rounded-3xl border border-glass-border bg-md-surface-container px-4 py-4 gap-2"
+              className="flex-1 gap-2 rounded-3xl border border-white/18 bg-white/10 px-4 py-4"
               style={getGlassStyle(16)}
             >
               <SkeletonBox height={12} width="60%" borderRadius={4} />
               <SkeletonBox height={32} width="45%" borderRadius={6} />
             </View>
             <View
-              className="flex-1 rounded-3xl border border-glass-border bg-md-surface-container px-4 py-4 gap-2"
+              className="flex-1 gap-2 rounded-3xl border border-white/18 bg-white/10 px-4 py-4"
               style={getGlassStyle(16)}
             >
               <SkeletonBox height={12} width="60%" borderRadius={4} />
@@ -63,7 +64,7 @@ function HistorySkeleton() {
             </View>
           </View>
           <View
-            className="rounded-3xl border border-glass-border bg-md-surface-container px-4 py-4"
+            className="rounded-3xl border border-white/18 bg-white/10 px-4 py-4"
             style={getGlassStyle(16)}
           >
             <View className="flex-row items-center justify-between">
@@ -121,13 +122,7 @@ export default function HistoryScreen() {
   }, [historyData, selectedDate]);
 
   return (
-    <ErrorBoundary
-      fallback={
-        <GlassBackground className="items-center justify-center">
-          <LoadingSpinner label="頁面出錯，請重新整理" />
-        </GlassBackground>
-      }
-    >
+    <ErrorBoundary fallback={<PageErrorFallback />}>
       <GlassBackground>
         <PageScrollView
           onRefresh={() => {
@@ -158,6 +153,7 @@ export default function HistoryScreen() {
                 icon="time-outline"
                 title={effectiveLocation.name}
                 subtitle={locationSecondaryText}
+                eyebrow="歷史觀測"
                 rightSlot={
                   <SourceBadge source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'} />
                 }
@@ -197,16 +193,17 @@ export default function HistoryScreen() {
                         accessibilityRole="button"
                         accessibilityLabel={`選擇 ${monthStr}/${dayStr}`}
                         onPress={() => setSelectedDate(item.date)}
+                        activeOpacity={0.84}
                         className={`min-w-14 min-h-11 items-center justify-center rounded-2xl px-3 py-2.5 ${
                           isSelected
-                            ? 'bg-md-primary'
-                            : 'border border-glass-border-strong bg-md-surface-container'
+                            ? 'border border-white/30 bg-white/18'
+                            : 'border border-white/20 bg-white/10'
                         }`}
-                        style={!isSelected ? getGlassStyle(16) : undefined}
+                        style={getGlassStyle(16)}
                       >
                         <Text
                           className={`text-[11px] font-semibold ${
-                            isSelected ? 'text-md-on-primary' : 'text-md-on-surface-variant'
+                            isSelected ? 'text-md-on-surface' : 'text-md-on-surface-variant'
                           }`}
                         >
                           {monthStr}/{dayStr}
@@ -218,10 +215,14 @@ export default function HistoryScreen() {
               </View>
 
               {selectedDayData ? (
-                <BlurFade key={selectedDate} delay={40} duration={280}>
+                <BlurFade
+                  key={selectedDate}
+                  delay={PAGE_ENTER.firstDelay}
+                  duration={PAGE_ENTER.duration}
+                >
                   <View className="gap-4 px-4">
                     <View
-                      className="rounded-[26px] border border-glass-border-strong bg-md-surface px-5 py-4"
+                      className="rounded-[28px] border border-white/20 bg-white/14 px-5 py-4"
                       style={getGlassStyle(16)}
                     >
                       <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-md-primary">

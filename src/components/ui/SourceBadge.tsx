@@ -10,7 +10,7 @@ export interface SourceBadgeProps {
 
 const FALLBACK_INFO = {
   label: '未知',
-  className: 'bg-md-surface-variant border-glass-border',
+  className: 'border-white/20 bg-white/10',
 };
 
 const AGGREGATE_INFO = {
@@ -33,8 +33,11 @@ export const SourceBadge = React.memo(function SourceBadge({
   const info = sourceMeta;
 
   return (
-    <View className={`${info.className} border px-2.5 py-1 rounded-full`}>
-      <Text className="text-md-on-surface" style={{ fontSize: 11, fontWeight: '700' }}>
+    <View className={`${info.className} rounded-full border px-2.5 py-1`}>
+      <Text
+        className="text-md-on-surface"
+        style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.2 }}
+      >
         {info.label}
       </Text>
     </View>

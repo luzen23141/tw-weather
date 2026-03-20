@@ -33,8 +33,8 @@ export function TextField({
         </Text>
       ) : null}
       <View
-        className={`h-14 px-4 bg-md-surface-container rounded-2xl border transition-colors duration-200 ${
-          isFocused ? 'border-md-primary' : 'border-glass-border'
+        className={`h-14 rounded-[24px] border px-4 transition-colors duration-200 ${
+          isFocused ? 'border-white/34 bg-white/18' : 'border-white/20 bg-white/12'
         } ${isDisabled ? 'opacity-60' : ''}`}
         style={getGlassStyle(20)}
       >
@@ -42,7 +42,7 @@ export function TextField({
           accessibilityState={{ disabled: isDisabled }}
           className={`flex-1 text-base text-md-on-surface outline-none ${inputClassName}`.trim()}
           editable={editable}
-          placeholderTextColor={colors.outline}
+          placeholderTextColor={colors.onSurfaceVariant}
           onFocus={(e) => {
             setIsFocused(true);
             props.onFocus?.(e);

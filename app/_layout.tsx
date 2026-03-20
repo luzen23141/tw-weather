@@ -16,6 +16,7 @@ if (typeof window !== 'undefined' && typeof window.importMeta === 'undefined') {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { defaultShouldDehydrateQuery } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -25,8 +26,7 @@ import { LogBox, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { historyCache } from '@/cache/history-cache';
-import { DARK, LIGHT, type MDColors } from '@/hooks/useMDColors';
-import { useSettingsStore } from '@/store/settings.store';
+import { LIGHT, type MDColors } from '@/hooks/useMDColors';
 
 // Suppress all LogBox warnings during tests so they don't block Maestro UI interactions
 LogBox.ignoreAllLogs(true);
@@ -48,6 +48,13 @@ const queryClient = new QueryClient({
 const asyncStoragePersister = isBrowser
   ? createAsyncStoragePersister({ storage: AsyncStorage })
   : null;
+
+function shouldPersistQuery(query: Parameters<typeof defaultShouldDehydrateQuery>[0]) {
+  const firstKey = query.queryKey[0];
+  const isHistoryQuery = typeof firstKey === 'string' && firstKey.startsWith('history:');
+
+  return !isHistoryQuery && defaultShouldDehydrateQuery(query);
+}
 
 function buildThemeVariables(colors: MDColors) {
   return {
@@ -81,8 +88,7 @@ function buildThemeVariables(colors: MDColors) {
 }
 
 function AppContent() {
-  const theme = useSettingsStore((s) => s.theme);
-  const colors = theme === 'dark' ? DARK : LIGHT;
+  const colors = LIGHT;
   const themeVariables = buildThemeVariables(colors);
 
   useEffect(() => {
@@ -98,7 +104,7 @@ function AppContent() {
             headerShown: false,
           }}
         />
-        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+        <StatusBar style="light" />
       </View>
     </VariableContextProvider>
   );
@@ -132,6 +138,9 @@ export default function RootLayout() {
         persistOptions={{
           persister: asyncStoragePersister,
           maxAge: 30 * 60 * 1000, // 30 minutes
+          dehydrateOptions: {
+            shouldDehydrateQuery: shouldPersistQuery,
+          },
         }}
       >
         <AppContent />

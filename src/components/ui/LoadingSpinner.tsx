@@ -22,9 +22,13 @@ export const LoadingSpinner = React.memo(function LoadingSpinner({
   const sizeValue = SIZE_MAP[size];
 
   return (
-    <View className={`items-center justify-center gap-2 ${className}`.trim()}>
+    <View className={`items-center justify-center gap-3 ${className}`.trim()}>
       <ActivityIndicator size={sizeValue} color={color ?? colors.primary} />
-      {label ? <Text className="text-sm text-md-on-surface-variant">{label}</Text> : null}
+      {label ? (
+        <Text className="text-[13px] font-medium tracking-[0.1px] text-md-on-surface-variant/84">
+          {label}
+        </Text>
+      ) : null}
     </View>
   );
 });
