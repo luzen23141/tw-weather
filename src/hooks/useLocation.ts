@@ -7,6 +7,22 @@ import { useLocationsStore } from '@/store/locations.store';
 import { formatLocationDisplayName } from '@/utils/location-display';
 import { resolveTaiwanLocation } from '@/utils/location-resolver';
 
+export const LOCATION_TIMEOUT_MS = 15000;
+
+export async function getCurrentLocationWithTimeout(): Promise<ExpoLocation.LocationObject> {
+  return Promise.race([
+    ExpoLocation.getCurrentPositionAsync({
+      accuracy: ExpoLocation.Accuracy.Balanced,
+    }),
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('取得位置逾時，請確認是否允許存取定位')),
+        LOCATION_TIMEOUT_MS,
+      ),
+    ),
+  ]);
+}
+
 export function getLocationFallback(
   selectedLocation: Location | null,
   savedLocations: Location[],
@@ -67,14 +83,7 @@ export function useLocation(): {
       }
 
       // 取得當前位置，設定合理 timeout 避免 Web 權限徵詢被忽略時卡住 (15秒)
-      const currentLocation = await Promise.race([
-        ExpoLocation.getCurrentPositionAsync({
-          accuracy: ExpoLocation.Accuracy.Balanced,
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('取得位置逾時，請確認是否允許存取定位')), 15000),
-        ),
-      ]);
+      const currentLocation = await getCurrentLocationWithTimeout();
 
       const { latitude, longitude } = currentLocation.coords;
       const newLocation = resolveTaiwanLocation(latitude, longitude);
@@ -165,14 +174,7 @@ export function useLocationPermission(): {
       let granted = false;
       if (Platform.OS === 'web') {
         try {
-          await Promise.race([
-            ExpoLocation.getCurrentPositionAsync({
-              accuracy: ExpoLocation.Accuracy.Balanced,
-            }),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('timeout')), 15000),
-            ),
-          ]);
+          await getCurrentLocationWithTimeout();
           granted = true;
         } catch {
           granted = false;

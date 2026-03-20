@@ -13,6 +13,8 @@ export function RadioButton({ selected, disabled = false }: RadioButtonProps) {
 
   return (
     <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
       style={{
         pointerEvents: 'none',
         height: 22,

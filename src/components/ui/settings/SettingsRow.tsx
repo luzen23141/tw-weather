@@ -19,7 +19,7 @@ export type SettingRowProps = {
   accessibilityRole?: 'button' | 'radio' | 'switch' | undefined;
   accessibilityState?:
     | {
-        checked?: boolean;
+        checked?: boolean | 'mixed';
         selected?: boolean;
         disabled?: boolean;
       }
@@ -93,13 +93,23 @@ export function SettingsRow({
     </>
   );
 
+  const resolvedAccessibilityState = {
+    ...accessibilityState,
+    disabled,
+    ...(accessibilityRole === 'radio'
+      ? { checked: selected, selected }
+      : accessibilityRole === 'switch'
+        ? { checked: accessibilityState?.checked ?? selected }
+        : { selected }),
+  };
+
   if (onPress) {
     return (
       <Pressable
         accessibilityRole={accessibilityRole}
         accessibilityLabel={title}
         accessibilityHint={[description, hint].filter(Boolean).join(' ')}
-        accessibilityState={{ ...accessibilityState, disabled, selected }}
+        accessibilityState={resolvedAccessibilityState}
         disabled={disabled}
         onPress={onPress}
         className={`flex-row items-center justify-between px-5 ${
@@ -165,7 +175,7 @@ export function RadioSettingOption({
       onPress={onPress}
       isLast={isLast}
       accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, selected }}
       trailing={<RadioButton selected={selected} />}
     />
   );

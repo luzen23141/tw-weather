@@ -12,6 +12,7 @@ import { PageState } from '@/components/ui/PageState';
 import { TextField } from '@/components/ui/TextField';
 import { TAIWAN_CITIES } from '@/constants/taiwan-locations';
 import { useMDColors } from '@/hooks/useMDColors';
+import { getLocationFallback, getCurrentLocationWithTimeout } from '@/hooks/useLocation';
 import { useLocationsStore } from '@/store/locations.store';
 import { getGlassStyle } from '@/components/ui/glass';
 import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
@@ -57,6 +58,7 @@ export default function LocationsScreen() {
     useLocationsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationActionMessage, setLocationActionMessage] = useState<string | null>(null);
 
   const isSearching = searchQuery.trim().length > 0;
 
@@ -90,6 +92,7 @@ export default function LocationsScreen() {
   const handleGetCurrentLocation = async () => {
     try {
       setIsGettingLocation(true);
+      setLocationActionMessage(null);
 
       let status = 'granted';
       if (Platform.OS !== 'web') {
@@ -101,14 +104,7 @@ export default function LocationsScreen() {
         throw new Error('位置權限被拒絕');
       }
 
-      const currentLocation = await Promise.race([
-        ExpoLocation.getCurrentPositionAsync({
-          accuracy: ExpoLocation.Accuracy.Balanced,
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('取得位置逾時，請確認是否允許存取定位')), 15000),
-        ),
-      ]);
+      const currentLocation = await getCurrentLocationWithTimeout();
 
       const { latitude, longitude } = currentLocation.coords;
       const newLoc = resolveTaiwanLocation(latitude, longitude);
@@ -116,9 +112,11 @@ export default function LocationsScreen() {
       const saved = savedLocations.find((s) => s.name === newLoc.name);
       if (saved) {
         setSelectedLocation(saved);
+        setLocationActionMessage(`已切換為目前位置：${getLocationPrimaryText(saved)}`);
       } else {
         addLocation(newLoc);
         setSelectedLocation(newLoc);
+        setLocationActionMessage(`已新增並切換為目前位置：${getLocationPrimaryText(newLoc)}`);
       }
       setSearchQuery('');
     } catch (err) {
@@ -127,9 +125,20 @@ export default function LocationsScreen() {
         errorMessage.toLowerCase().includes('denied') || errorMessage.includes('逾時');
       const finalMessage = isPermissionDenied ? '無法取得位置權限或定位逾時' : errorMessage;
 
-      if (Platform.OS === 'web') {
-        window.alert(`定位失敗：${finalMessage}`);
+      const fallbackLocation = getLocationFallback(selectedLocation, savedLocations);
+
+      if (fallbackLocation) {
+        setSelectedLocation(fallbackLocation);
+        setLocationActionMessage(
+          `定位失敗，已改用已儲存地點：${getLocationPrimaryText(fallbackLocation)}`,
+        );
       } else {
+        setLocationActionMessage(`定位失敗：${finalMessage}`);
+      }
+
+      if (Platform.OS === 'web' && !fallbackLocation) {
+        window.alert(`定位失敗：${finalMessage}`);
+      } else if (!fallbackLocation) {
         Alert.alert('定位失敗', finalMessage);
       }
     } finally {
@@ -170,15 +179,22 @@ export default function LocationsScreen() {
 
             {!isSearching ? (
               <View className="px-4">
-                <Button
-                  variant="tonal"
-                  label="使用當前位置"
-                  loading={isGettingLocation}
-                  icon={<AppIcon name="navigate-outline" size={16} color={colors.primary} />}
-                  onPress={() => {
-                    void handleGetCurrentLocation();
-                  }}
-                />
+                <View className="gap-2.5">
+                  <Button
+                    variant="tonal"
+                    label="使用當前位置"
+                    loading={isGettingLocation}
+                    icon={<AppIcon name="navigate-outline" size={16} color={colors.primary} />}
+                    onPress={() => {
+                      void handleGetCurrentLocation();
+                    }}
+                  />
+                  {locationActionMessage ? (
+                    <Text className="text-[12px] leading-5 text-md-on-surface-variant">
+                      {locationActionMessage}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             ) : null}
 

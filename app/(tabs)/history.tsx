@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { BlurFade } from '@/components/ui/BlurFade';
 import { MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
@@ -79,6 +80,7 @@ function HistorySkeleton() {
 }
 
 export default function HistoryScreen() {
+  const router = useRouter();
   const { displayMode } = useSettingsStore();
   const {
     effectiveLocation,
@@ -142,6 +144,8 @@ export default function HistoryScreen() {
               type="error"
               title="無法取得歷史資料"
               description={getWeatherErrorMessage(error)}
+              secondaryActionLabel="前往選擇地點"
+              onSecondaryAction={() => router.push('/locations')}
               actionLabel="重試"
               onActionPress={() => {
                 void refetch();
