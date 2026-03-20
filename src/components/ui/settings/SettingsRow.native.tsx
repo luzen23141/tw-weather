@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { Pressable, Text, View } from 'react-native';
 
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
@@ -78,7 +78,9 @@ export function SettingsRow({
           ) : null}
           {hint ? (
             <Text
-              className={`text-[11px] font-medium leading-4 text-md-on-surface-variant/78 ${disabled ? 'opacity-50' : ''}`}
+              className={`text-[11px] font-medium leading-4 text-md-on-surface-variant/78 ${
+                disabled ? 'opacity-50' : ''
+              }`}
             >
               {hint}
             </Text>
@@ -111,63 +113,13 @@ export function SettingsRow({
         : 'min-h-[56px] py-3.5'
   } ${!isLast ? 'border-b border-white/12' : ''}`;
 
-  const webButtonStyle: CSSProperties = {
-    appearance: 'none',
-    WebkitAppearance: 'none',
-    width: '100%',
-    border: 'none',
-    background: selected ? 'rgba(255,255,255,0.12)' : 'transparent',
-    padding: 0,
-    margin: 0,
-    textAlign: 'left',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.5 : 1,
-  };
-
   if (onPress) {
-    if (
-      Platform.OS === 'web' &&
-      (accessibilityRole === 'radio' || accessibilityRole === 'switch')
-    ) {
-      return (
-        <button
-          type="button"
-          role={accessibilityRole}
-          aria-label={title}
-          aria-checked={Boolean(resolvedAccessibilityState.checked)}
-          aria-disabled={disabled}
-          data-state={resolvedAccessibilityState.checked ? 'checked' : 'unchecked'}
-          disabled={disabled}
-          onClick={onPress}
-          style={webButtonStyle}
-        >
-          <View className={rowClassName}>{content}</View>
-        </button>
-      );
-    }
-
     return (
       <Pressable
         accessibilityRole={accessibilityRole}
         accessibilityLabel={title}
         accessibilityHint={[description, hint].filter(Boolean).join(' ')}
         accessibilityState={resolvedAccessibilityState}
-        {...(Platform.OS === 'web'
-          ? {
-              role: accessibilityRole,
-              tabIndex: disabled ? -1 : 0,
-              'aria-checked':
-                accessibilityRole === 'radio' || accessibilityRole === 'switch'
-                  ? Boolean(resolvedAccessibilityState.checked)
-                  : undefined,
-              dataSet:
-                accessibilityRole === 'radio' || accessibilityRole === 'switch'
-                  ? {
-                      state: resolvedAccessibilityState.checked ? 'checked' : 'unchecked',
-                    }
-                  : undefined,
-            }
-          : {})}
         disabled={disabled}
         onPress={onPress}
         className={rowClassName}
