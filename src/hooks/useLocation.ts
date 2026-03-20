@@ -1,5 +1,5 @@
 import * as ExpoLocation from 'expo-location';
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import { Location } from '@/api/types';
@@ -9,6 +9,27 @@ import { resolveTaiwanLocation } from '@/utils/location-resolver';
 
 export const LOCATION_TIMEOUT_MS = 15000;
 export const WEB_LOCATION_TIMEOUT_MS = 6000;
+
+type WebPermissionState = 'granted' | 'denied' | 'prompt';
+
+export async function getWebGeolocationPermissionState(): Promise<WebPermissionState | null> {
+  if (Platform.OS !== 'web' || typeof navigator === 'undefined' || !('permissions' in navigator)) {
+    return null;
+  }
+
+  try {
+    const status = await navigator.permissions.query({ name: 'geolocation' });
+    return status.state;
+  } catch {
+    return null;
+  }
+}
+
+export function isWebGeolocationSupported(): boolean {
+  return Platform.OS !== 'web' || typeof navigator === 'undefined'
+    ? true
+    : 'geolocation' in navigator;
+}
 
 export async function getCurrentLocationWithTimeout(): Promise<ExpoLocation.LocationObject> {
   const timeoutMs = Platform.OS === 'web' ? WEB_LOCATION_TIMEOUT_MS : LOCATION_TIMEOUT_MS;
@@ -50,11 +71,15 @@ export function useLocation(): {
   refetch: () => Promise<void>;
 } {
   const [location, setLocation] = useState<Location | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const selectedLocation = useLocationsStore((state) => state.selectedLocation);
   const savedLocations = useLocationsStore((state) => state.savedLocations);
+  const fallbackLocation = useMemo(
+    () => getLocationFallback(selectedLocation, savedLocations),
+    [selectedLocation, savedLocations],
+  );
 
   /**
    * 內部函式：取得當前地理定位
@@ -64,7 +89,7 @@ export function useLocation(): {
       setIsLoading(true);
       setError(null);
 
-      // 請求許可權 (Web上原生的 Permissions API 不一定可靠，改直接 request 定位)
+      // 請求許可權 (Web 上改由使用者主動觸發定位，不在 mount 自動請求)
       let status = 'granted';
       if (Platform.OS !== 'web') {
         const result = await ExpoLocation.requestForegroundPermissionsAsync();
@@ -73,7 +98,6 @@ export function useLocation(): {
 
       if (status !== 'granted') {
         // 許可權被拒絕，使用已儲存的地點
-        const fallbackLocation = getLocationFallback(selectedLocation, savedLocations);
         if (fallbackLocation) {
           setLocation(fallbackLocation);
         } else {
@@ -100,7 +124,6 @@ export function useLocation(): {
       setError(error);
 
       // 回退：使用已儲存的地點
-      const fallbackLocation = getLocationFallback(selectedLocation, savedLocations);
       if (fallbackLocation) {
         setLocation(fallbackLocation);
         setError(null); // 清除錯誤，因為我們有回退方案
@@ -108,28 +131,40 @@ export function useLocation(): {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedLocation, savedLocations]);
-
-  /**
-   * 初始載入
-   */
-  useEffect(() => {
-    void fetchCurrentLocation();
-  }, [fetchCurrentLocation]);
+  }, [fallbackLocation]);
 
   /**
    * 當選中的地點改變時，更新位置
    */
   useEffect(() => {
-    if (
-      selectedLocation &&
-      (!location ||
+    if (selectedLocation) {
+      const hasChanged =
+        !location ||
         location.latitude !== selectedLocation.latitude ||
-        location.longitude !== selectedLocation.longitude)
-    ) {
-      setLocation(selectedLocation);
+        location.longitude !== selectedLocation.longitude;
+
+      if (hasChanged) {
+        setLocation(selectedLocation);
+      }
+      return;
     }
-  }, [selectedLocation, location]);
+
+    if (fallbackLocation) {
+      const hasChanged =
+        !location ||
+        location.latitude !== fallbackLocation.latitude ||
+        location.longitude !== fallbackLocation.longitude;
+
+      if (hasChanged) {
+        setLocation(fallbackLocation);
+      }
+      return;
+    }
+
+    if (location !== null) {
+      setLocation(null);
+    }
+  }, [selectedLocation, fallbackLocation, location]);
 
   return {
     location,
@@ -158,6 +193,14 @@ export function useLocationPermission(): {
   const checkPermission = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
+      if (Platform.OS === 'web') {
+        const permissionState = await getWebGeolocationPermissionState();
+        setHasPermission(
+          permissionState === 'granted' ? true : permissionState === 'denied' ? false : null,
+        );
+        return;
+      }
+
       const { status } = await ExpoLocation.getForegroundPermissionsAsync();
       setHasPermission(status === 'granted');
     } catch (error) {
@@ -173,11 +216,17 @@ export function useLocationPermission(): {
       setIsLoading(true);
       let granted = false;
       if (Platform.OS === 'web') {
-        try {
-          await getCurrentLocationWithTimeout();
-          granted = true;
-        } catch {
+        const permissionState = await getWebGeolocationPermissionState();
+
+        if (permissionState === 'denied') {
           granted = false;
+        } else {
+          try {
+            await getCurrentLocationWithTimeout();
+            granted = true;
+          } catch {
+            granted = false;
+          }
         }
       } else {
         const { status } = await ExpoLocation.requestForegroundPermissionsAsync();

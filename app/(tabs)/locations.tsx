@@ -12,7 +12,12 @@ import { PageState } from '@/components/ui/PageState';
 import { TextField } from '@/components/ui/TextField';
 import { TAIWAN_CITIES } from '@/constants/taiwan-locations';
 import { useMDColors } from '@/hooks/useMDColors';
-import { getLocationFallback, getCurrentLocationWithTimeout } from '@/hooks/useLocation';
+import {
+  getCurrentLocationWithTimeout,
+  getLocationFallback,
+  getWebGeolocationPermissionState,
+  isWebGeolocationSupported,
+} from '@/hooks/useLocation';
 import { useLocationsStore } from '@/store/locations.store';
 import { getGlassStyle } from '@/components/ui/glass';
 import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
@@ -98,6 +103,15 @@ export default function LocationsScreen() {
       if (Platform.OS !== 'web') {
         const result = await ExpoLocation.requestForegroundPermissionsAsync();
         status = result.status;
+      } else {
+        if (!isWebGeolocationSupported()) {
+          throw new Error('此瀏覽器不支援定位功能');
+        }
+
+        const permissionState = await getWebGeolocationPermissionState();
+        if (permissionState === 'denied') {
+          throw new Error('瀏覽器已封鎖定位權限，請於網站權限設定中允許定位');
+        }
       }
 
       if (status !== 'granted') {
