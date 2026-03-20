@@ -112,20 +112,18 @@ export function SettingsRow({
         accessibilityState={resolvedAccessibilityState}
         {...(Platform.OS === 'web'
           ? {
+              role: accessibilityRole,
+              tabIndex: disabled ? -1 : 0,
               'aria-checked':
                 accessibilityRole === 'radio' || accessibilityRole === 'switch'
                   ? Boolean(resolvedAccessibilityState.checked)
                   : undefined,
-              'data-state':
-                accessibilityRole === 'radio'
-                  ? selected
-                    ? 'checked'
-                    : 'unchecked'
-                  : accessibilityRole === 'switch'
-                    ? resolvedAccessibilityState.checked
-                      ? 'checked'
-                      : 'unchecked'
-                    : undefined,
+              dataSet:
+                accessibilityRole === 'radio' || accessibilityRole === 'switch'
+                  ? {
+                      state: resolvedAccessibilityState.checked ? 'checked' : 'unchecked',
+                    }
+                  : undefined,
             }
           : {})}
         disabled={disabled}
