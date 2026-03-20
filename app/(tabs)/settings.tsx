@@ -1,5 +1,5 @@
 import React from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 
 import { WEATHER_SOURCES } from '@/api/sources';
 import type { AggregationConfig, WeatherSource } from '@/api/types';
@@ -7,9 +7,30 @@ import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PageScrollView } from '@/components/ui/PageScrollView';
+import { useMDColors } from '@/hooks/useMDColors';
 import { RadioSettingOption, SettingsRow } from '@/components/ui/settings/SettingsRow';
 import { SettingsSection } from '@/components/ui/settings/SettingsSection';
 import { useSettingsStore } from '@/store/settings.store';
+
+function SwitchIndicator({ checked }: { checked: boolean }) {
+  const colors = useMDColors();
+
+  return (
+    <View
+      className={`h-7 w-12 rounded-full border px-0.5 ${
+        checked ? 'border-white/28 bg-white/18' : 'border-white/16 bg-white/10'
+      } justify-center`}
+    >
+      <View
+        className="h-5 w-5 rounded-full"
+        style={{
+          backgroundColor: checked ? colors.primary : 'rgba(255,255,255,0.7)',
+          transform: [{ translateX: checked ? 19 : 0 }],
+        }}
+      />
+    </View>
+  );
+}
 
 function SourcesContent({
   enabledSources,
@@ -28,21 +49,12 @@ function SourcesContent({
           <SettingsRow
             key={sourceMeta.id}
             title={sourceMeta.label}
-            trailing={
-              <Switch
-                accessibilityLabel={`${sourceMeta.label} 開關`}
-                value={isEnabled}
-                onValueChange={() => toggleSource(source)}
-                trackColor={{
-                  false: 'var(--color-md-surface-variant)',
-                  true: 'var(--color-md-primary)',
-                }}
-                thumbColor={isEnabled ? 'var(--color-md-on-primary)' : 'var(--color-md-outline)'}
-              />
-            }
+            trailing={<SwitchIndicator checked={isEnabled} />}
             isLast={isLast}
             accessibilityRole="switch"
             accessibilityState={{ checked: isEnabled }}
+            selected={isEnabled}
+            onPress={() => toggleSource(source)}
           />
         );
       })}
