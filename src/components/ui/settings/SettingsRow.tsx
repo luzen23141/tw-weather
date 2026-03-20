@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
@@ -110,6 +110,24 @@ export function SettingsRow({
         accessibilityLabel={title}
         accessibilityHint={[description, hint].filter(Boolean).join(' ')}
         accessibilityState={resolvedAccessibilityState}
+        {...(Platform.OS === 'web'
+          ? {
+              'aria-checked':
+                accessibilityRole === 'radio' || accessibilityRole === 'switch'
+                  ? Boolean(resolvedAccessibilityState.checked)
+                  : undefined,
+              'data-state':
+                accessibilityRole === 'radio'
+                  ? selected
+                    ? 'checked'
+                    : 'unchecked'
+                  : accessibilityRole === 'switch'
+                    ? resolvedAccessibilityState.checked
+                      ? 'checked'
+                      : 'unchecked'
+                    : undefined,
+            }
+          : {})}
         disabled={disabled}
         onPress={onPress}
         className={`flex-row items-center justify-between px-5 ${

@@ -8,17 +8,17 @@ import { formatLocationDisplayName } from '@/utils/location-display';
 import { resolveTaiwanLocation } from '@/utils/location-resolver';
 
 export const LOCATION_TIMEOUT_MS = 15000;
+export const WEB_LOCATION_TIMEOUT_MS = 6000;
 
 export async function getCurrentLocationWithTimeout(): Promise<ExpoLocation.LocationObject> {
+  const timeoutMs = Platform.OS === 'web' ? WEB_LOCATION_TIMEOUT_MS : LOCATION_TIMEOUT_MS;
+
   return Promise.race([
     ExpoLocation.getCurrentPositionAsync({
       accuracy: ExpoLocation.Accuracy.Balanced,
     }),
     new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error('取得位置逾時，請確認是否允許存取定位')),
-        LOCATION_TIMEOUT_MS,
-      ),
+      setTimeout(() => reject(new Error('取得位置逾時，請確認是否允許存取定位')), timeoutMs),
     ),
   ]);
 }
