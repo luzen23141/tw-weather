@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "tw-weather",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",

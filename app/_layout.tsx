@@ -15,8 +15,11 @@ if (typeof window !== 'undefined' && typeof window.importMeta === 'undefined') {
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { defaultShouldDehydrateQuery } from '@tanstack/react-query';
+import {
+  defaultShouldDehydrateQuery,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
