@@ -15,7 +15,11 @@ var (
 )
 
 func main() {
-	a := newApp()
+	a, err := newApp()
+	if err != nil {
+		logFatal(err)
+		return
+	}
 	if err := a.Run(); err != nil {
 		logFatal(err)
 	}

@@ -37,8 +37,13 @@ func TestNew(t *testing.T) {
 	t.Setenv("GIN_MODE", "test")
 	t.Setenv("PROXY_SECRET", "secret")
 	t.Setenv("CWA_API_KEY", "cwa-key")
+	// Redis 現在是硬性依賴 —— 測試需指向本機 Redis（docker-compose up -d）
+	t.Setenv("REDIS_URL", "redis://localhost:6379/14")
 
-	a := New()
+	a, err := New()
+	if err != nil {
+		t.Skipf("Redis 不可用，跳過：%v", err)
+	}
 
 	require.NotNil(t, a)
 	assert.Equal(t, "18080", a.Config.Port)

@@ -20,6 +20,9 @@ import (
 type mockCacheRepository struct {
 	entries map[string]*model.CacheEntry
 	lastKey string
+	// lockDenied 為 true 時 TryLock 一律失敗，用於測試「別人正在更新」的分支
+	lockDenied bool
+	locksHeld  map[string]bool
 }
 
 func (m *mockCacheRepository) Get(key string) (*model.CacheEntry, bool) {
@@ -36,6 +39,24 @@ func (m *mockCacheRepository) Set(key string, entry *model.CacheEntry) {
 		m.entries = map[string]*model.CacheEntry{}
 	}
 	m.entries[key] = entry
+}
+
+func (m *mockCacheRepository) TryLock(key string, _ time.Duration) bool {
+	if m.lockDenied {
+		return false
+	}
+	if m.locksHeld == nil {
+		m.locksHeld = map[string]bool{}
+	}
+	if m.locksHeld[key] {
+		return false
+	}
+	m.locksHeld[key] = true
+	return true
+}
+
+func (m *mockCacheRepository) Unlock(key string) {
+	delete(m.locksHeld, key)
 }
 
 // ─── mock adapter ───────────────────────────────────────────────────────────

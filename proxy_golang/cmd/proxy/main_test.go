@@ -25,8 +25,8 @@ func TestMain_Success(t *testing.T) {
 	})
 
 	fatalCalled := false
-	newApp = func() *app.App {
-		return &app.App{Config: &config.Config{Port: "8080"}, Router: &fakeRunner{}}
+	newApp = func() (*app.App, error) {
+		return &app.App{Config: &config.Config{Port: "8080"}, Router: &fakeRunner{}}, nil
 	}
 	logFatal = func(_ error) {
 		fatalCalled = true
@@ -48,8 +48,8 @@ func TestMain_RunError(t *testing.T) {
 	fatalCalled := false
 	var fatalErr error
 	boom := errors.New("boom")
-	newApp = func() *app.App {
-		return &app.App{Config: &config.Config{Port: "8080"}, Router: &fakeRunner{err: boom}}
+	newApp = func() (*app.App, error) {
+		return &app.App{Config: &config.Config{Port: "8080"}, Router: &fakeRunner{err: boom}}, nil
 	}
 	logFatal = func(err error) {
 		fatalCalled = true
@@ -60,4 +60,24 @@ func TestMain_RunError(t *testing.T) {
 
 	assert.True(t, fatalCalled)
 	assert.ErrorIs(t, fatalErr, boom)
+}
+
+// 建構失敗（例如 Redis 連不上）時必須終止並回報，而不是帶著半成品繼續跑
+func TestMain_NewAppError(t *testing.T) {
+	oldNewApp := newApp
+	oldLogFatal := logFatal
+	t.Cleanup(func() {
+		newApp = oldNewApp
+		logFatal = oldLogFatal
+	})
+
+	boom := errors.New("redis unavailable")
+	newApp = func() (*app.App, error) { return nil, boom }
+
+	var fatalErr error
+	logFatal = func(err error) { fatalErr = err }
+
+	main()
+
+	assert.Equal(t, boom, fatalErr)
 }

@@ -1,0 +1,32 @@
+# 本地開發用的 Redis。
+#
+# 用途是**避免重複呼叫三方 API** —— CWA 與 Open-Meteo 都有速率限制，而預報資料
+# 本來就只有小時級的更新頻率，每個請求都打上游既慢又浪費配額。
+#
+# 先前只有行程內的 in-memory TTL 快取（5 分鐘、重啟即失），無法跨重啟、
+# 也無法在多個 proxy 實例間共用。
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: tw-weather-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command:
+      # 預報資料重算成本低、遺失無妨，因此關閉持久化以換取效能與簡單。
+      # 需要跨重啟保留時再改為 appendonly yes。
+      - redis-server
+      - --save
+      - ''
+      - --appendonly
+      - 'no'
+      # 記憶體上限與淘汰策略：滿了淘汰最久沒用到的鍵，而非拒絕寫入
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5

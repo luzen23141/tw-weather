@@ -21,8 +21,15 @@ func TestHandler(t *testing.T) {
 	t.Setenv("PORT", "18081")
 	t.Setenv("GIN_MODE", "test")
 	t.Setenv("CWA_API_KEY", "test-key")
+	// Redis 現在是硬性依賴
+	t.Setenv("REDIS_URL", "redis://localhost:6379/14")
 
-	server = app.New()
+	var err2 error
+	server, err2 = app.New()
+	if err2 != nil {
+		t.Skipf("Redis 不可用，跳過：%v", err2)
+	}
+	initError = nil
 
 	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 	w := httptest.NewRecorder()
