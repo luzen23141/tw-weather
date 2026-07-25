@@ -51,8 +51,17 @@ async function seedState(page: import('@playwright/test').Page) {
 
 test.describe('歷史天氣', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock history endpoint — 回傳「今天」的日期，讓 selectedDate 預設值能匹配
-    const todayISO = new Date().toISOString().split('T')[0] ?? '2026-03-12';
+    /*
+      Mock history endpoint — 回傳「今天」的日期，讓 selectedDate 預設值能匹配。
+
+      必須用本地日期而非 `toISOString()`：後者是 UTC，台灣（UTC+8）在
+      00:00~08:00 之間會得到前一天，而 app 是以本地日期判斷「今天」，
+      兩邊對不上就會在清晨跑 CI 時無預警變紅。
+    */
+    const now = new Date();
+    const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+      now.getDate(),
+    ).padStart(2, '0')}`;
     await page.route('**/api/weather/history**', async (route) => {
       await route.fulfill({
         status: 200,

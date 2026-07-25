@@ -164,23 +164,28 @@ class WeatherService {
       sourcesToFetch.map((source) => this.fetchWeatherFromAdapter(location, source)),
     );
 
-    const successResults = results
-      .filter(
-        (result): result is PromiseFulfilledResult<WeatherData> => result.status === 'fulfilled',
-      )
-      .map((result, index) => {
-        const source = sourcesToFetch[index];
-        if (source) this.recordSuccess(source);
-        return result.value;
-      });
+    /*
+      先把來源與結果配對，再分流。
 
-    const failedResults = results
-      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
-      .map((result, index) => {
-        const source = sourcesToFetch[index];
+      先前的寫法是 `results.filter(...).map((r, index) => sourcesToFetch[index])` ——
+      但 `filter` 之後的 index 是**過濾後**陣列的索引，不再對應 sourcesToFetch。
+      實際後果：CWA 失敗、Open-Meteo 成功時，成功會被記到 CWA 頭上，把它剛累積的
+      失敗計數清掉。壞掉的來源因此永遠達不到熔斷門檻，熔斷器形同虛設 —— 而它存在
+      的意義正是別再一直打一個已知壞掉的上游。
+    */
+    const successResults: WeatherData[] = [];
+    const failedResults: unknown[] = [];
+
+    results.forEach((result, index) => {
+      const source = sourcesToFetch[index];
+      if (result.status === 'fulfilled') {
+        if (source) this.recordSuccess(source);
+        successResults.push(result.value);
+      } else {
         if (source) this.recordFailure(source);
-        return result.reason;
-      });
+        failedResults.push(result.reason);
+      }
+    });
 
     if (successResults.length === 0) {
       throw new WeatherApiError(

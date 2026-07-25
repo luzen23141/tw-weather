@@ -22,6 +22,10 @@ export default [
       'src/**/*.{ts,tsx}',
       '*.ts',
       'e2e/**/*.ts',
+      // config/ 的工具設定（playwright、stryker、knip、commitlint）先前不在任何
+      // 涵蓋範圍內，eslint 會對它們發出 "File ignored" 警告，而 --max-warnings=0
+      // 把警告當失敗 —— 等於碰到 config/ 的提交都會被無意義地擋下
+      'config/**/*.ts',
       '**/__tests__/**/*.{ts,tsx}',
       'src/**/*.test.{ts,tsx}',
       '*.test.{ts,tsx}',
@@ -87,19 +91,34 @@ export default [
     },
   },
   {
-    files: ['**/__tests__/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}', '*.test.{ts,tsx}'],
+    files: [
+      '**/__tests__/**/*.{ts,tsx}',
+      'src/**/*.test.{ts,tsx}',
+      '*.test.{ts,tsx}',
+      // jest setup 同樣充滿 mock factory，適用同一組豁免
+      'config/jest.setup.ts',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       // jest.mock() factory 必須用 require()，無法改用 import
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
+  /*
+    建置與 CI 腳本跑在 Node 上。
+
+    先前這個 block 套了含 `no-undef` 的 recommended 規則卻沒給 globals，於是
+    `process`、`module`、`require`、`__dirname` 全被判為未定義 —— 光是設定檔與
+    腳本就產生 48 個 no-undef，`pnpm lint` 因此恆為紅色。一道永遠是紅的關卡
+    等於沒有關卡：真正的問題會淹沒在既有雜訊裡。
+  */
   {
-    files: ['*.{js,mjs}', 'scripts/**/*.{js,mjs}'],
+    files: ['*.{js,mjs,cjs}', 'scripts/**/*.{js,mjs,cjs}'],
     languageOptions: {
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
       },
     },
     rules: {

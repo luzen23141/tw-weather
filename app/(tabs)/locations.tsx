@@ -21,6 +21,7 @@ import {
 import { useLocationsStore } from '@/store/locations.store';
 import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
 import { formatLocationDisplayName, formatLocationSecondaryName } from '@/utils/location-display';
+import { isSameLocation } from '@/utils/location-dedupe';
 import { resolveTaiwanLocation } from '@/utils/location-resolver';
 
 /** 將 TAIWAN_CITIES 展平為可搜尋的列表 */
@@ -77,11 +78,33 @@ export default function LocationsScreen() {
     ).slice(0, 30);
   }, [searchQuery, isSearching]);
 
-  const isAlreadySaved = (loc: Location) =>
-    savedLocations.some((s) => s.latitude === loc.latitude && s.longitude === loc.longitude);
+  /*
+    判準必須與 store 的 addLocation 一致。
+
+    先前這裡用浮點座標精確相等，store 用 isSameLocation（行政區優先、座標
+    500m 內視為同一點）。兩套判準不一致的後果是「＋」按下去沒反應：UI 依浮
+    點比對認定未收藏所以顯示「＋」，store 依行政區比對認定重複而拒絕寫入。
+    GPS 定位加入的板橋與搜尋加入的板橋座標永遠不會精確相同，所以這不是邊角
+    案例，是通勤族加入第二個地點時的預設路徑。
+  */
+  const isAlreadySaved = (loc: Location) => savedLocations.some((s) => isSameLocation(s, loc));
 
   const handleAdd = (loc: Location) => {
     addLocation(loc);
+    setSearchQuery('');
+  };
+
+  /**
+   * 搜尋結果被點選 —— 收藏並立即切換過去。
+   *
+   * 點一筆搜尋結果的意圖是「我要看這裡的天氣」，不是「請記住這個地名」。
+   * 先前這一列完全沒有 onPress，LocationRow 因此連 Pressable 都不包，整列
+   * 是死的；使用者得找到右側那顆「＋」，加完還要再點一次才會真的切換。
+   * 「＋」保留給「只收藏、不切換」，適合一次加好幾個地點。
+   */
+  const handleSelectSearchResult = (loc: Location) => {
+    addLocation(loc);
+    setSelectedLocation(loc);
     setSearchQuery('');
   };
 
@@ -213,6 +236,8 @@ export default function LocationsScreen() {
                 primary={getLocationPrimaryText(item)}
                 secondary={getLocationSecondaryText(item)}
                 isLast={isLast}
+                onPress={() => handleSelectSearchResult(item)}
+                accessibilityLabel={`查看 ${getLocationPrimaryText(item)} 的天氣`}
                 trailing={
                   saved ? (
                     <View className="h-11 w-11 items-center justify-center">

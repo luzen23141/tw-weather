@@ -20,15 +20,17 @@ deps.forEach((dep) => {
     try {
       const p = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
       main = p.main || p.module || '(none)';
-    } catch (_) {}
+    } catch {
+      // 讀不到或解析不了 package.json 時，main 維持 '(none)' 即可
+    }
     console.log(`❌ ${dep}  (main: ${main})`);
     result
       .split('\n')
       .slice(0, 2)
       .forEach((f) => console.log(`   ${f}`));
     hasIssue = true;
-  } catch (e) {
-    // ignore
+  } catch {
+    // 掃不到這個相依套件（未安裝、或不是目錄）就跳過
   }
 });
 

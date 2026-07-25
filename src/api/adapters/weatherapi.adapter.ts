@@ -2,6 +2,7 @@ import { HistoricalDayWeather, Location, WeatherSource } from '../types';
 
 import { buildWeatherUrl, proxyFetch } from '@/api/proxy-fetch';
 import { type ProxyWeatherResponse, toHistoricalWeather } from '@/api/proxy-weather-response';
+import { toLocalDateString } from '@/utils/date';
 
 import { BaseProxyAdapter } from './base-proxy.adapter';
 
@@ -30,7 +31,7 @@ class WeatherApiComAdapter extends BaseProxyAdapter {
       for (let i = 1; i <= queryDays; i++) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0] ?? '';
+        const dateStr = toLocalDateString(date);
 
         const params = {
           ...this.buildLocationParams(location),

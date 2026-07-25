@@ -16,6 +16,14 @@ export interface MetricRowProps {
   precipitationProbability: number | undefined;
   precipitation: number;
   uvIndex: number | undefined;
+  /**
+   * `uvIndex` 是當日最高值而非此刻的值。
+   *
+   * 沒有任何來源提供「當前」UV（CWA 的 current 沒這個欄位，Open-Meteo 也只有
+   * daily 的 uvIndexMax），所以實務上這格填的都是日最高。標籤必須說出來 ——
+   * 晚上十一點顯示「UV 9」而不註明是當日尖峰，就是在報一個假的即時值。
+   */
+  uvIsDailyMax?: boolean;
 }
 
 /**
@@ -83,6 +91,7 @@ export const MetricRow = React.memo(function MetricRow({
   precipitationProbability,
   precipitation,
   uvIndex,
+  uvIsDailyMax,
 }: MetricRowProps): React.ReactElement {
   return (
     <View className="mt-4 flex-row border-t border-white/[0.16] pt-3">
@@ -112,7 +121,9 @@ export const MetricRow = React.memo(function MetricRow({
         UV 缺值時整格不渲染，而非顯示破折號。
         一個永遠沒有數字的欄位比少一個欄位更糟 —— 它佔著版面、每次都要被眼睛
         掃過一次，卻從不回答任何問題。剩下的格子由 flex 自動撐開。
-        （目前 CWA 與 Open-Meteo 都不提供當前 UV，實務上這格多半不會出現。）
+
+        來源沒有「當前 UV」這個欄位，填進來的是每日預報的 uvIndexMax，
+        所以標籤要標明是日最高，不能讓它冒充即時值。
       */}
       {uvIndex !== undefined ? (
         <>
@@ -120,7 +131,7 @@ export const MetricRow = React.memo(function MetricRow({
           <Metric
             icon={<AppIcon name="partly-sunny-outline" size={ICON_SIZE} color={ICON_COLOR} />}
             value={`${Math.round(uvIndex)}`}
-            label="UV"
+            label={uvIsDailyMax === true ? 'UV 最高' : 'UV'}
             scale={uvScale(uvIndex)}
           />
         </>

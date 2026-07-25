@@ -187,3 +187,47 @@
 .text-md-warning.text-md-warning {
   color: var(--color-md-warning);
 }
+
+/*
+  背景與邊框的靜態兜底 —— 與上方文字色同一個成因，先前漏了這一半。
+
+  症狀比文字更隱蔽：`bg-md-warning` 的注入掉了之後元素變成完全透明，不是變成
+  難讀的顏色而是**整個消失**。指標刻度條進入警示區間時正是用這個 class，
+  於是 UV 過量、風速偏強的時候整條刻度不見了 —— 恰好是最需要被看見的時候。
+*/
+.bg-md-primary.bg-md-primary {
+  background-color: var(--color-md-primary);
+}
+.bg-md-primary\/16.bg-md-primary\/16 {
+  background-color: color-mix(in srgb, var(--color-md-primary) 16%, transparent);
+}
+.bg-md-primary\/28.bg-md-primary\/28 {
+  background-color: color-mix(in srgb, var(--color-md-primary) 28%, transparent);
+}
+.bg-md-secondary.bg-md-secondary {
+  background-color: var(--color-md-secondary);
+}
+.bg-md-tertiary.bg-md-tertiary {
+  background-color: var(--color-md-tertiary);
+}
+.bg-md-background.bg-md-background {
+  background-color: var(--color-md-background);
+}
+.bg-md-warning.bg-md-warning {
+  background-color: var(--color-md-warning);
+}
+.bg-md-warning-container.bg-md-warning-container {
+  background-color: var(--color-md-warning-container);
+}
+.bg-md-on-surface\/\[0\.10\].bg-md-on-surface\/\[0\.10\] {
+  background-color: color-mix(in srgb, var(--color-md-on-surface) 10%, transparent);
+}
+.border-md-background.border-md-background {
+  border-color: var(--color-md-background);
+}
+.border-md-primary\/30.border-md-primary\/30 {
+  border-color: color-mix(in srgb, var(--color-md-primary) 30%, transparent);
+}
+.border-md-warning\/34.border-md-warning\/34 {
+  border-color: color-mix(in srgb, var(--color-md-warning) 34%, transparent);
+}

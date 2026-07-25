@@ -5,6 +5,8 @@ import {
   getDayOfWeek,
   isToday,
   daysAgo,
+  dayOffsetFromToday,
+  toLocalDateString,
 } from '@/utils/date';
 
 describe('Date Utils', () => {
@@ -146,6 +148,58 @@ describe('Date Utils', () => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       expect(daysAgo(sevenDaysAgo.toISOString())).toBe(7);
+    });
+  });
+
+  describe('toLocalDateString', () => {
+    it('應輸出本地時區的 YYYY-MM-DD 並補零', () => {
+      expect(toLocalDateString(new Date(2026, 6, 5))).toBe('2026-07-05');
+      expect(toLocalDateString(new Date(2026, 11, 31))).toBe('2026-12-31');
+    });
+
+    /*
+      台灣是 UTC+8，凌晨時段 UTC 仍停在前一天。先前各處用
+      `toISOString().slice(0, 10)` 取日期，在這個時段會整整少一天 ——
+      查歷史少要一天、快取鍵與查詢日期錯開。
+    */
+    it('凌晨時段不應退回 UTC 的前一天', () => {
+      const earlyMorning = new Date(2026, 6, 26, 1, 30);
+      expect(toLocalDateString(earlyMorning)).toBe('2026-07-26');
+
+      // 對照組：在 UTC 以東（台灣 UTC+8）的環境，舊寫法會得到前一天。
+      // 以時區偏移判斷而非寫死，否則這個測試在 UTC 的 CI 上會假性失敗。
+      const isEastOfUTC = earlyMorning.getTimezoneOffset() < 0;
+      if (isEastOfUTC) {
+        expect(earlyMorning.toISOString().slice(0, 10)).toBe('2026-07-25');
+      }
+    });
+  });
+
+  describe('dayOffsetFromToday', () => {
+    const shiftDays = (n: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + n);
+      return d.toISOString();
+    };
+
+    it('今天為 0、明天為 1、昨天為 -1', () => {
+      expect(dayOffsetFromToday(shiftDays(0))).toBe(0);
+      expect(dayOffsetFromToday(shiftDays(1))).toBe(1);
+      expect(dayOffsetFromToday(shiftDays(-1))).toBe(-1);
+    });
+
+    it('無效日期回傳 undefined', () => {
+      expect(dayOffsetFromToday('not-a-date')).toBeUndefined();
+    });
+
+    /*
+      這是 CWA 在當日晚間的真實行為：每日預報不再包含今天，第一筆是明天。
+      先前各處假設「陣列第 0 筆＝今天」，在這個時段就會整條時間軸錯位一天。
+    */
+    it('當預報首筆是明天時，不應被誤判為今天', () => {
+      const forecastDates = [shiftDays(1), shiftDays(2), shiftDays(3)];
+      expect(forecastDates.filter((d) => dayOffsetFromToday(d) === 0)).toHaveLength(0);
+      expect(dayOffsetFromToday(forecastDates[0] as string)).toBe(1);
     });
   });
 });

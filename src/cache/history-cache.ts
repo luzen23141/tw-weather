@@ -2,6 +2,7 @@ import { CacheKeys } from './keys';
 import { storage, serializeValue, deserializeValue } from './storage';
 
 import { HistoricalDayWeather } from '@/api/types';
+import { toLocalDateString } from '@/utils/date';
 
 /**
  * 歷史天氣快取索引
@@ -18,8 +19,20 @@ interface CachedHistoryDay {
   /** 歷史天氣資料 */
   data: HistoricalDayWeather;
 
-  /** 過期時間 */
-  expiryTime: number;
+  /**
+   * 過期時間；`null` 表示永不過期。
+   *
+   * **不要用 `Infinity`** —— JSON 沒有 Infinity，`JSON.stringify` 會把它寫成
+   * `null`，讀回來就是 `null`。而 `Date.now() > null` 會把 null 當 0，於是
+   * 恆為 true：每一筆歷史快取在存入後第一次讀取就被判定過期並刪除，整個
+   * 歷史快取等於從未生效，每次都打上游。
+   *
+   * 改用 null 當哨兵值同時也向後相容 —— 舊資料寫進去的正是 `null`，在新的
+   * 判斷下自動獲得原本就想要的「永不過期」語意。
+   *
+   * 歷史觀測是既成事實不會再變，清理交給 cleanup() 的 30 天 lazy cleanup。
+   */
+  expiryTime: number | null;
 }
 
 /**
@@ -48,7 +61,7 @@ export class HistoryCacheManager {
     const parsed = deserializeValue<CachedHistoryDay>(cached);
     if (!parsed) return null;
 
-    if (Date.now() > parsed.expiryTime) {
+    if (parsed.expiryTime !== null && Date.now() > parsed.expiryTime) {
       await storage.removeItem(key);
       return null;
     }
@@ -69,7 +82,7 @@ export class HistoryCacheManager {
 
     const cacheItem: CachedHistoryDay = {
       data,
-      expiryTime: Infinity,
+      expiryTime: null,
     };
 
     await storage.setItem(key, serializeValue(cacheItem));
@@ -87,7 +100,7 @@ export class HistoryCacheManager {
   ): Promise<void> {
     if (dataList.length === 0) return;
 
-    const expiryTime = Infinity;
+    const expiryTime = null;
 
     // 並行寫入所有資料（不更新索引）
     await Promise.all(
@@ -267,8 +280,7 @@ export class HistoryCacheManager {
     const date = new Date();
     date.setDate(date.getDate() - daysAgo);
 
-    const dateStr = date.toISOString().split('T')[0];
-    return dateStr ?? '';
+    return toLocalDateString(date);
   }
 }
 

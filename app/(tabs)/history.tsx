@@ -16,6 +16,7 @@ import { DayDetailCard } from '@/components/weather/DayDetailCard';
 import { DayStrip } from '@/components/weather/DayStrip';
 import { useHistory } from '@/hooks/useHistory';
 import { useWeatherPage } from '@/hooks/useWeatherPage';
+import { dayOffsetFromToday } from '@/utils/date';
 import { dayDetailFromForecast, dayDetailFromHistory } from '@/utils/day-detail';
 import { buildDayTimeline } from '@/utils/day-timeline';
 import { getWeatherErrorMessage } from '@/utils/error-message';
@@ -95,15 +96,28 @@ export default function HistoryScreen() {
   // 預報可用即足以呈現；歷史失敗只是少了過去幾天，不該擋住整頁
   const blockingError = weatherError ?? (timeline.length === 0 ? historyError : null);
 
-  // 預設落在「今天」；今天不在時間軸上時退回最後一項（最接近今天的未來日）
+  /*
+    預設落在「今天」；今天不在時間軸上時，退回**最接近**今天的那一天。
+
+    兩個先前的錯誤：
+    1. 用 `toISOString().slice(0, 10)` 取今天 —— 那是 UTC 日期。台北時間
+       00:00~08:00 之間 UTC 還停在前一天，於是清晨開啟時「今天」永遠找不到。
+    2. 找不到時退回 `timeline[length - 1]`，那是**最遠**的未來日（一週後），
+       與註解宣稱的「最接近」正好相反。CWA 當日晚間就不再提供今日預報，
+       今天缺席不是邊角案例，所以使用者實際看到的預設就是一週後那天。
+
+    timeline 已按日期升序，第一個 offset >= 0 的項目就是今天或最近的未來日；
+    全部都在過去時取最後一項（也就是最近的一天）。
+  */
   useEffect(() => {
     if (timeline.length === 0) return;
     const stillPresent = timeline.some((d) => d.date === selectedDate);
     if (stillPresent) return;
 
-    const todayIso = new Date().toISOString().slice(0, 10);
-    const today = timeline.find((d) => d.date === todayIso);
-    setSelectedDate((today ?? timeline[timeline.length - 1])?.date ?? '');
+    const nearestFromToday =
+      timeline.find((d) => (dayOffsetFromToday(d.date) ?? -Infinity) >= 0) ??
+      timeline[timeline.length - 1];
+    setSelectedDate(nearestFromToday?.date ?? '');
   }, [timeline, selectedDate]);
 
   const detail = useMemo(() => {

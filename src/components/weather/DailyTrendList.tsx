@@ -4,13 +4,26 @@ import { Pressable, Text, View } from 'react-native';
 import { AppIcon } from '@/components/icons/AppIcon';
 
 import { DailyForecast, HistoricalDayWeather } from '../../api/types';
-import { getDayOfWeek } from '../../utils/date';
+import { dayOffsetFromToday, getWeekdayName } from '../../utils/date';
 import { SectionLabel } from '../ui/SectionLabel';
 import { getGlassStyle } from '../ui/glass';
 import { WeatherIcon } from '../icons/WeatherIcon';
 
 /** 溫度區間 bar 的軸至少涵蓋這麼多度，避免全週溫差小時 bar 抖動放大 */
 const MIN_AXIS_SPAN = 6;
+
+/**
+ * 相對日期的中文標籤。超出「明日」就回 undefined，交給星期名 ——
+ * 「後天」之後再往下數，使用者反而要換算，不如直接看星期。
+ *
+ * 用「昨日/今日/明日」而非「昨天/今天/明天」，與同列的「週一」等長，
+ * 列首對齊時不會參差。
+ */
+function labelForOffset(offset: number | undefined): string | undefined {
+  if (offset === 0) return '今日';
+  if (offset === 1) return '明日';
+  return undefined;
+}
 
 interface TrendDay {
   key: string;
@@ -94,20 +107,30 @@ export const DailyTrendList = React.memo(function DailyTrendList({
       });
     }
 
-    forecasts.forEach((day, index) => {
+    forecasts.forEach((day) => {
+      /*
+        以日期而非陣列位置判斷今日。
+
+        CWA 的每日預報在當日晚間就不再包含今天 —— 此時第 0 筆是明天。先前用
+        `index === 0` 的結果是：明天被標成「今日」、當前氣溫的標點落在明天那
+        列的 bar 上，而真正的今天整列消失。
+      */
+      const offset = dayOffsetFromToday(day.date);
+      const isTodayRow = offset === 0;
+
       result.push({
         key: `forecast-${day.date}`,
         date: day.date,
-        name: index === 0 ? '今日' : getDayOfWeek(day.date),
+        name: labelForOffset(offset) ?? getWeekdayName(day.date),
         weatherCode: day.weatherCode,
         precipitationProbability: day.precipitationProbability,
         tempMin: day.temperatureMin,
         tempMax: day.temperatureMax,
-        ...(index === 0 && currentTemperature !== undefined
+        ...(isTodayRow && currentTemperature !== undefined
           ? { currentTemp: currentTemperature }
           : {}),
         isPast: false,
-        isToday: index === 0,
+        isToday: isTodayRow,
         canDrillDown: onSelectDay !== undefined,
       });
     });

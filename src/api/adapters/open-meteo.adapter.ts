@@ -2,6 +2,7 @@ import { HistoricalDayWeather, Location, WeatherSource } from '../types';
 
 import { buildWeatherUrl, proxyFetch } from '@/api/proxy-fetch';
 import { type ProxyWeatherResponse, toHistoricalWeather } from '@/api/proxy-weather-response';
+import { toLocalDateString } from '@/utils/date';
 
 import { BaseProxyAdapter } from './base-proxy.adapter';
 
@@ -34,11 +35,9 @@ class OpenMeteoAdapter extends BaseProxyAdapter {
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - days);
 
-      const formatDate = (date: Date): string => date.toISOString().split('T')[0] ?? '';
-
       const params = {
         ...this.buildLocationParams(location),
-        date: formatDate(startDate),
+        date: toLocalDateString(startDate),
         days: String(days),
       };
 

@@ -33,12 +33,17 @@ module.exports = {
     '!src/**/*.test.{ts,tsx}',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '/e2e/'],
+  /*
+    門檻的用途是擋退步，不是拿來追指標 —— 所以設在實際值下方留一點緩衝，
+    讓正常的重構不會無故變紅，但整段掉下去時會被擋住。
+    實際值約 lines 78 / branches 66 / functions 76 / statements 78。
+  */
   coverageThreshold: {
     global: {
-      lines: 50,
-      branches: 40,
-      functions: 42,
-      statements: 48,
+      lines: 74,
+      branches: 62,
+      functions: 72,
+      statements: 74,
     },
   },
   moduleNameMapper: {

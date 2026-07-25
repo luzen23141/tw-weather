@@ -35,6 +35,13 @@ export interface CurrentWeatherCardProps {
    * 推估。UV 則連 hourly 都沒有請求，維持留白。
    */
   currentHour?: HourlyForecast | undefined;
+  /**
+   * 今日預報的 UV 最高值。
+   *
+   * 沒有來源提供「當前」UV，這是唯一拿得到的 UV 資訊；顯示時會標明是日最高，
+   * 不讓它冒充即時值。
+   */
+  todayUvIndexMax?: number | undefined;
   actionSlot?: React.ReactNode;
 }
 
@@ -58,6 +65,7 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
   yesterdayHigh,
   apparentHigh,
   currentHour,
+  todayUvIndexMax,
   actionSlot,
 }: CurrentWeatherCardProps): React.ReactElement {
   const weatherInfo = getWeatherCodeInfo(data.weatherCode);
@@ -130,7 +138,13 @@ export const CurrentWeatherCard = React.memo(function CurrentWeatherCard({
           data.precipitationProbability ?? currentHour?.precipitationProbability
         }
         precipitation={data.precipitation}
-        uvIndex={data.uvIndex}
+        /*
+          當前 UV 沒有任何來源提供，退回今日預報的 uvIndexMax。
+          先前這格傳 data.uvIndex，而它恆為 undefined —— 等於這格永遠不渲染，
+          UV 這項資訊在 app 裡從來沒出現過。
+        */
+        uvIndex={data.uvIndex ?? todayUvIndexMax}
+        uvIsDailyMax={data.uvIndex === undefined && todayUvIndexMax !== undefined}
       />
     </View>
   );

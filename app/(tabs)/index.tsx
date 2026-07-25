@@ -22,6 +22,7 @@ import { SourceRow } from '@/components/weather/SourceRow';
 import { StaleDataNote } from '@/components/weather/StaleDataNote';
 import { useHistory } from '@/hooks/useHistory';
 import { useWeatherPage } from '@/hooks/useWeatherPage';
+import { isToday } from '@/utils/date';
 import { getWeatherErrorMessage } from '@/utils/error-message';
 import { findNowIndex, hourWindow } from '@/utils/hourly';
 import { buildRainSummary } from '@/utils/rain-summary';
@@ -56,7 +57,15 @@ export default function HomeScreen() {
 
   const hourly = weatherData?.hourlyForecast ?? [];
   const daily = weatherData?.dailyForecast ?? [];
-  const today = daily[0];
+  /*
+    以日期找今日，而非拿第一筆。
+
+    CWA 的每日預報在當日晚間就不再包含今天，此時 daily[0] 是明天 —— 先前直
+    接取第一筆，於是大卡的「36°/27°」與「比昨天熱 2°」講的其實是明天。昨日
+    比較是這個 app 的核心賣點，寧可在拿不到今日資料時不顯示，也不能拿明天的
+    數字冒充。
+  */
+  const today = useMemo(() => daily.find((d) => isToday(d.date)), [daily]);
   // history 由 useHistory 依日期新到舊排序，第一筆即昨日
   const yesterday = history?.[0];
 
@@ -120,6 +129,7 @@ export default function HomeScreen() {
                   {...(yesterday !== undefined ? { yesterdayHigh: yesterday.temperatureMax } : {})}
                   {...(apparentHigh !== undefined ? { apparentHigh } : {})}
                   currentHour={currentHour}
+                  todayUvIndexMax={today?.uvIndexMax}
                   actionSlot={
                     <Pressable
                       accessibilityRole="button"

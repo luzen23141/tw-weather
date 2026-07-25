@@ -7,6 +7,7 @@ import type { Provider } from '@/api/providers';
 import { useProviders } from '@/hooks/useProviders';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { PageScrollView } from '@/components/ui/PageScrollView';
+import { AttributionSection } from '@/components/settings/AttributionSection';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { useMDColors } from '@/hooks/useMDColors';
 import { RadioSettingOption, SettingsRow } from '@/components/ui/settings/SettingsRow';
@@ -291,6 +292,14 @@ export default function SettingsScreen() {
               </SettingsSection>
             </View>
           )}
+
+          {/* 授權標示是 CWA 與 Open-Meteo 條款的硬性要求，不是可選的關於頁裝飾 */}
+          <View className="gap-2">
+            <SectionLabel>資料來源出處</SectionLabel>
+            <SettingsSection icon="information-circle-outline" title="授權與聲明">
+              <AttributionSection />
+            </SettingsSection>
+          </View>
         </View>
       </PageScrollView>
     </GlassBackground>
