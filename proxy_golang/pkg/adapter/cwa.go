@@ -143,16 +143,32 @@ type cwaObsResponse struct {
 }
 
 // cwaElementValue CWA 預報要素值
-type cwaElementValue struct {
-	Value    string `json:"Value"`
-	Measures string `json:"Measures"`
-}
+// cwaElementValue CWA 的要素值。
+//
+// **鍵名依要素而異**（Temperature / RelativeHumidity / ProbabilityOfPrecipitation…），
+// 不是通用的 "Value"。先前宣告為 `{Value string}` 的結果是所有數值都讀成空字串，
+// 再 ParseFloat 成 0 —— CWA 的預報因此從未被正確解析過，而且失敗方式是靜默的
+// （回傳 0 而非錯誤），所以一直沒被發現。
+type cwaElementValue map[string]string
 
-// cwaForecastTime CWA 預報時間區間
+// cwaForecastTime CWA 預報時間點或區間。
+//
+// 逐時要素（溫度、濕度、風速…）用 DataTime 表示時間點；
+// 區間要素（降雨機率、天氣現象）用 StartTime/EndTime 表示三小時或十二小時區間。
+// 兩者必須都能解析，否則其中一組會整批落空。
 type cwaForecastTime struct {
+	DataTime     string            `json:"DataTime"`
 	StartTime    string            `json:"StartTime"`
 	EndTime      string            `json:"EndTime"`
 	ElementValue []cwaElementValue `json:"ElementValue"`
+}
+
+// at 回傳此筆的代表時間：逐時要素用 DataTime，區間要素用 StartTime。
+func (t cwaForecastTime) at() string {
+	if t.DataTime != "" {
+		return t.DataTime
+	}
+	return t.StartTime
 }
 
 // cwaForecastElement CWA 預報氣象要素
@@ -163,9 +179,10 @@ type cwaForecastElement struct {
 
 // cwaForecastLocation CWA 預報地點
 type cwaForecastLocation struct {
-	LocationName   string               `json:"LocationName"`
-	Lat            string               `json:"Lat"`
-	Lon            string               `json:"Lon"`
+	LocationName string `json:"LocationName"`
+	// CWA 回傳的是 Latitude / Longitude，先前標成 Lat / Lon 導致座標永遠是空字串
+	Lat            string               `json:"Latitude"`
+	Lon            string               `json:"Longitude"`
 	WeatherElement []cwaForecastElement `json:"WeatherElement"`
 }
 
@@ -269,12 +286,20 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 		return nil, err
 	}
 
+	// LocationName 必須是**鄉鎮名**而非縣市名 —— F-D0047-089 是鄉鎮層級的 dataset，
+	// 傳縣市名會過濾不到任何資料（回傳 0 筆而非錯誤，更難察覺）。
+	// 縣市由 LocationID 選擇的 dataset 決定，這裡只負責選鄉鎮。
 	q := url.Values{}
 	q.Set("Authorization", apiKey)
 	q.Set("format", "JSON")
-	q.Set("LocationName", target.County)
+	if query.Township != "" {
+		q.Set("LocationName", query.Township)
+	}
 
-	rawURL := fmt.Sprintf("%s/F-D0047-089?%s", cwaBaseURL, q.Encode())
+	// 必須用 target.Dataset（縣市版），不能寫死 F-D0047-089（全臺版）——
+	// 全臺版以 LocationName 過濾鄉鎮會回 0 筆，縣市版才支援鄉鎮過濾。
+	// 先前 resolveCWAForecastDataset 解析出正確 dataset 後卻沒被使用。
+	rawURL := fmt.Sprintf("%s/%s?%s", cwaBaseURL, target.Dataset, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
 	if err != nil {
 		return nil, fmt.Errorf("CWA hourly fetch failed: %w", err)
@@ -285,9 +310,9 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 		return nil, fmt.Errorf("CWA hourly parse failed: %w", err)
 	}
 
-	loc, elements := extractCWALocation(raw, target.County)
+	loc, elements := extractCWALocation(raw, query.Township)
 	if loc == nil {
-		return nil, fmt.Errorf("CWA: no location data for county %s", target.County)
+		return nil, fmt.Errorf("CWA: no forecast data for %s %s", target.County, query.Township)
 	}
 
 	// 建立 element 索引
@@ -300,27 +325,34 @@ func fetchCWAHourly(ctx context.Context, query *model.WeatherQuery, apiKey strin
 		if err != nil {
 			continue
 		}
-		temp := getCWAValue(elemMap, "溫度", slot)
-		humidity := getCWAValue(elemMap, "相對濕度", slot)
-		windSpeed := getCWAValue(elemMap, "風速", slot) * 3.6 // m/s → km/h
-		windDir := getCWAValue(elemMap, "風向", slot)
-		precipProb := getCWAValue(elemMap, "3小時降雨機率", slot)
-		weather := getCWAStringValue(elemMap, slot)
+		temp := getCWAValue(elemMap, "溫度", "Temperature", slot)
+		humidity := getCWAValue(elemMap, "相對濕度", "RelativeHumidity", slot)
+		windSpeed := getCWAValue(elemMap, "風速", "WindSpeed", slot) * 3.6 // m/s → km/h
+		// 風向是中文描述而非角度，需另外換算
+		windDir := cwaWindDirectionDegrees(getCWAStringValue(elemMap, "風向", "WindDirection", slot))
+		precipProb := getCWAValue(elemMap, "3小時降雨機率", "ProbabilityOfPrecipitation", slot)
+		weather := getCWAStringValue(elemMap, "天氣現象", "Weather", slot)
+		// CWA 有提供體感溫度，先前的 adapter 沒讀取它
+		apparent := getCWAValue(elemMap, "體感溫度", "ApparentTemperature", slot)
 
-		windDirInt := int(windDir)
 		precipProbInt := int(precipProb)
 		weatherCode := CWAWeatherToWMO(weather)
 
-		hourly = append(hourly, model.HourlyWeather{
+		item := model.HourlyWeather{
 			Time:          t,
 			Temperature:   temp,
 			Humidity:      int(humidity),
 			WindSpeed:     windSpeed,
-			WindDirection: &windDirInt,
+			WindDirection: windDir, // 無法辨識的風向為 nil，欄位會被省略
 			PrecipProb:    &precipProbInt,
 			WeatherCode:   weatherCode,
 			Description:   weather,
-		})
+		}
+		if apparent != 0 {
+			item.ApparentTemperature = &apparent
+		}
+
+		hourly = append(hourly, item)
 	}
 
 	lat, _ := strconv.ParseFloat(loc.Lat, 64)
@@ -341,12 +373,16 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 		return nil, err
 	}
 
+	// 同 hourly：F-D0047-091 也是鄉鎮層級 dataset，LocationName 要鄉鎮名
 	q := url.Values{}
 	q.Set("Authorization", apiKey)
 	q.Set("format", "JSON")
-	q.Set("LocationName", target.County)
+	if query.Township != "" {
+		q.Set("LocationName", query.Township)
+	}
 
-	rawURL := fmt.Sprintf("%s/F-D0047-091?%s", cwaBaseURL, q.Encode())
+	// 同 hourly：用縣市版 dataset 而非寫死的全臺版
+	rawURL := fmt.Sprintf("%s/%s?%s", cwaBaseURL, target.Dataset, q.Encode())
 	resp, err := client.Do(ctx, &model.UpstreamRequest{URL: rawURL, Method: "GET"})
 	if err != nil {
 		return nil, fmt.Errorf("CWA daily fetch failed: %w", err)
@@ -357,9 +393,9 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 		return nil, fmt.Errorf("CWA daily parse failed: %w", err)
 	}
 
-	loc, elements := extractCWALocation(raw, target.County)
+	loc, elements := extractCWALocation(raw, query.Township)
 	if loc == nil {
-		return nil, fmt.Errorf("CWA: no location data for county %s", target.County)
+		return nil, fmt.Errorf("CWA: no forecast data for %s %s", target.County, query.Township)
 	}
 
 	elemMap := buildCWAElementMap(elements)
@@ -371,10 +407,10 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 		if err != nil {
 			continue
 		}
-		maxTemp := getCWAValue(elemMap, "最高溫度", slot)
-		minTemp := getCWAValue(elemMap, "最低溫度", slot)
-		precipProb := getCWAValue(elemMap, "12小時降雨機率", slot)
-		weather := getCWAStringValue(elemMap, slot)
+		maxTemp := getCWAValue(elemMap, "最高溫度", "MaxTemperature", slot)
+		minTemp := getCWAValue(elemMap, "最低溫度", "MinTemperature", slot)
+		precipProb := getCWAValue(elemMap, "12小時降雨機率", "ProbabilityOfPrecipitation", slot)
+		weather := getCWAStringValue(elemMap, "天氣現象", "Weather", slot)
 
 		precipProbInt := int(precipProb)
 		weatherCode := CWAWeatherToWMO(weather)
@@ -388,6 +424,8 @@ func fetchCWADaily(ctx context.Context, query *model.WeatherQuery, apiKey string
 			Description: weather,
 		})
 	}
+
+	daily = mergeCWADailySegments(daily)
 
 	lat, _ := strconv.ParseFloat(loc.Lat, 64)
 	lon, _ := strconv.ParseFloat(loc.Lon, 64)
@@ -438,6 +476,48 @@ func extractCWALocation(raw cwaForecastResponse, locationName string) (*cwaLocat
 	}, l.WeatherElement
 }
 
+/*
+mergeCWADailySegments 把同一天的白天／晚上兩段合併成一筆。
+
+CWA 的週預報以 12 小時為單位，一天拆成白天與晚上兩段 —— 直接輸出會讓「明天」
+在畫面上出現兩列。合併規則：最高溫取兩段較高者、最低溫取較低者、降雨機率取
+較高者（保守），天氣描述取當日第一段（白天），因為那是使用者對「明天天氣」的
+預設理解。
+
+假設輸入已依時間排序（extractCWATimeSlots 保證）。
+*/
+func mergeCWADailySegments(segments []model.DailyWeather) []model.DailyWeather {
+	if len(segments) == 0 {
+		return segments
+	}
+
+	merged := make([]model.DailyWeather, 0, len(segments))
+	indexByDate := make(map[string]int, len(segments))
+
+	for _, seg := range segments {
+		key := seg.Date.Format("2006-01-02")
+		idx, seen := indexByDate[key]
+		if !seen {
+			indexByDate[key] = len(merged)
+			merged = append(merged, seg)
+			continue
+		}
+
+		target := &merged[idx]
+		if seg.TempMax > target.TempMax {
+			target.TempMax = seg.TempMax
+		}
+		if seg.TempMin < target.TempMin {
+			target.TempMin = seg.TempMin
+		}
+		if seg.PrecipProb != nil && (target.PrecipProb == nil || *seg.PrecipProb > *target.PrecipProb) {
+			target.PrecipProb = seg.PrecipProb
+		}
+	}
+
+	return merged
+}
+
 func resolveCWAForecastDataset(locationID string, datasets map[string]cwaForecastDataset) (*cwaForecastDataset, error) {
 	target, ok := datasets[locationID]
 	if ok {
@@ -446,66 +526,146 @@ func resolveCWAForecastDataset(locationID string, datasets map[string]cwaForecas
 	return nil, fmt.Errorf("CWA: unsupported forecast locationId %s", locationID)
 }
 
-func buildCWAElementMap(elements []cwaForecastElement) map[string]map[string]string {
-	result := make(map[string]map[string]string)
+// cwaTimeSeries 單一要素的時間序列：時間 → 該時間點的所有具名值。
+type cwaTimeSeries struct {
+	// 依時間排序的 (時間, 值) 序列。用序列而非 map 是因為區間要素需要
+	// 「找出涵蓋某時刻的區間」，那需要順序。
+	times  []string
+	values []cwaElementValue
+}
+
+func buildCWAElementMap(elements []cwaForecastElement) map[string]cwaTimeSeries {
+	result := make(map[string]cwaTimeSeries, len(elements))
 	for _, el := range elements {
-		timeMap := make(map[string]string)
+		series := cwaTimeSeries{}
 		for _, t := range el.Time {
-			if len(t.ElementValue) > 0 {
-				timeMap[t.StartTime] = t.ElementValue[0].Value
+			at := t.at()
+			if at == "" || len(t.ElementValue) == 0 {
+				continue
 			}
+			series.times = append(series.times, at)
+			series.values = append(series.values, t.ElementValue[0])
 		}
-		result[el.ElementName] = timeMap
+		sort.Sort(&series)
+		result[el.ElementName] = series
 	}
 	return result
 }
 
-func extractCWATimeSlots(elemMap map[string]map[string]string) []string {
-	seen := make(map[string]bool)
-	var slots []string
-	for _, timeMap := range elemMap {
-		for t := range timeMap {
-			if !seen[t] {
-				seen[t] = true
-				slots = append(slots, t)
-			}
-		}
-		break // 只需第一個 element 的時間軸
-	}
-	sort.Strings(slots)
-	return slots
+func (s *cwaTimeSeries) Len() int           { return len(s.times) }
+func (s *cwaTimeSeries) Less(i, j int) bool { return s.times[i] < s.times[j] }
+func (s *cwaTimeSeries) Swap(i, j int) {
+	s.times[i], s.times[j] = s.times[j], s.times[i]
+	s.values[i], s.values[j] = s.values[j], s.values[i]
 }
 
-func getCWAValue(elemMap map[string]map[string]string, name, timeSlot string) float64 {
-	if timeMap, ok := elemMap[name]; ok {
-		if val, ok := timeMap[timeSlot]; ok {
-			return parseFloat(val)
+/*
+lookup 取出涵蓋 slot 的值。
+
+逐時要素與區間要素的時間軸粒度不同 —— 溫度是每小時一筆，降雨機率是每三小時
+一筆。若用精確比對，三小時要素只有三分之一的時間點命中，其餘全部落空。
+因此改為「取最後一個不晚於 slot 的項目」，讓區間值涵蓋其後的每個小時。
+*/
+func (s *cwaTimeSeries) lookup(slot string) (cwaElementValue, bool) {
+	idx := -1
+	for i, t := range s.times {
+		if t <= slot {
+			idx = i
+		} else {
+			break
 		}
 	}
-	return 0
+	if idx < 0 {
+		return nil, false
+	}
+	return s.values[idx], true
 }
 
-func getCWAStringValue(elemMap map[string]map[string]string, timeSlot string) string {
-	if timeMap, ok := elemMap["天氣現象"]; ok {
-		if val, ok := timeMap[timeSlot]; ok {
-			return val
+// extractCWATimeSlots 以「溫度」的逐時時間軸為準。
+//
+// 不能取所有要素時間的聯集：那會把三小時區間的起點也當成獨立時間點，
+// 產生溫度為 0 的假資料列。
+func extractCWATimeSlots(elemMap map[string]cwaTimeSeries) []string {
+	for _, name := range []string{"溫度", "最高溫度", "最低溫度"} {
+		if series, ok := elemMap[name]; ok && len(series.times) > 0 {
+			slots := make([]string, len(series.times))
+			copy(slots, series.times)
+			return slots
 		}
 	}
-	return ""
+	return nil
+}
+
+// getCWAValue 取數值。name 為要素名、valueKey 為該要素的具名鍵。
+func getCWAValue(elemMap map[string]cwaTimeSeries, name, valueKey, timeSlot string) float64 {
+	series, ok := elemMap[name]
+	if !ok {
+		return 0
+	}
+	val, ok := series.lookup(timeSlot)
+	if !ok {
+		return 0
+	}
+	return parseFloat(val[valueKey])
+}
+
+// getCWAStringValue 取字串值（如天氣現象的「多雲」）。
+func getCWAStringValue(elemMap map[string]cwaTimeSeries, name, valueKey, timeSlot string) string {
+	series, ok := elemMap[name]
+	if !ok {
+		return ""
+	}
+	val, ok := series.lookup(timeSlot)
+	if !ok {
+		return ""
+	}
+	return val[valueKey]
+}
+
+/*
+cwaWindDirectionDegrees 把 CWA 的中文風向轉為角度。
+
+CWA 的風向欄位是描述文字（「偏東風」）而非數值 —— 先前直接 ParseFloat，
+結果永遠是 0（正北），也就是所有風向都顯示為北風。
+
+回傳氣象慣例的「風的來向」角度。無法辨識時回傳 nil，讓上層省略該欄位，
+而不是填一個看起來合理的錯誤值。
+*/
+func cwaWindDirectionDegrees(desc string) *int {
+	table := map[string]int{
+		"偏北風": 0, "北風": 0,
+		"偏東北風": 45, "東北風": 45,
+		"偏東風": 90, "東風": 90,
+		"偏東南風": 135, "東南風": 135,
+		"偏南風": 180, "南風": 180,
+		"偏西南風": 225, "西南風": 225,
+		"偏西風": 270, "西風": 270,
+		"偏西北風": 315, "西北風": 315,
+	}
+	if deg, ok := table[strings.TrimSpace(desc)]; ok {
+		return &deg
+	}
+	return nil
 }
 
 func parseCWATime(s string) (time.Time, error) {
-	layouts := []string{
-		"2006-01-02T15:04:05+08:00",
-		"2006-01-02T15:04:05",
+	// Z07:00 才是 Go 解析數值時區的正確格式 —— 先前用字面 "+08:00" 當 layout，
+	// Go 不把它當時區而是逐字比對，結果丟掉 +08:00 資訊、把台北時間當成 UTC。
+	// 症狀是所有 CWA 時間在前端偏移 8 小時，聚合按小時對齊時 CWA 與其他來源的
+	// 「同一個 T06」其實差 8 小時，合併後時間軸錯亂。
+	//
+	// 無時區資訊的 fallback 假設為台北時間（CWA 的資料一律是本地時間）。
+	if t, err := time.Parse("2006-01-02T15:04:05Z07:00", s); err == nil {
+		return t, nil
 	}
-	for _, layout := range layouts {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t, nil
-		}
+	if t, err := time.ParseInLocation("2006-01-02T15:04:05", s, cwaTimeZone); err == nil {
+		return t, nil
 	}
 	return time.Time{}, fmt.Errorf("cannot parse CWA time: %s", s)
 }
+
+// cwaTimeZone 是 CWA 資料的時區（台北，UTC+8）。無時區標記的時間以此解讀。
+var cwaTimeZone = time.FixedZone("Asia/Taipei", 8*60*60)
 
 var visibilityRe = regexp.MustCompile(`(\d+(?:\.\d+)?)`)
 
@@ -561,4 +721,36 @@ func haversine(lat1, lon1, lat2, lon2 float64) float64 {
 			math.Sin(dLon/2)*math.Sin(dLon/2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return earthRadiusKm * c
+}
+
+/*
+CWAWarmupTargets 回傳暖身用的 (dataset ID, 代表鄉鎮) 組合。
+
+只需每個縣市一個鄉鎮 —— CWA 的 dataset 回應包含該縣市**所有**鄉鎮，
+搭配 URL 層快取，抓一次就涵蓋整個縣市。
+*/
+func CWAWarmupTargets(weatherType model.WeatherType) map[string]string {
+	datasets := cwaThreeDayForecastDatasets
+	if weatherType == model.WeatherTypeDaily {
+		datasets = cwaWeeklyForecastDatasets
+	}
+
+	result := make(map[string]string, len(datasets))
+	for id, ds := range datasets {
+		if township, ok := cwaRepresentativeTownship[ds.County]; ok {
+			result[id] = township
+		}
+	}
+	return result
+}
+
+// cwaRepresentativeTownship 每個縣市取一個鄉鎮作為暖身用的查詢對象。
+// 選哪一個不影響快取涵蓋範圍 —— 回應永遠包含該縣市全部鄉鎮。
+var cwaRepresentativeTownship = map[string]string{
+	"宜蘭縣": "宜蘭市", "桃園市": "桃園區", "新竹縣": "竹北市", "苗栗縣": "苗栗市",
+	"彰化縣": "彰化市", "南投縣": "南投市", "雲林縣": "斗六市", "嘉義縣": "太保市",
+	"屏東縣": "屏東市", "臺東縣": "臺東市", "花蓮縣": "花蓮市", "澎湖縣": "馬公市",
+	"基隆市": "仁愛區", "新竹市": "東區", "嘉義市": "東區", "臺北市": "大安區",
+	"高雄市": "苓雅區", "新北市": "板橋區", "臺中市": "西屯區", "臺南市": "中西區",
+	"連江縣": "南竿鄉", "金門縣": "金城鎮",
 }

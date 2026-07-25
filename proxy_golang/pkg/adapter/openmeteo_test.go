@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -263,4 +264,89 @@ func TestWMODescription(t *testing.T) {
 			assert.Equal(t, c.expected, WMODescription(c.code))
 		})
 	}
+}
+
+// end_date 先前與 start_date 同值，導致 archive 請求永遠只涵蓋一天 ——
+// days 參數對歷史查詢完全沒有作用。這組測試把區間行為鎖住。
+func TestOpenMeteoHistoryEndDate(t *testing.T) {
+	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+
+	t.Run("依天數往後推，含頭尾", func(t *testing.T) {
+		assert.Equal(t, "2020-03-10", openMeteoHistoryEndDate("2020-03-01", 10))
+	})
+
+	t.Run("單日查詢維持原本行為", func(t *testing.T) {
+		assert.Equal(t, "2020-03-01", openMeteoHistoryEndDate("2020-03-01", 1))
+		assert.Equal(t, "2020-03-01", openMeteoHistoryEndDate("2020-03-01", 0))
+	})
+
+	t.Run("無法解析的起始日原樣回傳，不讓請求帶著空日期出去", func(t *testing.T) {
+		assert.Equal(t, "not-a-date", openMeteoHistoryEndDate("not-a-date", 30))
+	})
+
+	t.Run("上限為昨天 —— archive 不含當日，帶未來日期會讓整個請求失敗", func(t *testing.T) {
+		start := time.Now().AddDate(0, 0, -3).Format("2006-01-02")
+		assert.Equal(t, yesterday, openMeteoHistoryEndDate(start, 365))
+	})
+
+	t.Run("起始日晚於昨天時退回起始日，避免產生反向區間", func(t *testing.T) {
+		tomorrow := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+		assert.Equal(t, tomorrow, openMeteoHistoryEndDate(tomorrow, 30))
+	})
+}
+
+// 自架實例（單一模式）的 current 不提供 weather_code，官方託管則會跨模式補值。
+// 少了天氣代碼，UI 的圖示與描述會整個退化，所以必須退回逐時值。
+func TestCurrentWeatherCode_Fallback(t *testing.T) {
+	code := func(v int) *int { return &v }
+
+	t.Run("current 有值時直接採用", func(t *testing.T) {
+		raw := openMeteoForecastResponse{
+			Current: openMeteoCurrent{Time: "2026-07-23T19:00", WeatherCode: code(61)},
+			Hourly:  openMeteoHourly{Time: []string{"2026-07-23T19:00"}, WeatherCode: []int{3}},
+		}
+		assert.Equal(t, 61, currentWeatherCode(raw))
+	})
+
+	t.Run("current 為 0 時仍採用，不誤判為缺值", func(t *testing.T) {
+		raw := openMeteoForecastResponse{
+			Current: openMeteoCurrent{Time: "2026-07-23T19:00", WeatherCode: code(0)},
+			Hourly:  openMeteoHourly{Time: []string{"2026-07-23T19:00"}, WeatherCode: []int{95}},
+		}
+		assert.Equal(t, 0, currentWeatherCode(raw))
+	})
+
+	t.Run("current 缺值時取同一時刻的逐時值", func(t *testing.T) {
+		raw := openMeteoForecastResponse{
+			Current: openMeteoCurrent{Time: "2026-07-23T19:00"},
+			Hourly: openMeteoHourly{
+				Time:        []string{"2026-07-23T17:00", "2026-07-23T18:00", "2026-07-23T19:00", "2026-07-23T20:00"},
+				WeatherCode: []int{1, 2, 61, 80},
+			},
+		}
+		assert.Equal(t, 61, currentWeatherCode(raw))
+	})
+
+	t.Run("current 時刻落在逐時之間時取下一個時段", func(t *testing.T) {
+		raw := openMeteoForecastResponse{
+			Current: openMeteoCurrent{Time: "2026-07-23T19:15"},
+			Hourly: openMeteoHourly{
+				Time:        []string{"2026-07-23T19:00", "2026-07-23T20:00"},
+				WeatherCode: []int{61, 80},
+			},
+		}
+		assert.Equal(t, 80, currentWeatherCode(raw))
+	})
+
+	t.Run("逐時全部早於 current 時取最後一筆", func(t *testing.T) {
+		raw := openMeteoForecastResponse{
+			Current: openMeteoCurrent{Time: "2026-07-23T23:00"},
+			Hourly:  openMeteoHourly{Time: []string{"2026-07-23T20:00"}, WeatherCode: []int{45}},
+		}
+		assert.Equal(t, 45, currentWeatherCode(raw))
+	})
+
+	t.Run("兩邊都沒有時回傳 0", func(t *testing.T) {
+		assert.Equal(t, 0, currentWeatherCode(openMeteoForecastResponse{}))
+	})
 }

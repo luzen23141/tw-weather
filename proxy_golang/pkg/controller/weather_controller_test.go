@@ -300,13 +300,47 @@ func TestHandleCurrentWeather_DaysExceedsMax_Clamps(t *testing.T) {
 	svc := &mockWeatherService{
 		getWeatherFn: func(_ context.Context, query *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
 			assert.Equal(t, model.WeatherTypeCurrent, kind)
-			assert.Equal(t, model.MaxDays, query.Days)
+			assert.Equal(t, model.MaxForecastDays, query.Days)
 			return defaultWeatherResponse("openmeteo", model.WeatherTypeCurrent), nil
 		},
 	}
 	r := setupWeatherRouter(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/weather/current?provider=openmeteo&lat=25.04&lon=121.51&days=99", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// 歷史查詢的天數上限與預報不同 —— 先前共用同一個常數，導致歷史被靜默截斷到 7 天。
+func TestHandleHistoryWeather_AllowsLongerRangeThanForecast(t *testing.T) {
+	svc := &mockWeatherService{
+		getWeatherFn: func(_ context.Context, query *model.WeatherQuery, kind model.WeatherType) (*model.WeatherResponse, error) {
+			assert.Equal(t, model.WeatherTypeHistory, kind)
+			assert.Equal(t, 92, query.Days)
+			return defaultWeatherResponse("openmeteo", model.WeatherTypeHistory), nil
+		},
+	}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/history?provider=openmeteo&lat=25.04&lon=121.51&date=2026-05-01&days=92", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestHandleHistoryWeather_DaysExceedsHistoryMax_Clamps(t *testing.T) {
+	svc := &mockWeatherService{
+		getWeatherFn: func(_ context.Context, query *model.WeatherQuery, _ model.WeatherType) (*model.WeatherResponse, error) {
+			assert.Equal(t, model.MaxHistoryDays, query.Days)
+			return defaultWeatherResponse("openmeteo", model.WeatherTypeHistory), nil
+		},
+	}
+	r := setupWeatherRouter(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather/history?provider=openmeteo&lat=25.04&lon=121.51&date=2026-01-01&days=400", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

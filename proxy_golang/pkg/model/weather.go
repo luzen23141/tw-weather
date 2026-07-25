@@ -21,17 +21,41 @@ type WeatherQuery struct {
 	Lon        float64 `form:"lon"`
 	LocationID string  `form:"locationId"` // CWA 測站 ID 或地區代碼
 	Date       string  `form:"date"`       // YYYY-MM-DD（歷史查詢用）
-	Days       int     `form:"days"`       // 預報天數（預設 7）
+	// Township 鄉鎮市區名稱（CWA 預報用）。
+	//
+	// CWA 的逐時／每日預報 dataset 是「一個縣市一支 API」，而該 API 以鄉鎮名過濾。
+	// 因此 LocationID 決定打哪一支、Township 決定取哪一個鄉鎮 —— 兩者缺一不可。
+	// 留空時取該縣市的第一個鄉鎮，讓縣市層級的查詢仍有結果而非直接失敗。
+	Township string `form:"township"`
+	Days     int    `form:"days"` // 預報天數（預設 7）
 }
 
 // Weather request validation boundaries.
 const (
-	MaxDays = 7
-	MinLat  = -90.0
-	MaxLat  = 90.0
-	MinLon  = -180.0
-	MaxLon  = 180.0
+	// MaxForecastDays 預報天數上限（current / hourly / daily）。
+	// Open-Meteo 上游支援到 16 天，但越遠的預報準確度衰減得很快，7 天是實用上限。
+	MaxForecastDays = 7
+
+	// MaxHistoryDays 歷史查詢天數上限。
+	//
+	// 刻意與 MaxForecastDays 分開：兩者是本質不同的限制。預報受限於「預測多遠還可信」，
+	// 歷史受限於「上游 archive 有多長」。先前共用同一個常數 7，導致歷史查詢被靜默截斷到
+	// 一週 —— 而快取層本來就是照長期歷史設計的（永不過期、30 天 lazy cleanup）。
+	MaxHistoryDays = 92
+
+	MinLat = -90.0
+	MaxLat = 90.0
+	MinLon = -180.0
+	MaxLon = 180.0
 )
+
+// MaxDaysFor 回傳該查詢類型的天數上限。
+func MaxDaysFor(kind WeatherType) int {
+	if kind == WeatherTypeHistory {
+		return MaxHistoryDays
+	}
+	return MaxForecastDays
+}
 
 // WeatherResponse 統一天氣回應
 type WeatherResponse struct {
@@ -88,6 +112,7 @@ type DailyWeather struct {
 	Date          time.Time `json:"date"`
 	TempMax       float64   `json:"tempMax"`
 	TempMin       float64   `json:"tempMin"`
+	TempMean      *float64  `json:"tempMean,omitempty"` // 僅 archive 提供
 	Humidity      *int      `json:"humidity,omitempty"`
 	WindSpeed     *float64  `json:"windSpeed,omitempty"`
 	Precipitation *float64  `json:"precipitation,omitempty"`

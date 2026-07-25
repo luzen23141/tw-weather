@@ -94,9 +94,9 @@ func bindWeatherQuery(c *gin.Context, kind model.WeatherType) (*model.WeatherQue
 		}
 	}
 
-	// 限制 days 上限
-	if query.Days > model.MaxDays {
-		query.Days = model.MaxDays
+	// 限制 days 上限 —— 預報與歷史的上限不同，見 model.MaxDaysFor
+	if maxDays := model.MaxDaysFor(kind); query.Days > maxDays {
+		query.Days = maxDays
 	}
 	if query.Days < 0 {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Error: "days must be >= 0"})
