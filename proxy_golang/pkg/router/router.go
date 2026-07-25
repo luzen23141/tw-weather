@@ -25,6 +25,9 @@ func Setup(
 	api := r.Group("/api")
 	{
 		api.GET("/health", debugCtrl.HandleHealth)
+		// debug 公開不受 HMAC 保護 —— 它是查「為什麼行為不對」用的，
+		// 而 HMAC 失效正是常見的待診斷情境。端點內不含任何秘密。
+		api.GET("/debug", debugCtrl.HandleDebug)
 
 		provider := api.Group("/provider")
 		{

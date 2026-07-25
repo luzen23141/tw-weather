@@ -42,23 +42,36 @@ proxy_golang/
 
 ## API 端點
 
-| 端點                                      | 說明                               |
-| ----------------------------------------- | ---------------------------------- |
-| `GET /api/proxy?service=xxx&endpoint=yyy` | 主要代理端點，轉發至對應天氣資料源 |
-| `GET /api/debug`                          | 調試端點，無認證要求               |
+| 端點                       | 認證 | 說明                                                     |
+| -------------------------- | ---- | -------------------------------------------------------- |
+| `GET /api/health`          | 無   | Liveness —— 行程活著即回 ok，零依賴，給 load balancer 用 |
+| `GET /api/debug`           | 無   | 診斷 —— Redis 連線、provider 金鑰有無、暖身狀態、uptime  |
+| `GET /api/provider/list`   | 無   | 可用資料源清單                                           |
+| `GET /api/weather/current` | HMAC | 即時天氣（`provider` + `lat`/`lon` 或 `locationId`）     |
+| `GET /api/weather/hourly`  | HMAC | 逐時預報（CWA 需 `locationId` + `township`）             |
+| `GET /api/weather/daily`   | HMAC | 每日預報（CWA 需 `locationId` + `township`）             |
+| `GET /api/weather/history` | HMAC | 歷史天氣（`date` + `days`，上限 92 天）                  |
 
 ### 請求流程
 
 ```
 前端請求
-  → CORS 中間件
-  → HMAC 認證中間件（PROXY_SECRET 為空則跳過）
-  → RequestLogger 中間件
-  → ProxyController
-      → 查詢 TTL Cache（X-Cache: HIT/MISS）
-      → 呼叫對應 Adapter（CWA / WeatherAPI / Open-Meteo）
-      → 回傳 JSON + 快取標頭
+  → CORS → HMAC（PROXY_SECRET 為空則跳過）→ RequestLogger
+  → WeatherController
+      → Redis 快取（新鮮 → 直接回；過期 → 回舊資料 + 背景更新〔鎖保護〕）
+      → Adapter → CachingUpstreamClient（URL 層快取）→ 上游 API
 ```
+
+### 快取架構
+
+- **Redis 為硬性依賴**：`REDIS_URL` 未設或連不上，啟動即失敗（無記憶體降級 ——
+  靜默降級會讓「Redis 掛了、上游被狂打」這件事完全不可見）
+- **兩層快取**：解析後結果（`cwa:*` 等）+ 上游 URL 回應（`upstream:*`）。
+  URL 層讓 CWA 一支縣市 dataset 服務該縣市所有鄉鎮 —— 44 次上游呼叫涵蓋全臺
+- **Stale-while-revalidate**：過期資料立即回應，背景以分散式鎖（SET NX EX）更新
+- **啟動暖身**：背景預抓全臺縣市預報，週期依 `REFRESH_INTERVAL_SECONDS`；
+  實際上游資料新鮮度由 `REDIS_TTL_SECONDS` 決定
+- 本地開發：`docker-compose up -d` 啟動 Redis
 
 ---
 
@@ -71,6 +84,12 @@ OPENWEATHERMAP_KEY=<string>   # OpenWeatherMap 金鑰（選填）
 PORT=8080                      # 伺服器監聽埠（預設 8080）
 PROXY_SECRET=<string>          # HMAC 簽名密鑰（留空則跳過認證）
 GIN_MODE=release               # Gin 執行模式（debug/release）
+REDIS_URL=<string>             # 必要！如 redis://localhost:6379/0
+REDIS_TTL_SECONDS=3600         # 快取存活時間 = 上游資料的實際更新週期
+REFRESH_INTERVAL_SECONDS=300   # 視為過期並觸發背景更新的門檻
+OPENMETEO_FORECAST_URL=        # 自架 Open-Meteo 時覆寫（留空用官方託管）
+OPENMETEO_ARCHIVE_URL=         # 同上（歷史資料端點）
+OPENMETEO_MODEL=               # 自架時必填（如 ecmwf_ifs025），否則 best_match 全 null
 ```
 
 ---
@@ -118,11 +137,6 @@ docker run -p 8080:8080 --env-file .env proxy_golang
 1. 在 `pkg/adapter/` 新增適配器實作
 2. 在 `pkg/app/app.go` 註冊至 DI 容器
 3. 新增對應環境變數
-
-### 快取策略
-
-- 使用 `ttlcache` 以 `(service, endpoint, query)` 為 Key 做記憶體快取
-- 回應 Header 包含 `X-Cache: HIT` 或 `X-Cache: MISS`
 
 ### HMAC 認證
 

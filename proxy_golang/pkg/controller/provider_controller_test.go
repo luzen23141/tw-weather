@@ -32,3 +32,32 @@ func TestHandleListProviders(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &providers))
 	assert.Len(t, providers, 2)
 }
+
+// 需要金鑰但未配置的來源要標成 unconfigured —— 前端據此停用開關，
+// 而不是讓使用者選了之後收到一串 500
+func TestHandleListProviders_Status(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	registry := adapter.NewRegistry(
+		adapter.ProviderSpec{ID: "cwa", Name: "CWA", RequiresKey: true, APIKey: "key"},
+		adapter.ProviderSpec{ID: "openmeteo", Name: "OM", RequiresKey: false},
+		adapter.ProviderSpec{ID: "weatherapi", Name: "WA", RequiresKey: true, APIKey: ""},
+	)
+	ctrl := NewProviderController(registry)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	ctrl.HandleListProviders(c)
+
+	var resp []model.ProviderInfo
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	byID := map[string]model.ProviderStatus{}
+	for _, p := range resp {
+		byID[p.ID] = p.Status
+	}
+	assert.Equal(t, model.ProviderStatusAvailable, byID["cwa"])
+	assert.Equal(t, model.ProviderStatusAvailable, byID["openmeteo"])
+	assert.Equal(t, model.ProviderStatusUnconfigured, byID["weatherapi"])
+	// 金鑰內容絕不能出現在回應裡
+	assert.NotContains(t, w.Body.String(), "key\"")
+}
