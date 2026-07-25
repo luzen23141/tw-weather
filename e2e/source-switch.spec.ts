@@ -365,12 +365,11 @@ async function assertWeatherPagesBySource(
   badge: string,
 ): Promise<void> {
   await page.goto('/');
-  await expect(page.getByText('體感溫度')).toBeVisible();
+  await expect(page.getByText(/體感 \d+°/)).toBeVisible();
   await expect(page.getByText(badge, { exact: true }).first()).toBeVisible();
 
-  await page.goto('/forecast');
-  await expect(page.getByText('7 日預報', { exact: true })).toBeVisible();
-  await expect(page.getByText(badge, { exact: true }).first()).toBeVisible();
+  // 每日預報已併入首頁，來源標示同樣在首頁的資料來源列
+  await expect(page.getByText('每日預報', { exact: true })).toBeVisible();
 }
 
 test.describe('資料源 E2E', () => {
@@ -411,12 +410,9 @@ test.describe('資料源 E2E', () => {
     await seedState(page, AGGREGATE_SETTINGS);
 
     await page.goto('/');
-    await expect(page.getByText('體感溫度')).toBeVisible();
+    await expect(page.getByText(/體感 \d+°/)).toBeVisible();
     await expect(page.getByText('聚合', { exact: true }).first()).toBeVisible();
-
-    await page.goto('/forecast');
-    await expect(page.getByText('7 日預報', { exact: true })).toBeVisible();
-    await expect(page.getByText('聚合', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('每日預報', { exact: true })).toBeVisible();
 
     await page.goto('/history');
     const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));

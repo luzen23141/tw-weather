@@ -85,3 +85,9 @@ debug_*.ts
 test_*.js
 test_*.go
 sig*.txt
+
+# 本地開發用的 dev server 設定（含個人化 flag）
+.claude/launch.json
+
+# Go 編譯產物
+proxy_golang/proxy

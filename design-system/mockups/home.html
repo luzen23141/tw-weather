@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>tw-weather 設計稿 · 首頁</title>
+    <link rel="stylesheet" href="_assets/mockup.css" />
+    <style>
+      /* ─── 首頁專屬 ────────────────────────────────────────────────── */
+
+      /* 地點 + 刷新 */
+      .head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+      .head__name {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 500;
+        color: var(--fg);
+      }
+      .head__sub {
+        margin: 3px 0 0;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.7);
+      }
+      .head__btn {
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--glass-card-br);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: var(--fg);
+      }
+
+      /* 溫度組 —— 圖示脫框與溫度並置 */
+      .now {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+      .now__icon {
+        font-size: 52px;
+        color: var(--fg);
+      }
+      .now__temp {
+        margin: 0;
+        font-size: 52px;
+        line-height: 0.92;
+        font-weight: 500;
+        letter-spacing: -2px;
+        color: var(--fg);
+      }
+      .now__desc {
+        margin: 8px 0 0;
+        font-size: 13px;
+        color: var(--fg);
+      }
+      .now__meta {
+        margin: 4px 0 0;
+        font-size: 10px;
+        color: var(--fg-2);
+      }
+      .now__meta + .now__meta {
+        margin-top: 2px;
+      }
+
+      /* 指標列 —— 四格，每格四行：圖示 / 主值 / 第三列 / 標籤 */
+      .metrics {
+        margin-top: 15px;
+        padding-top: 13px;
+        border-top: 1px solid var(--divider);
+        display: flex;
+      }
+      .metric {
+        flex: 1;
+        text-align: center;
+        padding: 0 2px;
+        color: var(--accent);
+      }
+      .metric__icon {
+        font-size: 14px;
+        margin: 0 auto;
+      }
+      .metric__val {
+        margin: 4px 0 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--fg);
+      }
+      .metric__label {
+        margin: 5px 0 0;
+        font-size: 8px;
+        color: rgba(255, 255, 255, 0.68);
+      }
+      .metric__sep {
+        width: 1px;
+        background: rgba(255, 255, 255, 0.14);
+      }
+
+      /* 刻度條 —— 段數依各指標的實際分級，段寬與間距各自調整使總寬齊平 */
+      .scale {
+        display: flex;
+        justify-content: center;
+        margin-top: 6px;
+        height: 3px;
+      }
+      .scale__seg {
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .scale__seg--on {
+        background: #fff;
+      }
+      .scale__seg--warn {
+        background: var(--warn);
+      }
+      .scale--4 {
+        gap: 2px;
+      }
+      .scale--4 .scale__seg {
+        width: 8px;
+      }
+      .scale--5 {
+        gap: 2px;
+      }
+      .scale--5 .scale__seg {
+        width: 6px;
+      }
+      .scale--6 {
+        gap: 1.5px;
+      }
+      .scale--6 .scale__seg {
+        width: 5px;
+      }
+
+      /* 降水格沒有刻度，雨量數值接手那一列，四格行數才統一 */
+      .metric__sub {
+        margin: 6px 0 0;
+        font-size: 9px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.78);
+        height: 3px;
+        line-height: 3px;
+      }
+
+      /* 資料來源列 —— 卡片外，退為註腳層級 */
+      .sources {
+        margin-top: 11px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 4px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+      .sources__chip {
+        font-size: 9px;
+        background: rgba(124, 155, 255, 0.28);
+        color: #eaf0ff;
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+      .sources__dot {
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .sources__time {
+        margin-left: auto;
+        color: var(--fg-3);
+      }
+
+      /* 降雨摘要 —— 有雨時強調、無雨時退為低調確認 */
+      .rain-note {
+        margin-top: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        color: var(--fg);
+        background: rgba(158, 197, 255, 0.16);
+        border: 1px solid rgba(158, 197, 255, 0.3);
+      }
+      .rain-note__icon {
+        font-size: 17px;
+        color: var(--accent);
+      }
+      .rain-note--dry {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .rain-note--dry .rain-note__icon {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* 逐時 —— 玻璃底容器，過去時段以不透明度遞增表示，無分隔線 */
+      .hours {
+        padding: 5px 6px;
+        display: flex;
+        gap: 1px;
+        overflow: hidden;
+      }
+      .hour {
+        flex: 0 0 43px;
+        padding: 7px 0;
+        text-align: center;
+      }
+      .hour__time {
+        margin: 0;
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.78);
+      }
+      .hour__day {
+        margin: 0 0 -1px;
+        font-size: 8px;
+        font-weight: 500;
+        color: var(--fg-3);
+      }
+      .hour__icon {
+        font-size: 17px;
+        color: var(--fg);
+        margin: 0 auto;
+      }
+      .hour__temp {
+        margin: 2px 0 0;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--fg);
+      }
+      .hour__bar {
+        margin: 5px auto 0;
+        width: 20px;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .hour__bar i {
+        display: block;
+        height: 3px;
+        border-radius: 3px;
+        background: var(--accent);
+      }
+      .hour__pop {
+        margin: 3px 0 0;
+        font-size: 8px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+      /* 過去時段：亮度遞增即時間軸；降雨條轉白，彩色保留給「尚未發生」 */
+      .hour--past .hour__time,
+      .hour--past .hour__pop {
+        color: #fff;
+      }
+      .hour--past .hour__bar {
+        background: rgba(255, 255, 255, 0.25);
+      }
+      .hour--past .hour__bar i {
+        background: #fff;
+      }
+      /* 「現在」是玻璃上的透鏡 */
+      .hour--now {
+        flex: 0 0 50px;
+        background: var(--glass-lens-bg);
+        border-radius: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.42);
+      }
+      .hour--now .hour__time {
+        font-weight: 500;
+        color: var(--fg);
+      }
+      .hour--now .hour__icon {
+        font-size: 18px;
+      }
+      .hour--now .hour__temp {
+        font-size: 14px;
+      }
+      .hour--now .hour__bar {
+        width: 22px;
+        background: rgba(255, 255, 255, 0.3);
+      }
+      .hour--now .hour__bar i {
+        background: #fff;
+      }
+      .hour--now .hour__pop {
+        font-weight: 500;
+        color: var(--fg);
+      }
+
+      /* 每日 —— 昨日 / 今日 / 未來，共用軸的溫度區間 bar */
+      .days {
+        padding: 5px 12px;
+      }
+      .day {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 0;
+      }
+      .day__name {
+        flex: 0 0 34px;
+        margin: 0;
+        font-size: 11px;
+        color: var(--fg);
+      }
+      .day__icon {
+        flex: 0 0 15px;
+        font-size: 15px;
+        color: var(--fg);
+      }
+      .day__pop {
+        flex: 0 0 30px;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 9px;
+        color: var(--accent);
+      }
+      .day__pop .ic {
+        font-size: 8px;
+      }
+      .day__lo {
+        flex: 0 0 20px;
+        text-align: right;
+        font-size: 11px;
+        color: var(--fg-2);
+      }
+      .day__hi {
+        flex: 0 0 20px;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--fg);
+      }
+      .day__track {
+        flex: 1;
+        height: 4px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.18);
+        position: relative;
+      }
+      .day__range {
+        position: absolute;
+        height: 4px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.9);
+      }
+      .day__marker {
+        position: absolute;
+        top: -2px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #405292;
+      }
+      .day__div {
+        height: 1px;
+        background: var(--divider-soft);
+      }
+      .day--past {
+        opacity: 0.42;
+      }
+      .day--past .day__pop {
+        color: #fff;
+      }
+      .day--today {
+        padding: 7px;
+        margin: 3px -6px;
+        background: rgba(255, 255, 255, 0.16);
+        border-radius: 12px;
+      }
+      .day--today .day__name {
+        font-weight: 500;
+      }
+      .day__pop--none {
+        color: rgba(255, 255, 255, 0.35);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sheet">
+      <h1>首頁</h1>
+      <p class="lede">
+        自動播放中，拖曳滑桿可暫停並手動控制捲動位置。三個 scroll-driven 行為
+        （導航欄收合、頂部精簡標題淡入、內容位移）都是真的在跑，不是模擬。
+      </p>
+
+      <div class="specs">
+        <div>
+          <div class="device" id="device">
+            <div class="scroll" id="content">
+              <div style="height: 14px"></div>
+
+              <!-- ── 當前天氣卡 ─────────────────────────────────── -->
+              <div class="card">
+                <div class="head">
+                  <div>
+                    <p class="head__name">大安區</p>
+                    <p class="head__sub">臺北市</p>
+                  </div>
+                  <div class="head__btn">
+                    <svg class="ic"><use href="#i-refresh" /></svg>
+                  </div>
+                </div>
+
+                <div class="now">
+                  <svg class="ic now__icon"><use href="#i-cloud" /></svg>
+                  <div>
+                    <p class="now__temp">28°</p>
+                    <p class="now__desc">局部多雲</p>
+                    <p class="now__meta">
+                      31° / 24° &nbsp;·&nbsp; <b class="now__delta">比昨天熱 1°</b>
+                    </p>
+                    <p class="now__meta">體感 31° · 最高 34°</p>
+                  </div>
+                </div>
+
+                <div class="metrics">
+                  <div class="metric">
+                    <svg class="ic metric__icon"><use href="#i-droplet" /></svg>
+                    <p class="metric__val">74%</p>
+                    <div class="scale scale--4">
+                      <span class="scale__seg scale__seg--on"></span>
+                      <span class="scale__seg scale__seg--on"></span>
+                      <span class="scale__seg scale__seg--on"></span>
+                      <span class="scale__seg"></span>
+                    </div>
+                    <p class="metric__label">濕度</p>
+                  </div>
+                  <div class="metric__sep"></div>
+
+                  <div class="metric">
+                    <svg class="ic metric__icon"><use href="#i-wind" /></svg>
+                    <p class="metric__val">12</p>
+                    <div class="scale scale--6">
+                      <span class="scale__seg scale__seg--on"></span>
+                      <span class="scale__seg scale__seg--on"></span>
+                      <span class="scale__seg"></span><span class="scale__seg"></span>
+                      <span class="scale__seg"></span><span class="scale__seg"></span>
+                    </div>
+                    <p class="metric__label">km/h</p>
+                  </div>
+                  <div class="metric__sep"></div>
+
+                  <div class="metric">
+                    <svg class="ic metric__icon"><use href="#i-umbrella" /></svg>
+                    <p class="metric__val">60%</p>
+                    <p class="metric__sub">0.4 mm</p>
+                    <p class="metric__label">降水</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── 資料來源（含各來源分歧值） ──────────────────── -->
+              <div class="sources">
+                <span class="sources__chip">聚合</span>
+                <span>CWA 27°</span>
+                <span class="sources__dot">·</span>
+                <span>Open-Meteo 30°</span>
+                <span class="sources__time">14:30</span>
+              </div>
+
+              <!-- ── 降雨摘要 ───────────────────────────────────── -->
+              <div class="rain-note">
+                <svg class="ic rain-note__icon"><use href="#i-cloud-rain" /></svg>
+                <span>16:00 起轉雨，約持續 3 小時</span>
+              </div>
+
+              <!-- ── 逐時預報 ───────────────────────────────────── -->
+              <div class="section-head">
+                <p class="section-label">逐時預報</p>
+                <span class="section-more">全部 168 小時 ›</span>
+              </div>
+              <div class="glass hours">
+                <div class="hour hour--past" style="opacity: 0.32">
+                  <p class="hour__time">11:00</p>
+                  <svg class="ic hour__icon"><use href="#i-sun" /></svg>
+                  <p class="hour__temp">26°</p>
+                  <div class="hour__bar"><i style="width: 5%"></i></div>
+                  <p class="hour__pop">5%</p>
+                </div>
+                <div class="hour hour--past" style="opacity: 0.46">
+                  <p class="hour__time">12:00</p>
+                  <svg class="ic hour__icon"><use href="#i-sun" /></svg>
+                  <p class="hour__temp">27°</p>
+                  <div class="hour__bar"><i style="width: 10%"></i></div>
+                  <p class="hour__pop">10%</p>
+                </div>
+                <div class="hour hour--past" style="opacity: 0.6">
+                  <p class="hour__time">13:00</p>
+                  <svg class="ic hour__icon"><use href="#i-cloud" /></svg>
+                  <p class="hour__temp">28°</p>
+                  <div class="hour__bar"><i style="width: 15%"></i></div>
+                  <p class="hour__pop">15%</p>
+                </div>
+                <div class="hour hour--now">
+                  <p class="hour__time">現在</p>
+                  <svg class="ic hour__icon"><use href="#i-cloud" /></svg>
+                  <p class="hour__temp">28°</p>
+                  <div class="hour__bar"><i style="width: 20%"></i></div>
+                  <p class="hour__pop">20%</p>
+                </div>
+                <div class="hour">
+                  <p class="hour__time">15:00</p>
+                  <svg class="ic hour__icon"><use href="#i-sun" /></svg>
+                  <p class="hour__temp">29°</p>
+                  <div class="hour__bar"><i style="width: 10%"></i></div>
+                  <p class="hour__pop">10%</p>
+                </div>
+                <div class="hour">
+                  <p class="hour__time">16:00</p>
+                  <svg class="ic hour__icon"><use href="#i-cloud-rain" /></svg>
+                  <p class="hour__temp">27°</p>
+                  <div class="hour__bar"><i style="width: 60%"></i></div>
+                  <p class="hour__pop">60%</p>
+                </div>
+                <div class="hour">
+                  <p class="hour__time">17:00</p>
+                  <svg class="ic hour__icon"><use href="#i-cloud-rain" /></svg>
+                  <p class="hour__temp">26°</p>
+                  <div class="hour__bar"><i style="width: 70%"></i></div>
+                  <p class="hour__pop">70%</p>
+                </div>
+                <div class="hour">
+                  <p class="hour__day">7/24</p>
+                  <p class="hour__time">00:00</p>
+                  <svg class="ic hour__icon"><use href="#i-moon" /></svg>
+                  <p class="hour__temp">25°</p>
+                  <div class="hour__bar"><i style="width: 30%"></i></div>
+                  <p class="hour__pop">30%</p>
+                </div>
+              </div>
+
+              <!-- ── 每日預報 ───────────────────────────────────── -->
+              <p class="section-label">每日預報</p>
+              <div class="glass days">
+                <div class="day day--past">
+                  <p class="day__name">昨日</p>
+                  <svg class="ic day__icon"><use href="#i-cloud" /></svg>
+                  <span class="day__pop"
+                    ><svg class="ic"><use href="#i-droplet" /></svg>40%</span
+                  >
+                  <span class="day__lo">24°</span>
+                  <div class="day__track">
+                    <div class="day__range" style="left: 18.2%; width: 54.5%"></div>
+                  </div>
+                  <span class="day__hi">30°</span>
+                </div>
+                <div class="day__div"></div>
+                <div class="day day--today">
+                  <p class="day__name">今日</p>
+                  <svg class="ic day__icon"><use href="#i-cloud" /></svg>
+                  <span class="day__pop"
+                    ><svg class="ic"><use href="#i-droplet" /></svg>60%</span
+                  >
+                  <span class="day__lo">24°</span>
+                  <div class="day__track">
+                    <div class="day__range" style="left: 18.2%; width: 63.6%"></div>
+                    <div class="day__marker" style="left: 54.5%"></div>
+                  </div>
+                  <span class="day__hi">31°</span>
+                </div>
+                <div class="day__div"></div>
+                <div class="day">
+                  <p class="day__name">週五</p>
+                  <svg class="ic day__icon"><use href="#i-sun" /></svg>
+                  <span class="day__pop day__pop--none">—</span>
+                  <span class="day__lo">25°</span>
+                  <div class="day__track">
+                    <div class="day__range" style="left: 27.3%; width: 63.6%"></div>
+                  </div>
+                  <span class="day__hi">32°</span>
+                </div>
+                <div class="day__div"></div>
+                <div class="day">
+                  <p class="day__name">週六</p>
+                  <svg class="ic day__icon"><use href="#i-sun" /></svg>
+                  <span class="day__pop day__pop--none">—</span>
+                  <span class="day__lo">26°</span>
+                  <div class="day__track">
+                    <div class="day__range" style="left: 36.4%; width: 63.6%"></div>
+                  </div>
+                  <span class="day__hi">33°</span>
+                </div>
+                <div class="day__div"></div>
+                <div class="day">
+                  <p class="day__name">週日</p>
+                  <svg class="ic day__icon"><use href="#i-cloud-rain" /></svg>
+                  <span class="day__pop"
+                    ><svg class="ic"><use href="#i-droplet" /></svg>60%</span
+                  >
+                  <span class="day__lo">25°</span>
+                  <div class="day__track">
+                    <div class="day__range" style="left: 27.3%; width: 54.5%"></div>
+                  </div>
+                  <span class="day__hi">31°</span>
+                </div>
+                <div class="day__div"></div>
+                <div class="day">
+                  <p class="day__name">週一</p>
+                  <svg class="ic day__icon"><use href="#i-cloud" /></svg>
+                  <span class="day__pop"
+                    ><svg class="ic"><use href="#i-droplet" /></svg>30%</span
+                  >
+                  <span class="day__lo">23°</span>
+                  <div class="day__track">
+                    <div class="day__range" style="left: 9.1%; width: 45.5%"></div>
+                  </div>
+                  <span class="day__hi">28°</span>
+                </div>
+                <div class="day__div"></div>
+                <div class="day">
+                  <p class="day__name">週二</p>
+                  <svg class="ic day__icon"><use href="#i-cloud-rain" /></svg>
+                  <span class="day__pop"
+                    ><svg class="ic"><use href="#i-droplet" /></svg>70%</span
+                  >
+                  <span class="day__lo">22°</span>
+                  <div class="day__track">
+                    <div class="day__range" style="left: 0%; width: 45.5%"></div>
+                  </div>
+                  <span class="day__hi">27°</span>
+                </div>
+                <div class="day__div"></div>
+                <div class="day">
+                  <p class="day__name">週三</p>
+                  <svg class="ic day__icon"><use href="#i-cloud" /></svg>
+                  <span class="day__pop"
+                    ><svg class="ic"><use href="#i-droplet" /></svg>20%</span
+                  >
+                  <span class="day__lo">24°</span>
+                  <div class="day__track">
+                    <div class="day__range" style="left: 18.2%; width: 45.5%"></div>
+                  </div>
+                  <span class="day__hi">29°</span>
+                </div>
+              </div>
+
+              <div style="height: 96px"></div>
+            </div>
+
+            <!-- ── 頂部精簡標題 ─────────────────────────────────── -->
+            <div class="compact-header" id="compact">
+              <span>大安區</span>
+              <span
+                ><svg class="ic" style="font-size: 15px"><use href="#i-cloud" /></svg>28°</span
+              >
+            </div>
+
+            <!-- ── 底部導航欄（展開 / 收合） ────────────────────── -->
+            <nav class="tabbar" id="tabFull">
+              <div class="tabbar__item tabbar__item--active">
+                <svg class="ic"><use href="#i-cloud" /></svg>
+              </div>
+              <div class="tabbar__item">
+                <svg class="ic"><use href="#i-calendar" /></svg>
+              </div>
+              <div class="tabbar__item">
+                <svg class="ic"><use href="#i-clock" /></svg>
+              </div>
+              <div class="tabbar__item">
+                <svg class="ic"><use href="#i-map-pin" /></svg>
+              </div>
+              <div class="tabbar__item">
+                <svg class="ic"><use href="#i-settings" /></svg>
+              </div>
+            </nav>
+            <nav class="tabbar tabbar--collapsed" id="tabMini">
+              <div class="tabbar__item tabbar__item--active">
+                <svg class="ic"><use href="#i-cloud" /></svg>
+              </div>
+              <span class="label">大安區</span>
+            </nav>
+          </div>
+
+          <div class="scrubber">
+            <button id="toggle" type="button">暫停</button>
+            <input
+              type="range"
+              id="slider"
+              min="0"
+              max="100"
+              value="0"
+              step="0.1"
+              aria-label="捲動位置"
+            />
+          </div>
+        </div>
+
+        <div class="note">
+          <h3>版面順序</h3>
+          當前天氣卡 → 資料來源 → 降雨摘要 → 逐時 → 每日。資料來源刻意放在卡片與
+          逐時之間：它是註腳而非主資訊，但又必須緊跟著它所描述的那批數字。
+
+          <h3>玻璃層級</h3>
+          全站最多兩層。卡片一層 <code>rgba(255,255,255,.14)</code>，卡片內的強調區
+          （逐時的「現在」、每日的「今日」）一層。三層以上邊界會互相干擾，文字對比不穩。
+
+          <h3>時間軸靠亮度，不靠線</h3>
+          逐時的過去時段 opacity 由 <code>.32</code> 遞增到 <code>.6</code>，「現在」為實心
+          lens，未來回到 <code>1</code>。亮度梯度本身就讀得出方向。過去時段的降雨條轉白，
+          彩色保留給「尚未發生」，是第二層線索。
+
+          <h3>指標刻度段數</h3>
+          段數依各指標的實際分級，不強行統一；但段寬與間距各自調整，使四條刻度總寬 都落在 38px
+          左右，整列底線才齊。降水沒有刻度 —— 百分比的機率直覺人人都有，
+          而雨量數值剛好接手刻度空出的那一列，四格行數因此統一。
+
+          <h3>Liquid Glass</h3>
+          關鍵是非對稱邊框：上緣 <code>.5</code>、左右 <code>.3</code>、下緣 <code>.14</code>，
+          模擬光從上方打在玻璃厚度上的高光。active 項是同材質再疊一層，而非填色按鈕。
+
+          <h3>已知資料缺口</h3>
+          <b>體感溫度</b>：CWA adapter 未提供此欄位，前端 fallback 會顯示氣溫。<br />
+          <b>當日最高體感</b>：需由今日逐時的 apparent 取最大值，後端 daily 未提供。<br />
+          <b>聚合分歧</b>：<code>aggregateTemperature</code> 的 union 模式算出 min/max 後只回傳
+          中點，各來源原始值目前在資料層就被丟棄。<br />
+          <b>過去逐時</b>：proxy 的 hourly 端點無 <code>past_hours</code> 參數；CWA 上游本就不支援。
+          無過去資料時時間軸自然從「現在」開始，即為 fallback。
+        </div>
+      </div>
+
+      <h3 style="margin-top: 40px">指標分級對照</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>指標</th>
+            <th>段數</th>
+            <th>分段</th>
+            <th>依據</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>UV</td>
+            <td>5</td>
+            <td>0–2 低 / 3–5 中 / 6–7 高 / 8–10 過量 / 11+ 危險</td>
+            <td>WHO 官方五級</td>
+          </tr>
+          <tr>
+            <td>風速</td>
+            <td>6</td>
+            <td>0 平靜 / 1–3 微風 / 4–5 和風 / 6–7 強風 / 8–9 烈風 / 10+ 暴風</td>
+            <td>蒲福 13 級歸併（非官方分組）</td>
+          </tr>
+          <tr>
+            <td>濕度</td>
+            <td>4</td>
+            <td>&lt;40 乾燥 / 40–60 舒適 / 60–80 偏濕 / 80+ 潮濕</td>
+            <td>體感舒適區間</td>
+          </tr>
+          <tr>
+            <td>降水機率</td>
+            <td>—</td>
+            <td>不設刻度</td>
+            <td>百分比直覺可讀</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script src="_assets/icons.js"></script>
+    <script src="_assets/scroll-demo.js"></script>
+    <script>
+      ScrollDemo.init({
+        device: '#device',
+        content: '#content',
+        header: '#compact',
+        tabFull: '#tabFull',
+        tabMini: '#tabMini',
+        slider: '#slider',
+        toggle: '#toggle',
+      });
+    </script>
+  </body>
+</html>

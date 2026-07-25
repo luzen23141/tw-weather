@@ -142,7 +142,8 @@ test.describe('天氣頁面', () => {
     await page.goto('/');
     await expect(page.getByText(/20°/).first()).toBeVisible();
     // 驗證溫度顯示（mock 回傳 20 度）
-    await expect(page.getByText('體感溫度')).toBeVisible();
+    // 體感從獨立的 StatCard 改為溫度區塊下方的一行文字
+    await expect(page.getByText(/體感 \d+°/)).toBeVisible();
   });
 
   test('應顯示天氣描述', async ({ page }) => {
@@ -152,6 +153,7 @@ test.describe('天氣頁面', () => {
 
   test('應顯示風速資訊', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('風速')).toBeVisible();
+    // 指標列改為四格單列，風速那格以單位當標籤
+    await expect(page.getByText('km/h')).toBeVisible();
   });
 });

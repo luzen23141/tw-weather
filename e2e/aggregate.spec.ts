@@ -164,15 +164,16 @@ test.describe('聚合模式', () => {
 
     const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
     expect(settings).toContain('"displayMode":"aggregate"');
-    await expect(page.getByText('體感溫度')).toBeVisible();
+    await expect(page.getByText(/體感 \d+°/)).toBeVisible();
   });
 
-  test('預報頁在 aggregate 模式應保留 aggregate 設定', async ({ page }) => {
+  // 原本的預報分頁已移除 —— 每日預報併入首頁，且擴充為昨日 + 今日 + 未來
+  test('首頁每日預報在 aggregate 模式應保留 aggregate 設定', async ({ page }) => {
     await seedAggregateMode(page);
-    await page.goto('/forecast');
+    await page.goto('/');
 
     const settings = await page.evaluate(() => window.localStorage.getItem('weather-settings'));
     expect(settings).toContain('"displayMode":"aggregate"');
-    await expect(page.getByText('7 日預報', { exact: true })).toBeVisible();
+    await expect(page.getByText('每日預報', { exact: true })).toBeVisible();
   });
 });

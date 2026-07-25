@@ -1,0 +1,320 @@
+/*
+ * tw-weather 設計稿共用樣式
+ *
+ * 這份 CSS 是「設計意圖的可執行紀錄」，不是 production 樣式。
+ * 實作端請對照 src/components/ 的 NativeWind class；兩邊的數值
+ * 應該一致，若不一致，以本檔為設計來源、以程式碼為實際行為。
+ */
+
+/* ─── Design tokens ─────────────────────────────────────────────── */
+
+:root {
+  /* 天氣漸層（對應 src/utils/weather-theme.ts 的 LIGHT_GRADIENTS） */
+  --grad-cloudy: linear-gradient(160deg, #2a3875 0%, #3a4f8a 50%, #4a5f9a 100%);
+  --grad-sunny: linear-gradient(160deg, #3a5098 0%, #4a60a8 50%, #5a70b8 100%);
+  --grad-rainy: linear-gradient(160deg, #253068 0%, #354580 50%, #455a95 100%);
+  --grad-night: linear-gradient(160deg, #0e1428 0%, #1a2340 50%, #1e2a48 100%);
+
+  /* 玻璃層級 —— 全站最多兩層，卡片一層、卡片內強調區一層 */
+  --glass-card-bg: rgba(255, 255, 255, 0.14);
+  --glass-card-br: rgba(255, 255, 255, 0.22);
+  --glass-sub-bg: rgba(255, 255, 255, 0.12);
+  --glass-sub-br: rgba(255, 255, 255, 0.2);
+  --glass-lens-bg: rgba(255, 255, 255, 0.26);
+
+  /* Liquid Glass 非對稱邊框 —— 模擬光從上方打在玻璃厚度上的高光 */
+  --lg-bg: rgba(255, 255, 255, 0.2);
+  --lg-top: rgba(255, 255, 255, 0.5);
+  --lg-side: rgba(255, 255, 255, 0.3);
+  --lg-bottom: rgba(255, 255, 255, 0.14);
+
+  /* 文字 */
+  --fg: #fff;
+  --fg-2: rgba(255, 255, 255, 0.72);
+  --fg-3: rgba(255, 255, 255, 0.55);
+
+  /* 強調色 */
+  --accent: #9ec5ff;
+  --warn: #fac775;
+
+  --divider: rgba(255, 255, 255, 0.16);
+  --divider-soft: rgba(255, 255, 255, 0.12);
+}
+
+/* ─── 頁框（設計稿專用，非 app 的一部分） ────────────────────────── */
+
+body {
+  margin: 0;
+  padding: 32px 20px 56px;
+  background: #14161c;
+  color: #e8eaf0;
+  font:
+    14px/1.6 -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'PingFang TC',
+    'Noto Sans TC',
+    sans-serif;
+}
+
+.sheet {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.sheet h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.sheet .lede {
+  color: #9aa1b4;
+  margin: 0 0 32px;
+  max-width: 62ch;
+}
+
+.specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.note {
+  max-width: 44ch;
+  color: #9aa1b4;
+  font-size: 13px;
+}
+
+.note h3 {
+  color: #e8eaf0;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 22px 0 6px;
+}
+
+.note h3:first-child {
+  margin-top: 0;
+}
+
+.note code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.caption {
+  font-size: 12px;
+  color: #9aa1b4;
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+/* ─── 裝置外框 ──────────────────────────────────────────────────── */
+
+.device {
+  position: relative;
+  width: 340px;
+  height: 544px;
+  border-radius: 26px;
+  overflow: hidden;
+  background: var(--grad-cloudy);
+  flex: 0 0 auto;
+}
+
+.device--sunny {
+  background: var(--grad-sunny);
+}
+.device--rainy {
+  background: var(--grad-rainy);
+}
+.device--night {
+  background: var(--grad-night);
+}
+
+.device--auto {
+  height: auto;
+  min-height: 544px;
+}
+
+.scroll {
+  position: absolute;
+  inset: 0 0 auto 0;
+  padding: 0 14px;
+}
+
+.device--auto .scroll {
+  position: static;
+  padding: 0 14px 20px;
+}
+
+/* ─── 圖示 ──────────────────────────────────────────────────────── */
+
+.ic {
+  width: 1em;
+  height: 1em;
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* ─── 卡片與玻璃 ────────────────────────────────────────────────── */
+
+/* backdrop-filter 對應 app 端的 getGlassStyle(n)；少了它玻璃會變成單純的
+   半透明色塊，層次感全失，設計稿會比實際扁一階 */
+.card {
+  border: 1px solid var(--glass-card-br);
+  background: var(--glass-card-bg);
+  border-radius: 22px;
+  padding: 15px 14px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass {
+  border: 1px solid var(--glass-sub-br);
+  background: var(--glass-sub-bg);
+  border-radius: 18px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.section-label {
+  margin: 18px 0 8px;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ─── 頂部精簡標題（捲動時淡入） ────────────────────────────────── */
+
+.compact-header {
+  position: absolute;
+  inset: 0 0 auto 0;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.18);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transition: opacity 0.18s linear;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.compact-header span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ─── Liquid Glass 底部導航欄 ───────────────────────────────────── */
+
+.tabbar {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--lg-bg);
+  border-top: 1px solid var(--lg-top);
+  border-left: 1px solid var(--lg-side);
+  border-right: 1px solid var(--lg-side);
+  border-bottom: 1px solid var(--lg-bottom);
+  transform: translateX(-50%);
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.tabbar__item {
+  width: 46px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* active 是「玻璃上的透鏡」—— 同材質再疊一層，而非填色按鈕 */
+.tabbar__item--active {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--fg);
+}
+
+.tabbar--collapsed {
+  opacity: 0;
+  transform: translateX(-50%) scale(0.86);
+  padding-right: 15px;
+  gap: 7px;
+}
+
+.tabbar--collapsed .tabbar__item--active {
+  width: 38px;
+  height: 32px;
+  font-size: 17px;
+}
+.tabbar--collapsed .label {
+  font-size: 12px;
+  color: var(--fg);
+}
+
+/* ─── 捲動控制列（設計稿專用） ──────────────────────────────────── */
+
+.scrubber {
+  width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.scrubber button {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8eaf0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.scrubber input {
+  flex: 1;
+}
+
+/* ─── 表格 ──────────────────────────────────────────────────────── */
+
+table {
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+th,
+td {
+  text-align: left;
+  padding: 7px 14px 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+th {
+  color: #e8eaf0;
+  font-weight: 600;
+}
+td {
+  color: #9aa1b4;
+}
