@@ -14,8 +14,21 @@ import {
   WeatherSource,
 } from './types';
 
-export const MAX_HISTORY_FETCH_DAYS = 7;
+/**
+ * UI 可查詢的歷史天數上限。
+ *
+ * 這是「使用者最遠能往回看多久」，**不是**任一資料源的能力上限 —— 各來源的上限
+ * 由 `fetchHistory` 內部依來源分別套用（Open-Meteo 92、WeatherAPI 7），來源降級時
+ * 自然拿到較短的區間。
+ *
+ * 先前這個值是 7，等於在送進 service 之前就先砍到最弱來源的水準，讓分來源的
+ * 上限邏輯完全失效 —— Open-Meteo 的 92 天永遠用不到。
+ */
+export const MAX_HISTORY_RANGE_DAYS = 92;
+
+/** Open-Meteo archive 的實際上限 */
 export const OPEN_METEO_MAX_HISTORY_DAYS = 92;
+/** WeatherAPI 免費方案的實際上限 */
 export const WEATHERAPI_MAX_HISTORY_DAYS = 7;
 
 /**

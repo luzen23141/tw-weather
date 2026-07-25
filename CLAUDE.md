@@ -97,13 +97,26 @@ API 層 (Adapters) → Service (統一介面) → Aggregator → UI Hooks → Co
 **路由** (`app/`)
 
 - Expo Router v4 檔案式路由
-- Tabs 導航結構：首頁 / 逐時預報 / 每日預報 / 歷史天氣 / 地點管理 / 設定
+- Tabs 導航（4 個）：天氣 / 歷史 / 地點 / 設定
+- 下鑽路由（非分頁）：
+  - `app/day/[date].tsx` — 單日詳情，由首頁每日列點入
+  - `app/hourly.tsx` — 完整逐時預報，由首頁逐時區塊點入
+- 導航欄為自繪（`src/components/ui/GlassTabBar.tsx`）：Expo Router 的 `Tabs`
+  不接受 animated style，而捲動收合需要把 `Animated.View` 掛上去
 
 **UI 組件** (`src/components/`)
 
-- CurrentWeatherCard — 當前天氣卡
-- HourlyForecastList / DailyForecastList — 預報列表
+- CurrentWeatherCard — 當前天氣卡（單層玻璃、含昨日比較）
+- MetricRow / MetricScale — 四格指標與分段刻度（分級邏輯見 `src/utils/metric-scale.ts`）
+- SourceRow — 資料來源與各來源分歧值
+- RainSummaryNote / StaleDataNote — 降雨摘要與過期資料提示
+- HourlyForecastList / HourlyDetailList — 逐時（首頁橫向 / 詳情頁垂直）
+- DailyTrendList — 昨日 + 今日 + 未來，共用軸的溫度區間
+- DayDetailCard / DayStrip — 單日詳情與日期選擇（歷史頁與 `/day/[date]` 共用）
+- GlassTabBar — Liquid Glass 底部導航（捲動收合）
 - LoadingSpinner / ErrorBoundary — 通用組件
+
+**設計稿**：`design-system/mockups/`（可執行的 HTML，非 Figma）
 
 ---
 
@@ -335,10 +348,13 @@ export default function MyNewPage() {
 ## 相關文件
 
 - `README.md` — 功能特色、快速開始
-- `ARCHITECTURE.md` — 詳細系統架構
-- `FEATURES.md` — 功能詳解
-- `DECISIONS.md` — 架構決策記錄（ADR）
-- `DEVELOPMENT.md` — 開發工作流
-- `API.md` — API 整合細節
-- `TESTING.md` — 測試策略
-- `CHANGELOG.md` — 版本變更記錄
+- `design-system/mockups/README.md` — 設計稿與程式碼的對應關係、已知資料缺口
+- `design-system/taiwan-weather/MASTER.md` — Design system 規範
+- `uiux.md` — UI/UX team spec
+- `ui-checklist.md` — UI 檢查清單
+- `proxy_golang/CLAUDE.md` — 後端代理伺服器指引
+
+> 先前此處列出 `ARCHITECTURE.md`、`FEATURES.md`、`DECISIONS.md`、`DEVELOPMENT.md`、
+> `API.md`、`TESTING.md`、`CHANGELOG.md`，但這七份檔案並不存在於專案中。
+> 指引文件指向不存在的檔案比沒有文件更糟 —— 會讓人（與 AI）反覆撲空。
+> 若之後補上，記得同步恢復此清單。

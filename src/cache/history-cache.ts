@@ -115,8 +115,10 @@ export class HistoryCacheManager {
     cached: HistoricalDayWeather[];
     missingDates: string[];
   }> {
-    // 計算過去 N 天的日期
-    const requestedDates = Array.from({ length: days }, (_, i) => this.getDateString(i));
+    // 計算過去 N 天的日期，**從昨天起算**（i+1）而非今天。
+    // 歷史資料源（archive）不含當日觀測 —— 從今天起算會浪費一格在永遠取不到的
+    // 今天上，days=2 實際只拿得到昨天一天。從昨天起算才是「最近 N 天的觀測」。
+    const requestedDates = Array.from({ length: days }, (_, i) => this.getDateString(i + 1));
 
     // 讀取索引，確認哪些日期已快取
     const index = await this.readIndex(latitude, longitude);

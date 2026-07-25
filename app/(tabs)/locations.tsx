@@ -1,14 +1,14 @@
 import * as ExpoLocation from 'expo-location';
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, Platform, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Platform, Pressable, Text, View } from 'react-native';
 
 import type { Location } from '@/api/types';
 import { AppIcon } from '@/components/icons/AppIcon';
-import { BlurDecorative } from '@/components/ui/BlurDecorative';
 import { Button } from '@/components/ui/Button';
 import { GlassBackground } from '@/components/ui/GlassBackground';
-import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
+import { LocationRow } from '@/components/ui/LocationRow';
 import { PageState } from '@/components/ui/PageState';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextField } from '@/components/ui/TextField';
 import { TAIWAN_CITIES } from '@/constants/taiwan-locations';
 import { useMDColors } from '@/hooks/useMDColors';
@@ -19,7 +19,6 @@ import {
   isWebGeolocationSupported,
 } from '@/hooks/useLocation';
 import { useLocationsStore } from '@/store/locations.store';
-import { getGlassStyle } from '@/components/ui/glass';
 import { getPressFeedbackStyle } from '@/components/ui/press-feedback';
 import { formatLocationDisplayName, formatLocationSecondaryName } from '@/utils/location-display';
 import { resolveTaiwanLocation } from '@/utils/location-resolver';
@@ -162,26 +161,16 @@ export default function LocationsScreen() {
 
   return (
     <GlassBackground className="pt-2">
-      <BlurDecorative color="accent" size="lg" position="top-right" opacity={0.08} />
-      <BlurDecorative color="tertiary" size="sm" position="bottom-left" opacity={0.06} />
-
       <FlatList
         data={isSearching ? searchResults : savedLocations}
         keyExtractor={(item) => `${item.latitude}-${item.longitude}`}
-        contentContainerStyle={{ paddingBottom: 104, gap: 12 }}
+        contentContainerStyle={{ paddingBottom: 104 }}
         style={
           Platform.OS === 'web' ? { alignSelf: 'center', width: '100%', maxWidth: 920 } : undefined
         }
         ListHeaderComponent={
-          <View className="gap-5 pb-3">
-            <PageHeaderCard
-              icon="location-outline"
-              title="地點管理"
-              subtitle="搜尋並切換常用地點。"
-              eyebrow="位置與收藏"
-            />
-
-            <View className="px-4">
+          <View className="gap-4 pb-2">
+            <View className="px-4 pt-2">
               <TextField
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -192,132 +181,91 @@ export default function LocationsScreen() {
             </View>
 
             {!isSearching ? (
-              <View className="px-4">
-                <View className="gap-2.5">
-                  <Button
-                    variant="tonal"
-                    label="使用當前位置"
-                    loading={isGettingLocation}
-                    icon={<AppIcon name="navigate-outline" size={16} color={colors.primary} />}
-                    onPress={() => {
-                      void handleGetCurrentLocation();
-                    }}
-                  />
-                  {locationActionMessage ? (
-                    <Text className="text-[12px] leading-5 text-md-on-surface-variant">
-                      {locationActionMessage}
-                    </Text>
-                  ) : null}
-                </View>
+              <View className="gap-2 px-4">
+                <Button
+                  variant="tonal"
+                  label="使用當前位置"
+                  loading={isGettingLocation}
+                  icon={<AppIcon name="navigate-outline" size={16} color={colors.primary} />}
+                  onPress={() => {
+                    void handleGetCurrentLocation();
+                  }}
+                />
+                {locationActionMessage ? (
+                  <Text className="text-[12px] leading-5 text-md-on-surface-variant">
+                    {locationActionMessage}
+                  </Text>
+                ) : null}
               </View>
             ) : null}
 
-            {!isSearching ? (
-              savedLocations.length > 0 ? (
-                <Text className="mb-2 px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-md-on-surface-variant">
-                  已儲存地點
-                </Text>
-              ) : null
-            ) : null}
+            <SectionLabel>{isSearching ? '搜尋結果' : '已儲存地點'}</SectionLabel>
           </View>
         }
         renderItem={({ item, index }) => {
+          const isLast = index === (isSearching ? searchResults.length : savedLocations.length) - 1;
+
           if (isSearching) {
             const saved = isAlreadySaved(item);
-            const isFirst = index === 0;
-            const isLast = index === searchResults.length - 1;
 
             return (
-              <View
-                className={`mx-4 flex-row items-center justify-between rounded-[28px] border border-white/20 bg-white/12 px-4 py-3 ${
-                  !isLast ? 'border-b border-white/12' : ''
-                } ${isFirst ? 'rounded-t-[26px]' : ''} ${isLast ? 'rounded-b-[26px]' : ''}`}
-                style={getGlassStyle(16)}
-              >
-                <View className="flex-1">
-                  <Text className="text-[15px] font-semibold text-md-on-surface">
-                    {getLocationPrimaryText(item)}
-                  </Text>
-                  <Text className="mt-0.5 text-[12px] text-md-on-surface-variant">
-                    {getLocationSecondaryText(item)}
-                  </Text>
-                </View>
-                {saved ? (
-                  <AppIcon name="checkmark-circle" size={22} color={colors.primary} />
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`新增 ${getLocationPrimaryText(item)} 到收藏`}
-                    onPress={() => handleAdd(item)}
-                    className="min-h-11 min-w-11 items-center justify-center rounded-full border border-white/18 bg-white/10"
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={(state) =>
-                      getPressFeedbackStyle(state, { pressedOpacity: 0.84, pressedScale: 0.97 })
-                    }
-                  >
-                    <AppIcon name="add-circle-outline" size={24} color={colors.primary} />
-                  </Pressable>
-                )}
-              </View>
+              <LocationRow
+                primary={getLocationPrimaryText(item)}
+                secondary={getLocationSecondaryText(item)}
+                isLast={isLast}
+                trailing={
+                  saved ? (
+                    <View className="h-11 w-11 items-center justify-center">
+                      <AppIcon name="checkmark-circle" size={20} color={colors.primary} />
+                    </View>
+                  ) : (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`新增 ${getLocationPrimaryText(item)} 到收藏`}
+                      onPress={() => handleAdd(item)}
+                      className="h-11 w-11 items-center justify-center rounded-full"
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={(state) =>
+                        getPressFeedbackStyle(state, { pressedOpacity: 0.84, pressedScale: 0.97 })
+                      }
+                    >
+                      <AppIcon name="add-circle-outline" size={22} color={colors.primary} />
+                    </Pressable>
+                  )
+                }
+              />
             );
           }
 
           const isSelected =
             selectedLocation?.latitude === item.latitude &&
             selectedLocation?.longitude === item.longitude;
-          const isFirst = index === 0;
-          const isLast = index === savedLocations.length - 1;
 
           return (
-            <View
-              className={`mx-4 flex-row items-center gap-3 rounded-[28px] border px-4 py-3 ${
-                isSelected ? 'border-white/30 bg-white/18' : 'border-white/20 bg-white/12'
-              } ${!isLast ? 'border-b border-white/12' : ''} ${isFirst ? 'rounded-t-[26px]' : ''} ${
-                isLast ? 'rounded-b-[26px]' : ''
-              }`}
-              style={getGlassStyle(16)}
-            >
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={`選擇 ${getLocationPrimaryText(item)}`}
-                onPress={() => handleSelect(item)}
-                className="flex-1"
-                activeOpacity={0.84}
-              >
-                <View className="flex-row items-center justify-between gap-3">
-                  <View className="flex-1">
-                    <Text
-                      className={`text-[15px] font-semibold ${
-                        isSelected ? 'text-md-on-surface' : 'text-md-on-surface'
-                      }`}
-                    >
-                      {getLocationPrimaryText(item)}
-                    </Text>
-                    <Text className="mt-0.5 text-[12px] text-md-on-surface-variant">
-                      {getLocationSecondaryText(item)}
-                    </Text>
-                  </View>
-                  {isSelected ? (
-                    <AppIcon name="checkmark-circle" size={20} color={colors.primary} />
-                  ) : null}
-                </View>
-              </TouchableOpacity>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`刪除 ${getLocationPrimaryText(item)}`}
-                onPress={() => handleRemove(item)}
-                className="min-h-11 min-w-11 items-center justify-center rounded-full border border-white/14 bg-white/8"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={(state) =>
-                  getPressFeedbackStyle(state, { pressedOpacity: 0.84, pressedScale: 0.97 })
-                }
-              >
-                <AppIcon name="trash-outline" size={18} color={colors.error} />
-              </Pressable>
-            </View>
+            <LocationRow
+              primary={getLocationPrimaryText(item)}
+              secondary={getLocationSecondaryText(item)}
+              isLast={isLast}
+              isSelected={isSelected}
+              onPress={() => handleSelect(item)}
+              accessibilityLabel={`選擇 ${getLocationPrimaryText(item)}`}
+              trailing={
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`刪除 ${getLocationPrimaryText(item)}`}
+                  onPress={() => handleRemove(item)}
+                  className="h-11 w-11 items-center justify-center rounded-full"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={(state) =>
+                    getPressFeedbackStyle(state, { pressedOpacity: 0.84, pressedScale: 0.97 })
+                  }
+                >
+                  <AppIcon name="trash-outline" size={18} color={colors.error} />
+                </Pressable>
+              }
+            />
           );
         }}
-        ItemSeparatorComponent={undefined}
         ListEmptyComponent={
           isSearching ? (
             <PageState type="empty" title="未找到相符地點" description="請嘗試其他關鍵字。" />

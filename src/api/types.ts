@@ -133,6 +133,21 @@ export interface HistoricalDayWeather {
 
 // ===== 聚合介面 =====
 
+/**
+ * 單一來源的原始讀數。
+ *
+ * 聚合會把多個來源壓成一個數字，而「各來源差多少」正是多資料源最有價值的資訊 ——
+ * 使用者看到 28° 時，知道背後是 27 與 30 的分歧，跟不知道，是兩種不同的判斷處境。
+ * 因此聚合結果必須把原始值一併帶出來，不能只留下計算後的單一值。
+ */
+export interface SourceReading {
+  source: WeatherSource;
+  /** 該來源回報的當前氣溫（°C） */
+  temperature: number;
+  /** 該來源回報的當前天氣代碼 */
+  weatherCode: number;
+}
+
 export interface WeatherData {
   /** 查詢地點 */
   location: Location;
@@ -148,6 +163,11 @@ export interface WeatherData {
   dailyForecast: DailyForecast[];
   /** 歷史天氣（過去 N 天） */
   history: HistoricalDayWeather[];
+  /**
+   * 各來源的原始讀數。僅聚合模式會填入；單一來源時為 undefined。
+   * 用於在 UI 上呈現來源之間的分歧。
+   */
+  sourceReadings?: SourceReading[];
 }
 
 // ===== API Adapter 介面 =====

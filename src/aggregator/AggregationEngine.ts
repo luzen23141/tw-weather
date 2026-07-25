@@ -8,6 +8,7 @@ import {
   CurrentWeather,
   DailyForecast,
   HourlyForecast,
+  SourceReading,
   WeatherData,
 } from '../api/types';
 
@@ -18,6 +19,22 @@ import {
   aggregateTemperatureRange,
   mode,
 } from './aggregation.utils';
+
+/**
+ * 收集各來源的原始讀數。
+ *
+ * 只取聚合前的原值，不做任何加工 —— 這裡的用途是呈現「分歧」，一旦加工就
+ * 失去意義。已經是聚合結果的項目會被排除，避免自我引用。
+ */
+function collectSourceReadings(results: WeatherData[]): SourceReading[] {
+  return results
+    .filter((r) => r.source !== 'aggregate')
+    .map((r) => ({
+      source: r.source,
+      temperature: r.current.temperature,
+      weatherCode: r.current.weatherCode,
+    }));
+}
 
 class AggregationEngine {
   /**
@@ -49,6 +66,9 @@ class AggregationEngine {
       hourlyForecast,
       dailyForecast,
       history,
+      // 保留各來源的原始讀數。聚合把多個數字壓成一個，但「他們差多少」才是
+      // 多資料源真正的價值 —— 那個資訊不能在計算過程中被丟掉。
+      sourceReadings: collectSourceReadings(results),
     };
   }
 

@@ -20,6 +20,18 @@ export function formatTime(isoString: string): string {
 }
 
 /**
+ * 將 ISO 時間字串格式化為 24 小時制的「16:00」。
+ *
+ * 逐時預報每格只有 43px 寬，「下午 4:00」會撐破格線。這種密集並排的情境，
+ * 24 小時制不只是省空間 —— 一整排等寬的數字本身就構成可掃描的節奏。
+ */
+export function formatHourShort(isoString: string): string {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${String(date.getHours()).padStart(2, '0')}:00`;
+}
+
+/**
  * 將 ISO 日期字串格式化為「2月27日（四）」格式
  */
 export function formatDate(isoString: string): string {
@@ -65,6 +77,19 @@ export function getDayOfWeek(isoString: string): string {
   }
 
   return DAYS_OF_WEEK[date.getDay()] ?? '週日';
+}
+
+/**
+ * 純星期名稱（週一…週日），不做今天/明天的相對替換。
+ *
+ * 與 getDayOfWeek 的差別：後者會把今天/明天回傳成「今天」「明天」，用在需要
+ * 相對語意的地方；但當畫面同時顯示相對敘述（今天/N 天前）時，星期那格再回傳
+ * 「今天」就成了「今天 · 今天」的重複。這個函式永遠給星期，讓兩格各司其職。
+ */
+export function getWeekdayName(isoString: string): string {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return '';
+  return DAYS_OF_WEEK[date.getDay()] ?? '';
 }
 
 /**

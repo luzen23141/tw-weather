@@ -31,6 +31,8 @@ export default {
         'md-on-error': 'var(--color-md-on-error)',
         'md-error-container': 'var(--color-md-error-container)',
         'md-on-error-container': 'var(--color-md-on-error-container)',
+        'md-warning': 'var(--color-md-warning)',
+        'md-warning-container': 'var(--color-md-warning-container)',
         // Glass Token
         'glass-border': 'var(--color-glass-border)',
         'glass-border-strong': 'var(--color-glass-border-strong)',

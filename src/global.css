@@ -39,6 +39,11 @@
     --color-md-error-container: rgba(255, 107, 107, 0.18);
     --color-md-on-error-container: #ffd0d0;
 
+    /* Warning —— 指標刻度進入警示區間時使用（目前僅 UV 高量以上）。
+       刻意與 error 分開：這是「該注意」，不是「出錯了」。 */
+    --color-md-warning: #fac775;
+    --color-md-warning-container: rgba(250, 199, 117, 0.2);
+
     --color-glass-border: rgba(255, 255, 255, 0.26);
     --color-glass-border-strong: rgba(255, 255, 255, 0.42);
   }
@@ -91,4 +96,94 @@
     text-rendering: optimizeLegibility;
     min-height: 100vh;
   }
+}
+
+/*
+  文字色彩的靜態 CSS 兜底。
+
+  NativeWind v5 preview 在 web 上把自訂 CSS 變數色彩靠 runtime 注入 inline style，
+  而該注入在 async 資料觸發 re-render 後會掉 —— 症狀是首頁的溫度、地點等文字
+  在天氣載入後變成 RNW 預設的黑字，深色背景下幾乎看不見。
+
+  這裡補上真正的 class 規則消費同一組變數：runtime 有掛時 inline style 勝出（正確），
+  掉了時這些規則接手（也正確）。雙 class 選擇器是為了蓋過 react-native-web 對每個
+  Text 設的黑字預設（同為 0,1,0 specificity，靠加倍提高到 0,2,0）。
+*/
+.text-md-on-surface.text-md-on-surface {
+  color: var(--color-md-on-surface);
+}
+.text-md-on-surface\/70.text-md-on-surface\/70 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 70%, transparent);
+}
+.text-md-on-surface\/72.text-md-on-surface\/72 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 72%, transparent);
+}
+.text-md-on-surface\/75.text-md-on-surface\/75 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 75%, transparent);
+}
+.text-md-on-surface\/78.text-md-on-surface\/78 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 78%, transparent);
+}
+.text-md-on-surface\/82.text-md-on-surface\/82 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 82%, transparent);
+}
+.text-md-on-surface\/84.text-md-on-surface\/84 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 84%, transparent);
+}
+.text-md-on-surface\/85.text-md-on-surface\/85 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 85%, transparent);
+}
+.text-md-on-surface\/86.text-md-on-surface\/86 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 86%, transparent);
+}
+.text-md-on-surface\/88.text-md-on-surface\/88 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 88%, transparent);
+}
+.text-md-on-surface\/90.text-md-on-surface\/90 {
+  color: color-mix(in srgb, var(--color-md-on-surface) 90%, transparent);
+}
+.text-md-on-surface-variant.text-md-on-surface-variant {
+  color: var(--color-md-on-surface-variant);
+}
+.text-md-on-surface-variant\/55.text-md-on-surface-variant\/55 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 55%, transparent);
+}
+.text-md-on-surface-variant\/68.text-md-on-surface-variant\/68 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 68%, transparent);
+}
+.text-md-on-surface-variant\/70.text-md-on-surface-variant\/70 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 70%, transparent);
+}
+.text-md-on-surface-variant\/72.text-md-on-surface-variant\/72 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 72%, transparent);
+}
+.text-md-on-surface-variant\/75.text-md-on-surface-variant\/75 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 75%, transparent);
+}
+.text-md-on-surface-variant\/78.text-md-on-surface-variant\/78 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 78%, transparent);
+}
+.text-md-on-surface-variant\/80.text-md-on-surface-variant\/80 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 80%, transparent);
+}
+.text-md-on-surface-variant\/82.text-md-on-surface-variant\/82 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 82%, transparent);
+}
+.text-md-on-surface-variant\/84.text-md-on-surface-variant\/84 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 84%, transparent);
+}
+.text-md-on-surface-variant\/86.text-md-on-surface-variant\/86 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 86%, transparent);
+}
+.text-md-on-surface-variant\/88.text-md-on-surface-variant\/88 {
+  color: color-mix(in srgb, var(--color-md-on-surface-variant) 88%, transparent);
+}
+.text-md-primary.text-md-primary {
+  color: var(--color-md-primary);
+}
+.text-md-error.text-md-error {
+  color: var(--color-md-error);
+}
+.text-md-warning.text-md-warning {
+  color: var(--color-md-warning);
 }

@@ -1,7 +1,7 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 
 import { HistoricalDayWeather, Location } from '@/api/types';
-import { weatherService, MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
+import { weatherService, MAX_HISTORY_RANGE_DAYS } from '@/api/weather.service';
 import { historyCache } from '@/cache/history-cache';
 import { CacheKeys } from '@/cache/keys';
 
@@ -19,9 +19,9 @@ import { CacheKeys } from '@/cache/keys';
  */
 export function useHistory(
   location: Location | null,
-  days = MAX_HISTORY_FETCH_DAYS,
+  days = MAX_HISTORY_RANGE_DAYS,
 ): UseQueryResult<HistoricalDayWeather[], Error> {
-  const normalizedDays = Math.min(days, MAX_HISTORY_FETCH_DAYS);
+  const normalizedDays = Math.min(days, MAX_HISTORY_RANGE_DAYS);
   return useQuery({
     queryKey: [
       CacheKeys.historyDay(location?.latitude ?? 0, location?.longitude ?? 0, 'range'),

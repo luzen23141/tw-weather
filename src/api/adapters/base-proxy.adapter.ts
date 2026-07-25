@@ -47,9 +47,9 @@ export abstract class BaseProxyAdapter implements WeatherApiAdapter {
       const params = this.buildLocationParams(location);
 
       const [currentResp, hourlyResp, dailyResp] = await Promise.all([
-        this.fetchEndpoint('current', params),
-        this.fetchEndpoint('hourly', params),
-        this.fetchEndpoint('daily', params),
+        this.fetchEndpoint('current', this.buildEndpointParams('current', location, params)),
+        this.fetchEndpoint('hourly', this.buildEndpointParams('hourly', location, params)),
+        this.fetchEndpoint('daily', this.buildEndpointParams('daily', location, params)),
       ]);
 
       return {
@@ -89,6 +89,20 @@ export abstract class BaseProxyAdapter implements WeatherApiAdapter {
   }
 
   // ----- 共用 helper -----
+
+  /**
+   * 依端點微調查詢參數。預設原樣回傳。
+   *
+   * 存在的理由：部分來源的不同端點需要不同的定位方式 —— CWA 的即時觀測可由
+   * lat/lon 找測站，但逐時／每日預報是依縣市切成不同 dataset，必須帶 locationId。
+   */
+  protected buildEndpointParams(
+    _endpoint: WeatherEndpoint,
+    _location: Location,
+    params: Record<string, string>,
+  ): Record<string, string> {
+    return params;
+  }
 
   protected buildLocationParams(location: Location): Record<string, string> {
     return {

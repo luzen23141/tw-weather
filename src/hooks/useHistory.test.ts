@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { type HistoricalDayWeather, type Location } from '@/api/types';
-import { MAX_HISTORY_FETCH_DAYS, weatherService } from '@/api/weather.service';
+import { MAX_HISTORY_RANGE_DAYS, weatherService } from '@/api/weather.service';
 import { historyCache } from '@/cache/history-cache';
 import { useHistory } from '@/hooks/useHistory';
 
@@ -10,7 +10,7 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@/api/weather.service', () => ({
-  MAX_HISTORY_FETCH_DAYS: 7,
+  MAX_HISTORY_RANGE_DAYS: 92,
   weatherService: {
     fetchHistory: jest.fn(),
   },
@@ -76,10 +76,18 @@ describe('useHistory', () => {
     });
   });
 
-  it('days 大於上限時 query key 應收斂到 7 天', () => {
+  it('days 大於上限時 query key 應收斂到上限', () => {
+    useHistory(mockLocation, 400);
+
+    expect(captured?.queryKey).toEqual(['history:25.033,121.5654:range', MAX_HISTORY_RANGE_DAYS]);
+  });
+
+  // 上限從 7 拉到 92 之前，30 天會被靜默砍成 7 天。
+  // 各來源自己的上限由 weatherService.fetchHistory 內部套用，不在這層處理。
+  it('未超過上限的天數應原樣傳遞，不再被砍到最弱來源的水準', () => {
     useHistory(mockLocation, 30);
 
-    expect(captured?.queryKey).toEqual(['history:25.033,121.5654:range', MAX_HISTORY_FETCH_DAYS]);
+    expect(captured?.queryKey).toEqual(['history:25.033,121.5654:range', 30]);
   });
 
   it('快取缺資料時應以收斂後天數呼叫 fetchHistory', async () => {
@@ -90,12 +98,12 @@ describe('useHistory', () => {
     mockFetchHistory.mockResolvedValue(fetched);
     mockSaveHistoryRange.mockResolvedValue();
 
-    useHistory(mockLocation, 30);
+    useHistory(mockLocation, 400);
 
     const result = await captured?.queryFn();
 
-    expect(mockGetHistoryRange).toHaveBeenCalledWith(25.033, 121.5654, 7);
-    expect(mockFetchHistory).toHaveBeenCalledWith(mockLocation, 7);
+    expect(mockGetHistoryRange).toHaveBeenCalledWith(25.033, 121.5654, MAX_HISTORY_RANGE_DAYS);
+    expect(mockFetchHistory).toHaveBeenCalledWith(mockLocation, MAX_HISTORY_RANGE_DAYS);
     expect(mockSaveHistoryRange).toHaveBeenCalled();
     expect(result?.length).toBeGreaterThan(0);
   });

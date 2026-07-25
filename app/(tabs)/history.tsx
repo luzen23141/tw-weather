@@ -1,149 +1,149 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { View } from 'react-native';
 
 import { BlurFade } from '@/components/ui/BlurFade';
-import { MAX_HISTORY_FETCH_DAYS } from '@/api/weather.service';
-import { BlurDecorative } from '@/components/ui/BlurDecorative';
-import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { GlassBackground } from '@/components/ui/GlassBackground';
 import { NoLocationState } from '@/components/ui/NoLocationState';
 import { PageErrorFallback } from '@/components/ui/PageErrorFallback';
-import { PageHeaderCard } from '@/components/ui/PageHeaderCard';
 import { PAGE_ENTER } from '@/components/ui/page-motion';
 import { PageScrollView } from '@/components/ui/PageScrollView';
 import { PageState } from '@/components/ui/PageState';
-import {
-  PageHeaderCardSkeleton,
-  SkeletonBox,
-  SkeletonProvider,
-} from '@/components/ui/SkeletonLoader';
-import { SourceBadge } from '@/components/ui/SourceBadge';
-import { StatCard } from '@/components/ui/StatCard';
-import { useEffectiveLocation } from '@/hooks/useEffectiveLocation';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { SkeletonBox, SkeletonProvider } from '@/components/ui/SkeletonLoader';
+import { DayDetailCard } from '@/components/weather/DayDetailCard';
+import { DayStrip } from '@/components/weather/DayStrip';
 import { useHistory } from '@/hooks/useHistory';
-import { useSettingsStore } from '@/store/settings.store';
-import { formatDate, daysAgo } from '@/utils/date';
+import { useWeatherPage } from '@/hooks/useWeatherPage';
+import { dayDetailFromForecast, dayDetailFromHistory } from '@/utils/day-detail';
+import { buildDayTimeline } from '@/utils/day-timeline';
 import { getWeatherErrorMessage } from '@/utils/error-message';
-import { getGlassStyle } from '@/components/ui/glass';
-import { formatLocationSecondaryName } from '@/utils/location-display';
 
 function HistorySkeleton() {
   return (
     <SkeletonProvider>
-      <View className="gap-6">
-        <PageHeaderCardSkeleton />
-
-        {/* 日期選擇器骨架 */}
-        <View className="gap-2">
-          <SkeletonBox height={12} width={60} borderRadius={4} className="mx-4" />
-          <View className="flex-row gap-2" style={{ paddingHorizontal: 16 }}>
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <SkeletonBox key={i} height={44} width={52} borderRadius={16} />
-            ))}
-          </View>
-        </View>
-
-        {/* 資料卡骨架 */}
-        <View className="gap-4 px-4">
-          <SkeletonBox height={14} width={100} borderRadius={4} />
-          <View className="flex-row gap-3">
-            <View
-              className="flex-1 gap-2 rounded-3xl border border-white/18 bg-white/10 px-4 py-4"
-              style={getGlassStyle(16)}
-            >
-              <SkeletonBox height={12} width="60%" borderRadius={4} />
-              <SkeletonBox height={32} width="45%" borderRadius={6} />
-            </View>
-            <View
-              className="flex-1 gap-2 rounded-3xl border border-white/18 bg-white/10 px-4 py-4"
-              style={getGlassStyle(16)}
-            >
-              <SkeletonBox height={12} width="60%" borderRadius={4} />
-              <SkeletonBox height={32} width="45%" borderRadius={6} />
-            </View>
-          </View>
-          <View
-            className="rounded-3xl border border-white/18 bg-white/10 px-4 py-4"
-            style={getGlassStyle(16)}
-          >
-            <View className="flex-row items-center justify-between">
-              <SkeletonBox height={12} width="40%" borderRadius={4} />
-              <SkeletonBox height={16} width="25%" borderRadius={4} />
-            </View>
-          </View>
-        </View>
+      <View className="gap-5">
+        <SkeletonBox height={196} borderRadius={22} className="mx-4" />
+        <SkeletonBox height={86} borderRadius={18} className="mx-4" />
       </View>
     </SkeletonProvider>
   );
 }
 
+/*
+ * 只往回顯示幾天的觀測。
+ *
+ * 資料層與後端最多支援 92 天（見 useHistory / MAX_HISTORY_RANGE_DAYS），但過去
+ * 只取最近兩天 —— 使用者要的是「跟前一兩天比冷了還熱了」，更久遠的觀測對日常
+ * 決策沒有幫助。未來則接上完整的每日預報。
+ */
+const HISTORY_DISPLAY_DAYS = 2;
+
+/**
+ * 日期時間軸。
+ *
+ * 一條連續的時間線：過去幾天的實際觀測 + 今日與未來的預報。使用者往右滑就能
+ * 看到未來，不必為此換一個畫面。選中的日期是觀測還是預報，決定詳情卡的呈現
+ * （共用 DayDetailCard，只換 renderer）。
+ *
+ * 職責仍是**「找到那一天並呈現那一天」** —— 與首頁每日列的下鑽（/day/[date]）
+ * 互補：這裡是可掃視的時間軸，那裡是單日的直接連結。
+ */
 export default function HistoryScreen() {
   const router = useRouter();
-  const { displayMode } = useSettingsStore();
   const {
     effectiveLocation,
-    isLoading: locationLoading,
-    error: locationError,
-  } = useEffectiveLocation();
+    weatherData,
+    isLoading: pageLoading,
+    locationError,
+    weatherError,
+  } = useWeatherPage();
   const [selectedDate, setSelectedDate] = useState('');
 
   const {
     data: historyData,
-    isLoading,
-    error,
+    isLoading: historyLoading,
+    error: historyError,
     refetch,
     isRefetching,
-  } = useHistory(effectiveLocation ?? null, MAX_HISTORY_FETCH_DAYS);
+  } = useHistory(effectiveLocation ?? null, HISTORY_DISPLAY_DAYS);
 
-  const historyDateMap = useMemo(
-    () => new Map(historyData?.map((d) => [d.date, d]) ?? []),
-    [historyData],
+  // 過去觀測 + 未來預報，合併成一條由舊到新的時間軸
+  const timeline = useMemo(
+    () => buildDayTimeline(historyData ?? [], weatherData?.dailyForecast ?? []),
+    [historyData, weatherData],
   );
 
-  const isLoadingCombined = locationLoading || (!!effectiveLocation && isLoading);
-  const selectedDayData = historyDateMap.get(selectedDate) ?? null;
+  const stripDays = useMemo(
+    () =>
+      timeline.map((d) => ({
+        date: d.date,
+        weatherCode: d.weatherCode,
+        tempMax: d.tempMax,
+        tempMin: d.tempMin,
+      })),
+    [timeline],
+  );
 
-  const locationSecondaryText = effectiveLocation
-    ? formatLocationSecondaryName(effectiveLocation)
-    : null;
+  const selected = useMemo(
+    () => timeline.find((d) => d.date === selectedDate) ?? null,
+    [timeline, selectedDate],
+  );
 
+  const isLoadingCombined = pageLoading || (!!effectiveLocation && historyLoading);
+  // 預報可用即足以呈現；歷史失敗只是少了過去幾天，不該擋住整頁
+  const blockingError = weatherError ?? (timeline.length === 0 ? historyError : null);
+
+  // 預設落在「今天」；今天不在時間軸上時退回最後一項（最接近今天的未來日）
   useEffect(() => {
-    if (!historyData || historyData.length === 0) {
-      return;
-    }
+    if (timeline.length === 0) return;
+    const stillPresent = timeline.some((d) => d.date === selectedDate);
+    if (stillPresent) return;
 
-    const hasSelectedDate = historyDateMap.has(selectedDate);
-    if (!selectedDate || !hasSelectedDate) {
-      const latestAvailableDate = historyData[0]?.date;
-      if (latestAvailableDate) {
-        setSelectedDate(latestAvailableDate);
-      }
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const today = timeline.find((d) => d.date === todayIso);
+    setSelectedDate((today ?? timeline[timeline.length - 1])?.date ?? '');
+  }, [timeline, selectedDate]);
+
+  const detail = useMemo(() => {
+    if (selected === null) return null;
+    if (selected.isObservation && selected.history !== undefined) {
+      return dayDetailFromHistory(selected.history);
     }
-  }, [historyData, selectedDate]);
+    if (selected.forecast !== undefined) {
+      return dayDetailFromForecast(selected.forecast);
+    }
+    return null;
+  }, [selected]);
+
+  const offsetDays = useMemo(() => {
+    if (selectedDate === '') return undefined;
+    const target = new Date(`${selectedDate}T00:00:00`).getTime();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.round((target - today.getTime()) / 86_400_000);
+  }, [selectedDate]);
 
   return (
     <ErrorBoundary fallback={<PageErrorFallback />}>
-      <GlassBackground>
+      {/* 背景漸層跟著所選日期的天氣走，切換日期時整個畫面的氛圍也跟著變 */}
+      <GlassBackground weatherCode={selected?.weatherCode}>
         <PageScrollView
           onRefresh={() => {
             void refetch();
           }}
           refreshing={isRefetching}
         >
-          <BlurDecorative color="accent" size="xl" position="top-right" opacity={0.08} />
-          <BlurDecorative color="secondary" size="md" position="bottom-left" opacity={0.06} />
-
           {isLoadingCombined ? (
             <PageState type="loading" skeleton={<HistorySkeleton />} />
           ) : !effectiveLocation ? (
-            <NoLocationState scope="最近 7 天的歷史天氣" locationError={locationError} />
-          ) : error ? (
+            <NoLocationState scope="歷史與預報" locationError={locationError} />
+          ) : blockingError ? (
             <PageState
               type="error"
-              title="無法取得歷史資料"
-              description={getWeatherErrorMessage(error)}
+              title="無法取得資料"
+              description={getWeatherErrorMessage(blockingError)}
               secondaryActionLabel="前往選擇地點"
               onSecondaryAction={() => router.push('/locations')}
               actionLabel="重試"
@@ -151,134 +151,35 @@ export default function HistoryScreen() {
                 void refetch();
               }}
             />
-          ) : effectiveLocation && historyData && historyData.length > 0 ? (
-            <View className="gap-7">
-              <PageHeaderCard
-                icon="time-outline"
-                title={effectiveLocation.name}
-                subtitle={locationSecondaryText}
-                eyebrow="歷史觀測"
-                rightSlot={
-                  <SourceBadge source={displayMode === 'aggregate' ? 'aggregate' : 'open-meteo'} />
-                }
-                bottomSlot={
-                  <Button
-                    variant="tonal"
-                    size="sm"
-                    label="手動刷新"
-                    loading={isRefetching}
-                    onPress={() => {
-                      void refetch();
-                    }}
-                  />
-                }
-              />
-
-              <View className="gap-2.5">
-                <Text className="px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-md-on-surface-variant">
-                  選擇日期
-                </Text>
-                <FlatList
-                  data={historyData}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={(item) => item.date}
-                  contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-                  initialNumToRender={7}
-                  maxToRenderPerBatch={7}
-                  windowSize={3}
-                  renderItem={({ item }) => {
-                    const isSelected = item.date === selectedDate;
-                    const dateObj = new Date(item.date);
-                    const dayStr = dateObj.getDate().toString();
-                    const monthStr = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-                    return (
-                      <TouchableOpacity
-                        accessibilityRole="button"
-                        accessibilityLabel={`選擇 ${monthStr}/${dayStr}`}
-                        onPress={() => setSelectedDate(item.date)}
-                        activeOpacity={0.84}
-                        className={`min-w-14 min-h-11 items-center justify-center rounded-2xl px-3 py-2.5 ${
-                          isSelected
-                            ? 'border border-white/30 bg-white/18'
-                            : 'border border-white/20 bg-white/10'
-                        }`}
-                        style={getGlassStyle(16)}
-                      >
-                        <Text
-                          className={`text-[11px] font-semibold ${
-                            isSelected ? 'text-md-on-surface' : 'text-md-on-surface-variant'
-                          }`}
-                        >
-                          {monthStr}/{dayStr}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  }}
+          ) : detail !== null ? (
+            <View className="gap-5">
+              <BlurFade
+                key={selectedDate}
+                delay={PAGE_ENTER.firstDelay}
+                duration={PAGE_ENTER.duration}
+              >
+                <DayDetailCard
+                  detail={detail}
+                  {...(offsetDays !== undefined ? { offsetDays } : {})}
                 />
-              </View>
+              </BlurFade>
 
-              {selectedDayData ? (
-                <BlurFade
-                  key={selectedDate}
-                  delay={PAGE_ENTER.firstDelay}
-                  duration={PAGE_ENTER.duration}
-                >
-                  <View className="gap-4 px-4">
-                    <View
-                      className="rounded-[28px] border border-white/20 bg-white/14 px-5 py-4"
-                      style={getGlassStyle(16)}
-                    >
-                      <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-md-primary">
-                        歷史摘要
-                      </Text>
-                      <Text className="mt-2 text-[17px] font-bold text-md-on-surface">
-                        {formatDate(selectedDate)}
-                      </Text>
-                      <Text className="mt-1 text-[13px] leading-5 text-md-on-surface-variant">
-                        {daysAgo(selectedDate) === 0
-                          ? '這是今天目前可取得的歷史資料。'
-                          : `${daysAgo(selectedDate)} 天前的觀測摘要。`}
-                      </Text>
-                    </View>
-
-                    <View className="flex-row flex-wrap gap-3">
-                      <StatCard
-                        iconType="thermometer"
-                        label="最低溫"
-                        value={`${Math.round(selectedDayData.temperatureMin)}°`}
-                        iconColor="#0ea5e9"
-                      />
-                      <StatCard
-                        iconType="thermometer"
-                        label="最高溫"
-                        value={`${Math.round(selectedDayData.temperatureMax)}°`}
-                        iconColor="#f97316"
-                      />
-                      <StatCard
-                        iconType="wind"
-                        label="日較差"
-                        value={`${Math.round(selectedDayData.temperatureMax - selectedDayData.temperatureMin)}°`}
-                        iconColor="#14b8a6"
-                      />
-                      <StatCard
-                        iconType="precipitation"
-                        label="總降水量"
-                        value={`${selectedDayData.precipitationSum.toFixed(1)} mm`}
-                        iconColor="#6366f1"
-                      />
-                    </View>
-                  </View>
-                </BlurFade>
-              ) : (
-                <PageState type="empty" title="無該日期的歷史資料" description="請改選其他日期。" />
-              )}
+              <BlurFade delay={PAGE_ENTER.staggerDelay} duration={PAGE_ENTER.secondaryDuration}>
+                <View className="gap-2">
+                  <SectionLabel>選擇日期</SectionLabel>
+                  <DayStrip
+                    days={stripDays}
+                    selectedDate={selectedDate}
+                    onSelect={setSelectedDate}
+                  />
+                </View>
+              </BlurFade>
             </View>
           ) : (
             <PageState
               type="empty"
-              title="無歷史資料"
-              description="目前地點尚未有可用歷史天氣紀錄。"
+              title="無可用資料"
+              description="目前地點尚未有可用的天氣紀錄或預報。"
             />
           )}
         </PageScrollView>

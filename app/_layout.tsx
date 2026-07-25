@@ -106,7 +106,28 @@ function AppContent() {
           screenOptions={{
             headerShown: false,
           }}
-        />
+        >
+          <Stack.Screen name="(tabs)" />
+          {/* 下鑽頁面保留原生返回手勢與標題列，讓「從哪裡來」有明確的退路 */}
+          <Stack.Screen
+            name="day/[date]"
+            options={{
+              headerShown: true,
+              title: '單日詳情',
+              headerTransparent: true,
+              headerTintColor: '#ffffff',
+            }}
+          />
+          <Stack.Screen
+            name="hourly"
+            options={{
+              headerShown: true,
+              title: '逐時預報',
+              headerTransparent: true,
+              headerTintColor: '#ffffff',
+            }}
+          />
+        </Stack>
         <StatusBar style="light" />
       </View>
     </VariableContextProvider>

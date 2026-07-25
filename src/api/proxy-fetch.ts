@@ -7,6 +7,14 @@ const PROXY_SECRET = process.env.EXPO_PUBLIC_PROXY_SECRET;
 
 export type WeatherEndpoint = 'current' | 'hourly' | 'daily' | 'history';
 
+/** 建構任意 proxy API 路徑的完整 URL（如 /api/provider/list） */
+export function buildApiUrl(path: string): string {
+  if (!PROXY_URL) {
+    throw new Error('EXPO_PUBLIC_PROXY_URL not found');
+  }
+  return `${PROXY_URL}${path}`;
+}
+
 export function buildWeatherUrl(endpoint: WeatherEndpoint, params: Record<string, string>): string {
   if (!PROXY_URL) {
     throw new Error('EXPO_PUBLIC_PROXY_URL not found');
