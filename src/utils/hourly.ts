@@ -9,18 +9,31 @@
 import { HourlyForecast } from '@/api/types';
 
 /**
- * 找出「現在」在逐時陣列中的索引 —— 第一筆時間不早於 now 的項目。
+ * 找出「現在」在逐時陣列中的索引 —— **包含 now 的那個小時區間**，
+ * 也就是最後一筆時間不晚於 now 的項目。
  *
- * 全部都在過去時退回最後一筆（而非 -1），呼叫端才不用各自處理空集合。
- * 空陣列回傳 0。
+ * 先前取的是「第一筆不早於 now」，那在整點時正確、其餘 59 分鐘都會多跳一格：
+ * 01:02 時 01:00 被判為過去、02:00 被標成「現在」。於是逐時列高亮的是還沒發生
+ * 的下一小時，首頁大卡拿來補降雨機率的 `currentHour` 也取到下一小時的值。
+ * 舊測試全把 now 釘在整點，剛好是唯一測不出這個偏差的時刻。
+ *
+ * 邊界：全部都在過去時退回最後一筆（而非 -1），呼叫端才不用各自處理空集合；
+ * 全部都在未來（資料尚未涵蓋現在）時退回第一筆。空陣列回傳 0。
  */
 export function findNowIndex(
   forecasts: readonly HourlyForecast[],
   now: number = Date.now(),
 ): number {
   if (forecasts.length === 0) return 0;
-  const index = forecasts.findIndex((f) => new Date(f.timestamp).getTime() >= now);
-  return index === -1 ? forecasts.length - 1 : index;
+
+  let currentIndex = -1;
+  forecasts.forEach((f, index) => {
+    const time = new Date(f.timestamp).getTime();
+    if (!Number.isNaN(time) && time <= now) currentIndex = index;
+  });
+
+  // 全部都在未來 —— 最接近「現在」的就是第一筆
+  return currentIndex === -1 ? 0 : currentIndex;
 }
 
 /**

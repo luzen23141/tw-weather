@@ -1,0 +1,17 @@
+# pnpm 10 起，`overrides` 與 `onlyBuiltDependencies` 不再從 package.json 的
+# `pnpm` 欄位讀取，必須放在這裡。放錯位置不會報錯，只會印一行 warning 然後
+# **靜默忽略** —— 也就是說 react 的版本鎖定其實一直沒有生效。
+#
+# 這個檔案存在不代表這是 monorepo：pnpm 10 把它同時當作設定檔，
+# 沒有 `packages:` 欄位就只是單一套件專案。
+
+overrides:
+  # React 19.2.0 三者必須同版：react-test-renderer 與 react 版本不一致時，
+  # jest 的元件測試會在 renderer 內部炸掉，而錯誤訊息不會指向版本問題。
+  react: 19.2.0
+  react-dom: 19.2.0
+  react-test-renderer: 19.2.0
+  jsdom: ^26.1.0
+
+onlyBuiltDependencies:
+  - msw

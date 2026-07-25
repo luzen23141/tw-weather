@@ -142,10 +142,20 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
 
-        {/* Service Worker 離線快取 */}
+        {/*
+          Service Worker 離線快取 —— 只在 production 註冊。
+
+          先前不分環境一律註冊，於是開發時 sw.js 會攔截並回傳快取住的 HTML 與
+          bundle：改了程式碼、重整、畫面沒變，看起來像 Metro 快取問題，實際上是
+          service worker 在發舊檔案。已經註冊過的開發者不會因為改成條件註冊就
+          自動解除，所以 dev 這邊要主動反註冊並清掉快取，否則舊 SW 會一直活著。
+        */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')})}`,
+            __html:
+              process.env.NODE_ENV === 'production'
+                ? `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')})}`
+                : `if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})})}}`,
           }}
         />
 

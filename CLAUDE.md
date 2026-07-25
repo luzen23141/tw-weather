@@ -274,7 +274,7 @@ EXPO_PUBLIC_WEATHERAPI_KEY=your_weatherapi_key
 ### 新增天氣來源
 
 1. **型別定義** (`src/api/types.ts`)
-   - `WeatherSource` enum 新增 ID
+   - `WeatherSource` 是 union type（不是 enum），在字串聯集中新增 ID
 
 2. **實作 Adapter** (`src/api/adapters/mynewsource.ts`)
    - 實作 `WeatherApiAdapter` 介面

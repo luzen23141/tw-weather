@@ -36,6 +36,32 @@ describe('findNowIndex', () => {
   it('全部都在過去時退回最後一筆，讓列表永遠有一格可高亮', () => {
     expect(findNowIndex([hour(8), hour(10), hour(12)], NOW)).toBe(2);
   });
+
+  /*
+    以下三例是整點以外的時刻。上面的案例全把 NOW 釘在 14:00:00 整，而那正是
+    「第一筆不早於 now」與「包含 now 的那一格」唯一會給出相同答案的時刻 ——
+    一天當中其餘 59/60 的時間兩者都不同。
+  */
+  const MID_HOUR = new Date(2026, 6, 23, 14, 2, 0).getTime();
+
+  it('14:02 時「現在」是 14:00 那格，不是 15:00', () => {
+    const forecasts = [hour(13), hour(14), hour(15), hour(16)];
+    expect(findNowIndex(forecasts, MID_HOUR)).toBe(1);
+  });
+
+  it('14:59 仍屬 14:00 那一小時', () => {
+    const almostNext = new Date(2026, 6, 23, 14, 59, 59).getTime();
+    expect(findNowIndex([hour(14), hour(15)], almostNext)).toBe(0);
+  });
+
+  it('資料尚未涵蓋現在（全部在未來）時退回第一筆', () => {
+    expect(findNowIndex([hour(18), hour(20)], MID_HOUR)).toBe(0);
+  });
+
+  it('忽略無法解析的時間戳', () => {
+    const broken = { ...hour(10), timestamp: 'not-a-date' };
+    expect(findNowIndex([hour(13), broken, hour(15)], MID_HOUR)).toBe(0);
+  });
 });
 
 describe('upcomingHours', () => {
